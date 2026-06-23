@@ -25,6 +25,30 @@ Chunky, Noisium) — **you do NOT need those on the client.** Only the three abo
 > **[Modrinth App](https://modrinth.com/app)** or **[Prism Launcher](https://prismlauncher.org/)**).
 > Add CC: Tweaked and Cobblemon and it pulls in Kotlin for Forge automatically.
 
+## Easiest path — Prism Launcher (recommended)
+[Prism Launcher](https://prismlauncher.org/) installs NeoForge, the right Java,
+and mod dependencies for you. Five steps:
+
+1. **Create the instance** — **Add Instance** → **Minecraft 1.21.1** → on the left
+   choose **NeoForge** as the mod loader (take the suggested 1.21.1 build) → name
+   it → **OK**. If Prism warns about Java, let it download **Java 21** for you.
+2. **Add the mods** — select the instance → **Edit → Mods → Download mods** (the
+   built-in Modrinth browser) and add each, confirming it says **NeoForge / 1.21.1**:
+   - **CC: Tweaked** `1.120.0`
+   - **Cobblemon** `1.7.3` — Prism auto-adds its dependency **Kotlin for Forge**
+     `5.11.0`; just check it landed in the list.
+   - You do **not** need the server's performance mods.
+3. **Launch** the instance once (the ▶ button) so it downloads everything.
+4. **Add the server** — in-game **Multiplayer → Add Server** → address
+   `mc.starting.cc` → Done.
+5. **Get whitelisted** (see the note in step 5 below), then **Join**.
+
+> *Optional:* add **Sodium** (NeoForge 1.21.1 build) in that same Mods list for
+> extra FPS — client-only, fine to skip.
+
+Prefer Prism? You can stop here. The steps below are the **manual official-launcher
+alternative** if you'd rather not use a third-party launcher.
+
 ## 1. Install Minecraft Java Edition
 - Own **Minecraft: Java Edition** and install the official launcher from
   <https://www.minecraft.net/download>. (Java Edition — *not* Bedrock.)
@@ -53,16 +77,18 @@ Chunky, Noisium) — **you do NOT need those on the client.** Only the three abo
   **NeoForge 1.21.1** profile → **Play**.
 
 ## 5. Connect to the server
-- **Multiplayer → Add Server** → Server Address: `SERVER_IP:25565`
-  (ask Garvis for the current address) → Done → Join.
-- Note: the server uses a **whitelist** — ask the owner to add your exact
-  Minecraft username, or you'll be turned away at the door.
+- **Multiplayer → Add Server** → Server Address: `mc.starting.cc` → Done → Join.
+  (Default port 25565 — no `:port` needed. Ask Garvis if the address ever changes.)
+- **You must be whitelisted first.** The server only admits listed players. Give the
+  owner your **exact, case-sensitive** Minecraft name — watch for trailing characters
+  (e.g. `Name` vs `Name_`); a one-character mismatch is rejected at the door.
 
 ## Troubleshooting (ask Garvis)
 - *“Outdated client/server” / failed handshake* → your mod versions don't match.
   Get the current versions from the table above, or ask Garvis.
 - *Crash on startup* → remove any mods you added beyond the three above.
-- *“You are not white-listed on this server”* → ask the owner to whitelist your
-  username.
+- *“You are not white-listed on this server”* → the whitelisted name doesn't exactly
+  match your account. Send the owner your **exact** in-game name (mind capitalization
+  and any trailing `_`) and have them re-add it.
 - *Installer won't open* → install Temurin 21 (step 2).
-- *Can't find the address* → ask Garvis: “what's the server IP?”
+- *Can't find the address* → it's `mc.starting.cc`. Or ask Garvis: “what's the server address?”
