@@ -15,3 +15,5 @@
 
 # ── mods ───────────────────────────────────────────────────────────────────
 cc-tweaked            # CC: Tweaked — programmable in-game computers/turtles (ComputerCraft, maintained fork). NeoForge 1.21.1, latest v1.120.0. No required deps. client_side: REQUIRED — players must install it too.
+cobblemon             # Cobblemon — catch & battle Pokémon. NeoForge 1.21.1, latest v1.7.3. client_side: REQUIRED — players must install it too. deps: kotlin-for-forge.
+kotlin-for-forge      # Kotlin for Forge — required dependency of Cobblemon (Kotlin runtime). NeoForge 1.21.1, latest v5.11.0. client_side/server_side: optional (pulled in for Cobblemon).
