@@ -28,7 +28,7 @@ network_policies:
     name: anthropic-api
     endpoints:
       - { host: api.anthropic.com, port: 443, protocol: rest, enforcement: enforce, access: read-write }
-    binaries: [ { path: /usr/bin/curl }, { path: /usr/bin/node }, { path: /usr/local/bin/claude } ]
+    binaries: [ { path: /usr/bin/curl }, { path: /usr/local/bin/node }, { path: /usr/local/bin/claude } ]
   modrinth:
     name: modrinth
     endpoints:
