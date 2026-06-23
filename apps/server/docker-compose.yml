@@ -26,7 +26,8 @@ services:
       MOTD: "${MC_MOTD:-A NeoForge server, maintained by Garvis}"
       DIFFICULTY: "${MC_DIFFICULTY:-normal}"
       MAX_PLAYERS: "${MC_MAX_PLAYERS:-20}"
-      OPS: "${MC_OPS:-}"
+      OPS: "${MC_OPS:-}"                        # server operators (admin) — set via MC_OPS in .env
+      OVERRIDE_OPS: "TRUE"                       # rewrite ops.json from MC_OPS each start (repo is source of truth; wipes any drift / console-granted op)
       # --- Whitelist (only listed players may join) ---
       WHITELIST: "${MC_WHITELIST:-}"            # comma-separated usernames; setting this turns white-list on
       ENFORCE_WHITELIST: "TRUE"                 # kick players who get removed from the list, even mid-session
