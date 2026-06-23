@@ -1,0 +1,15 @@
+{
+  "name": "minecraft",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Modded Minecraft (NeoForge 1.21.x) server monorepo — game server, @Garvis Discord bot, maintenance agent, and infra.",
+  "workspaces": [
+    "apps/garvis-bot"
+  ],
+  "scripts": {
+    "bot": "npm --workspace apps/garvis-bot start",
+    "server:up": "cd apps/server && docker compose up -d",
+    "server:down": "cd apps/server && docker compose down",
+    "server:logs": "cd apps/server && docker compose logs -f"
+  }
+}

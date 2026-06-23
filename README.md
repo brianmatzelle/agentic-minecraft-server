@@ -1,7 +1,8 @@
-# minecraft-server
+# minecraft
 
-A modded **Minecraft Java Edition** server (NeoForge 1.21.x), maintained
-asynchronously by a Claude Code agent and driven from Discord by **@Garvis**.
+Monorepo for a modded **Minecraft Java Edition** server (NeoForge 1.21.x),
+maintained asynchronously by a Claude Code agent and driven from Discord by
+**@Garvis**. Each layer is an independent package under `apps/` / `infra/`.
 
 ## Architecture (5 layers)
 
@@ -26,10 +27,13 @@ asynchronously by a Claude Code agent and driven from Discord by **@Garvis**.
 ## Quickstart (Layer 1 — playable now)
 
 ```bash
+cd apps/server
 cp .env.example .env        # then edit: set LEVEL_SEED, MC_VERSION, mods…
 docker compose up -d        # first boot downloads NeoForge + mods (be patient)
 docker compose logs -f      # watch for "Done (…)! For help, type help"
 ```
+
+From the repo root you can also use `npm run server:up` / `server:down` / `server:logs`.
 
 Connect in-game to `your-host-ip:25565`. The **custom seed** is the `LEVEL_SEED`
 value in `.env` (only applied on first world generation).
@@ -39,17 +43,19 @@ value in `.env` (only applied on first world generation).
 This repo lets semi-trusted friends drive an autonomous agent. Read
 `docs/security.md` before exposing anything. **The Discord token shared in chat
 is compromised — rotate it** (Developer Portal → Bot → Reset Token) and put the
-new one only in `.env` (gitignored).
+new one only in `apps/garvis-bot/.env` (gitignored).
 
 ## Layout
 
 ```
-docker-compose.yml   Layer 1 — the game server
-.env.example         all config knobs (copy to .env)
-bot/                 Layer 3 — @Garvis Discord bot
-agent/               Layer 2 — Hermes + claude-code config
-k8s/                 Layer 4 — Kubernetes manifests / Helm values
-openshell/           Layer 5 — agent egress sandbox policy
-docs/                architecture, security, Windows client install guide
-CLAUDE.md            operational guardrails for the maintenance agent
+apps/
+  server/        Layer 1 — the game server (docker-compose.yml, .env, server-data/)
+  garvis-bot/    Layer 3 — @Garvis Discord bot (Node)
+  agent/         Layer 2 — Hermes + claude-code maintenance agent config
+infra/
+  k8s/           Layer 4 — Kubernetes manifests / Helm values
+  openshell/     Layer 5 — agent egress sandbox policy
+docs/            architecture, security, Windows client install guide
+package.json     workspace root (npm workspaces + server/bot scripts)
+CLAUDE.md        operational guardrails for the maintenance agent
 ```

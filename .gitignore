@@ -4,8 +4,8 @@
 !.env.example
 
 # === Minecraft runtime data (world, logs, runtime-downloaded mods) ===
-/server-data/
-/data/
+apps/server/server-data/
+apps/server/data/
 *.log
 
 # === Garvis Discord bot (Node) ===
@@ -22,8 +22,8 @@ dist/
 
 # === Hermes maintenance agent local state ===
 .hermes/
-agent/state/
-agent/*.local.*
+apps/agent/state/
+apps/agent/*.local.*
 
 # === OS / editor ===
 .DS_Store

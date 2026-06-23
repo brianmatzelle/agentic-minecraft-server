@@ -6,12 +6,14 @@ allowlist plus Claude Code `deny`/`ask` rules (see `docs/security.md`). Treat it
 as how-we-work, and assume it cannot stop a determined prompt injection.
 
 ## What this repo is
-- A NeoForge **1.21.x** server run via `docker-compose.yml` (`itzg/minecraft-server`).
-- Mods are declared as Modrinth slugs in `MODRINTH_PROJECTS` (in `.env`, and the
-  canonical list lives in version control once we add `agent/modlist.txt`).
+- A monorepo: `apps/server` (the game server), `apps/garvis-bot` (Discord bot),
+  `apps/agent` (this maintenance agent's config), `infra/k8s`, `infra/openshell`.
+- A NeoForge **1.21.x** server run via `apps/server/docker-compose.yml` (`itzg/minecraft-server`).
+- Mods are declared as Modrinth slugs in `MODRINTH_PROJECTS` (in `apps/server/.env`,
+  and the canonical list lives in version control once we add `apps/agent/modlist.txt`).
 - The repo is the source of truth. You change the **repo**; a separate deploy
   step applies changes to the live server. **Never** mutate the running server
-  directly or touch `server-data/` (the live world).
+  directly or touch `apps/server/server-data/` (the live world).
 
 ## How to handle a mod request
 1. Identify the mod on Modrinth; confirm it supports **NeoForge 1.21.x server-side**.

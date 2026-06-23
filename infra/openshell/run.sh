@@ -13,16 +13,16 @@ openshell gateway add http://127.0.0.1:8080 --local --name local
 #    The start command goes AFTER `--` (it replaces the image CMD). [VERIFIED form]
 #    NOTE: confirm whether <name> is required vs auto-assigned (`sandbox create --help`).
 openshell sandbox create \
-    --from openshell/Dockerfile \
+    --from infra/openshell/Dockerfile \
     --name "${SANDBOX_NAME}" \
     -- hermes serve                      # [ILLUSTRATIVE start cmd — confirm Hermes long-run subcommand]
 
 # 3) Apply the default-deny egress allowlist (NAME before --policy). [VERIFIED order]
-openshell policy set "${SANDBOX_NAME}" --policy openshell/policy.yaml --wait
+openshell policy set "${SANDBOX_NAME}" --policy infra/openshell/policy.yaml --wait
 openshell policy get "${SANDBOX_NAME}"
 
 # 4) Inside the sandbox, the agent clones the repo into /sandbox (its only writable state):
-#       git clone https://github.com/<you>/minecraft-server /sandbox/minecraft-server
+#       git clone https://github.com/<you>/minecraft /sandbox/minecraft
 #    Secrets injected as env (NOT the Discord token): ANTHROPIC_API_KEY, GH_TOKEN.
 
 echo "Sandbox '${SANDBOX_NAME}' is up. Connect: openshell sandbox connect ${SANDBOX_NAME}"
