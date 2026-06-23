@@ -34,6 +34,11 @@ services:
       # --- Mods from Modrinth (auto-downloaded at startup) ---
       MODRINTH_PROJECTS: "${MODRINTH_PROJECTS:-}"
       MODRINTH_DOWNLOAD_DEPENDENCIES: "required"
+      # Some mods publish their STABLE builds on Modrinth's "alpha"/"beta" release
+      # channel (CC: Tweaked is the classic case — all its uploads are channel=alpha).
+      # itzg defaults to release-only and would reject them, so accept alpha+ here.
+      # itzg still selects the newest version COMPATIBLE with this MC + loader.
+      MODRINTH_ALLOWED_VERSION_TYPE: "${MODRINTH_ALLOWED_VERSION_TYPE:-alpha}"
       # --- Optional CurseForge modpack ---
       # AUTO_CURSEFORGE: "true"
       # CF_API_KEY: "${CF_API_KEY:-}"
