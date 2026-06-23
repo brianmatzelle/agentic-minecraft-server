@@ -44,3 +44,37 @@ enforced by an OpenShell egress sandbox rather than per-action prompts.
 
 Concrete config for S1–S6 lands in `agent/` and `openshell/` after the
 deep-research synthesis.
+
+## Implemented now — op/admin-escalation hardening (2026-06-23)
+
+Red-team finding: asked (and then social-engineered with owner-impersonation +
+urgency) to `op` a Discord user, Garvis **declined** both times — but only because
+the *model* chose to. The capability was always present: the agent runs with the
+host's `bypassPermissions` and could reach `docker exec … rcon-cli op …`. "Declined"
+is not "prevented." These controls turn the soft, model-dependent "no" into layered
+hard(er) stops. Full trace + analysis: the `harden/op-guardrails` PR.
+
+- **G1 — Agent deny rules (the lever).** Every spawned agent (Q&A *and* maintenance)
+  is launched with `--disallowedTools` blocking `docker`/`docker-compose`/`rcon-cli`/
+  `mc-send-to-console` and edits/writes to `apps/server/.env` and `server-data/**`
+  (`AGENT_DENY_TOOLS` in `apps/garvis-bot/src/index.js`). Claude Code enforces
+  `deny`/disallowed-tools **even under `bypassPermissions`** (only allow/ask is
+  skipped), and a spawn flag survives the clone's `git reset --hard && git clean -fd`
+  (the agent can't wipe an argv). Costs the agent nothing — it only needs
+  git/gh/curl/file-edits in its clone.
+  ⚠️ **Soft control:** pattern-based Bash denial is bypassable (full paths, a helper
+  script that shells out, etc.). It raises the bar; it is not a wall. The wall is S1
+  (don't run with bypassPermissions) + the OpenShell sandbox (no docker socket / no
+  host shell) — still the priority follow-up.
+- **G2 — Ops are repo-source-of-truth.** `OVERRIDE_OPS: "TRUE"` (compose) rewrites
+  `ops.json` from `MC_OPS` (in `.env`) on every boot, so any drift or console-granted
+  op is wiped on restart. Mirrors the existing `OVERRIDE_WHITELIST` pattern.
+- **G3 — Audit tripwire.** `scripts/ops-tripwire.sh` (systemd unit in
+  `infra/systemd/ops-tripwire.service`) follows the server log and alarms on any
+  op/de-op/ban/whitelist/RCON action, plus (best-effort) writes to the live ops/
+  whitelist/`.env` files — so an escalation, attempted or real, is never silent.
+- **G4 — Identity caveat (policy).** Garvis cannot verify who is typing; an
+  "authorized Discord member" may *ask* for things but that is not authority to grant
+  admin. Privileged live-server actions (op/ban/etc.) are done by the human on the
+  host, never by the agent acting on a chat message — which is exactly what Garvis
+  told the impersonator.

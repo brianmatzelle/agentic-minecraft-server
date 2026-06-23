@@ -51,6 +51,29 @@ const HELP_TIMEOUT_MS = 240_000;
 const MAINT_TURNS = 40;
 const MAINT_TIMEOUT_MS = 600_000;
 
+// Hard guardrail for EVERY spawned agent (Q&A + maintenance, local + openshell).
+// Claude Code enforces `deny`/disallowed-tools even under the host's
+// bypassPermissions, so these block the only paths from a (possibly prompt-injected)
+// agent to live-server admin state: docker / rcon-cli (-> op/deop/ban/whitelist) and
+// edits to the live server config + world. Passed as a spawn flag so it survives the
+// clone's `git reset --hard && git clean -fd` (the agent can't wipe an argv).
+// IMPORTANT: this is a SOFT control — pattern-based Bash denial is bypassable (full
+// paths, a script that shells out, etc.). The real boundary is the OpenShell sandbox
+// (no docker socket / no host shell). See docs/security.md. Costs the agent nothing:
+// it only needs git/gh/curl/file edits in its clone, never docker or rcon.
+const AGENT_DENY_TOOLS = [
+  'Bash(docker *)',
+  'Bash(* docker *)',
+  'Bash(docker-compose *)',
+  'Bash(* docker-compose *)',
+  'Bash(* rcon-cli *)',
+  'Bash(* mc-send-to-console *)',
+  'Edit(apps/server/.env)',
+  'Edit(apps/server/server-data/**)',
+  'Write(apps/server/.env)',
+  'Write(apps/server/server-data/**)',
+];
+
 const SERVER = {
   loader: 'NeoForge',
   mc: '1.21.1',
@@ -93,6 +116,9 @@ function runClaude(prompt, { resume = null, timeoutMs = HELP_TIMEOUT_MS, maxTurn
   return new Promise((done) => {
     const claudeArgs = ['-p', '--output-format', 'json', '--max-turns', String(maxTurns)];
     if (resume) claudeArgs.push('--resume', resume);
+    // Keep this LAST: --disallowedTools is variadic and consumes the patterns that
+    // follow it, so nothing else may come after on the arg list.
+    claudeArgs.push('--disallowedTools', ...AGENT_DENY_TOOLS);
     // Local: spawn `claude` in the isolated clone. OpenShell: spawn `openshell
     // sandbox exec` which runs that same `claude` inside the egress sandbox; the
     // prompt is forwarded over stdin either way, so only argv0 + prefix differ.

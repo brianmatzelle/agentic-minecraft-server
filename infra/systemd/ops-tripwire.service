@@ -1,0 +1,19 @@
+# Garvis ops tripwire — audit alerts for privileged Minecraft admin actions.
+# Install as a systemd --user service (same pattern as garvis-bot.service):
+#   cp infra/systemd/ops-tripwire.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now ops-tripwire.service
+#   journalctl --user -u ops-tripwire.service -f      # watch the alerts
+[Unit]
+Description=Garvis ops tripwire (audit alerts for op/deop/ban/whitelist/RCON)
+After=docker.service
+
+[Service]
+Type=simple
+# Adjust this path if your checkout lives elsewhere.
+ExecStart=/home/cowboy/projects/active/minecraft/scripts/ops-tripwire.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
