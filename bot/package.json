@@ -1,0 +1,16 @@
+{
+  "name": "garvis-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "@Garvis — friend-facing Discord bot: relays scoped mod requests to the maintenance agent and answers Windows-client install questions.",
+  "scripts": {
+    "register": "node src/register-commands.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5"
+  },
+  "engines": { "node": ">=20" }
+}

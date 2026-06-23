@@ -1,0 +1,38 @@
+# Modded Minecraft — NeoForge 1.21.x — itzg/minecraft-server
+# Layer 1 of the architecture (the actual game server). This is a NORMAL
+# container exposed on TCP 25565 — it does NOT run inside OpenShell (OpenShell
+# is egress-only and cannot host an inbound game listener). See docs/architecture.md.
+#
+# Quickstart:  cp .env.example .env  &&  edit .env  &&  docker compose up -d
+# Custom seed: set LEVEL_SEED in .env (only takes effect on first world gen).
+# Console:     docker compose exec minecraft rcon-cli   (or: mc-send-to-console)
+
+services:
+  minecraft:
+    image: itzg/minecraft-server:java21
+    container_name: mc-neoforge
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+    ports:
+      - "25565:25565"
+    environment:
+      EULA: "TRUE"                              # accepts https://aka.ms/MinecraftEULA
+      TYPE: "NEOFORGE"
+      VERSION: "${MC_VERSION:-1.21.1}"          # NeoForge build auto-resolved for this MC version
+      MEMORY: "${MC_MEMORY:-6G}"
+      SEED: "${LEVEL_SEED:-}"                   # <-- custom world seed (blank = random)
+      MOTD: "${MC_MOTD:-A NeoForge server, maintained by Garvis}"
+      DIFFICULTY: "${MC_DIFFICULTY:-normal}"
+      MAX_PLAYERS: "${MC_MAX_PLAYERS:-20}"
+      OPS: "${MC_OPS:-}"
+      # --- Mods from Modrinth (auto-downloaded at startup) ---
+      MODRINTH_PROJECTS: "${MODRINTH_PROJECTS:-}"
+      MODRINTH_DOWNLOAD_DEPENDENCIES: "required"
+      # --- Optional CurseForge modpack ---
+      # AUTO_CURSEFORGE: "true"
+      # CF_API_KEY: "${CF_API_KEY:-}"
+      USE_AIKAR_FLAGS: "true"                   # GC tuning recommended for modded
+      OVERRIDE_SERVER_PROPERTIES: "true"        # re-apply env-driven props on restart
+    volumes:
+      - ./server-data:/data                     # world + mods + logs (gitignored)

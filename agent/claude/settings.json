@@ -1,0 +1,42 @@
+{
+  "//": "Bounded-autonomy permissions for the AGENT's Claude Code (Layer 2).",
+  "//2": "Kept under agent/ (not the repo root .claude/) so it binds the sandboxed",
+  "//3": "agent, not your own interactive use of the repo. The agent runs claude",
+  "//4": "with: claude --settings agent/claude/settings.json  (or install to the",
+  "//5": "sandbox home). Key names + rule syntax are [VERIFIED]. deny > ask > allow.",
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read",
+      "Edit",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(git switch *)",
+      "Bash(git branch *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr view *)"
+    ],
+    "ask": [],
+    "deny": [
+      "Bash(git push *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(npm *)",
+      "Bash(pip *)",
+      "Bash(pipx *)",
+      "Bash(rm -rf *)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.kube/**)",
+      "Read(./server-data/**)",
+      "Edit(./server-data/**)",
+      "Read(./**/*token*)",
+      "Read(./**/*secret*)"
+    ]
+  }
+}

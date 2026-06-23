@@ -1,0 +1,13 @@
+{
+  "//": "MANAGED (un-overridable) settings — highest precedence. Install to the",
+  "//2": "OS managed-settings path INSIDE the OpenShell agent image so a prompt-",
+  "//3": "injected agent cannot relax them. Key names + values are [VERIFIED].",
+  "//4": "CONFIRM the managed-settings delivery path/mechanism on the image, or these",
+  "//5": "have no effect.",
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "disableAutoMode": "disable"
+  },
+  "allowManagedPermissionRulesOnly": false,
+  "allowManagedHooksOnly": true
+}

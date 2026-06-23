@@ -1,0 +1,15 @@
+# Hermes Agent config (Layer 2)  →  install to ~/.hermes/config.yaml
+# Key NAMES are [VERIFIED] (from hermes cli-config example); VALUES are [ILLUSTRATIVE].
+#
+# Do NOT add a `schema_version` key — Hermes tracks `_config_version` itself
+# (managed by `hermes setup`/migrations). Run `hermes setup` after copying.
+model:
+  default: "anthropic/claude-opus-4-8"   # [ILLUSTRATIVE — set to your preferred model id]
+  provider: "anthropic"                  # auto | anthropic | openrouter | ...
+terminal:
+  backend: "local"
+  cwd: "."
+  timeout: 180
+# CONFIRM AT INSTALL: that the keys you set here exist in YOUR installed Hermes
+# build (some docs-listed keys were not found in source). `hermes setup` will
+# migrate/validate. Secrets live in ~/.hermes/.env (see discord.env.example).

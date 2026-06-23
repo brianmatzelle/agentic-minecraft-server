@@ -1,0 +1,57 @@
+# OpenShell sandbox policy for the maintenance AGENT (Layer 5).
+# `openshell policy set <name> --policy openshell/policy.yaml` REPLACES the whole
+# policy, so the static sections below must stay in the file when you edit egress.
+#
+# TAGS: schema/keys = [VERIFIED] against OpenShell source/docs.
+#       the host LIST under network_policies = [OURS] (the allowlist we chose).
+# CONFIRM AT INSTALL: binary paths (`which git`/`claude`/`node` inside the image),
+#       and `openshell policy set --help` for exact arg order.
+version: 1
+
+filesystem_policy:
+  include_workdir: true
+  read_only:  [/usr, /lib, /proc, /dev/urandom, /app, /etc, /var/log]
+  read_write: [/sandbox, /tmp, /dev/null]      # the ONLY writable state = the repo clone
+
+landlock:
+  compatibility: best_effort
+
+process:
+  run_as_user:  sandbox                         # root is rejected by OpenShell [VERIFIED]
+  run_as_group: sandbox
+
+# Default-deny egress. Only these hosts are reachable; everything else is blocked.
+# Loopback (127/8), link-local/metadata (169.254/16) and 0.0.0.0 are ALWAYS blocked,
+# even if listed — and cannot be re-enabled. [VERIFIED]
+network_policies:
+  anthropic:
+    name: anthropic-api
+    endpoints:
+      - { host: api.anthropic.com, port: 443, protocol: rest, enforcement: enforce, access: read-write }
+    binaries: [ { path: /usr/bin/curl }, { path: /usr/bin/node }, { path: /usr/local/bin/claude } ]
+  modrinth:
+    name: modrinth
+    endpoints:
+      - { host: api.modrinth.com, port: 443, protocol: rest, enforcement: enforce, access: read-only }
+      - { host: cdn.modrinth.com, port: 443, protocol: rest, enforcement: enforce, access: read-only }
+    binaries: [ { path: /usr/bin/curl } ]
+  github:                                        # clone repo + open PRs (POST needs read-write)
+    name: github
+    endpoints:
+      - { host: github.com,                    port: 443, protocol: rest, enforcement: enforce, access: read-write }
+      - { host: api.github.com,                port: 443, protocol: rest, enforcement: enforce, access: read-write }
+      - { host: codeload.github.com,           port: 443, protocol: rest, enforcement: enforce, access: read-only }
+      - { host: objects.githubusercontent.com, port: 443, protocol: rest, enforcement: enforce, access: read-only }
+    binaries: [ { path: /usr/bin/git }, { path: /usr/bin/curl }, { path: /usr/bin/gh } ]
+  neoforge:
+    name: neoforge-maven
+    endpoints:
+      - { host: maven.neoforged.net, port: 443, protocol: rest, enforcement: enforce, access: read-only }
+    binaries: [ { path: /usr/bin/curl } ]
+  # Enable ONLY if you switch the server to AUTO_CURSEFORGE:
+  # curseforge:
+  #   name: curseforge
+  #   endpoints:
+  #     - { host: api.curseforge.com, port: 443, protocol: rest, enforcement: enforce, access: read-only }
+  #     - { host: "*.forgecdn.net",   port: 443, protocol: rest, enforcement: enforce, access: read-only }
+  #   binaries: [ { path: /usr/bin/curl } ]

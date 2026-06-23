@@ -1,0 +1,30 @@
+# Reference L4 Service for raw TCP 25565 (the itzg chart renders this for you when
+# serviceType is set; included standalone for clarity / non-Helm deploys).
+#
+# IMPORTANT: Minecraft is a binary TCP protocol — there is NO Host header/SNI, so a
+# normal HTTP (L7) Ingress will NOT route it. Use a LoadBalancer or NodePort (L4).
+# For MANY worlds behind one IP you'd add itzg's SNI-aware `mc-router` (out of scope
+# for a single world).
+apiVersion: v1
+kind: Service
+metadata:
+  name: mc-minecraft
+  labels:
+    app: minecraft
+spec:
+  type: LoadBalancer            # NodePort on bare metal (pins 30000–32767; MetalLB for a clean IP)
+  selector:
+    app: minecraft             # match the chart's pod labels
+  ports:
+    - name: minecraft
+      port: 25565
+      targetPort: 25565
+      protocol: TCP
+  # loadBalancerSourceRanges:   # optional allowlist of client CIDRs
+  #   - 0.0.0.0/0
+---
+# DEPLOY GATE (the repo->live boundary from docs/security.md):
+# The agent only opens PRs. A human merges to main; THEN a controller/CI applies it:
+#   - Argo CD Application or Flux HelmRelease referencing itzg/minecraft + k8s/values.yaml, OR
+#   - CI fallback:  helm upgrade --install mc itzg/minecraft -f k8s/values.yaml
+# Pin BOTH the chart version and the MC version. Never "LATEST".

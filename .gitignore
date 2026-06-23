@@ -1,0 +1,29 @@
+# === Secrets — NEVER commit ===
+.env
+*.env
+!.env.example
+
+# === Minecraft runtime data (world, logs, runtime-downloaded mods) ===
+/server-data/
+/data/
+*.log
+
+# === Garvis Discord bot (Node) ===
+node_modules/
+npm-debug.log*
+yarn-error.log*
+dist/
+*.sqlite
+*.sqlite3
+
+# === Hermes maintenance agent local state ===
+.hermes/
+agent/state/
+agent/*.local.*
+
+# === OS / editor ===
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

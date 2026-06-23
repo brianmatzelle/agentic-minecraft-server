@@ -1,0 +1,52 @@
+# itzg/minecraft Helm values (Layer 4). NeoForge 1.21.1, single stateful world.
+#   helm repo add itzg https://itzg.github.io/minecraft-server-charts/
+#   helm upgrade --install mc itzg/minecraft -f k8s/values.yaml
+# Key names + chart defaults are [VERIFIED]; host-specific values are [ILLUSTRATIVE].
+
+# replicaCount MUST stay 1 — Minecraft is NOT horizontally scalable (chart warns
+# this "will most likely break your setup"). [VERIFIED]
+replicaCount: 1
+
+image:
+  repository: itzg/minecraft-server
+  tag: java21                      # NeoForge 1.21.1 requires Java 21 [VERIFIED]
+
+workloadAsStatefulSet: true
+strategyType: Recreate             # safe on a single RWO PVC [VERIFIED default]
+
+resources:
+  requests:
+    memory: 6Gi                    # keep >= minecraftServer.memory
+    cpu: 1000m
+
+minecraftServer:
+  eula: "TRUE"
+  type: "NEOFORGE"
+  version: "1.21.1"
+  memory: 6144M
+  serviceType: LoadBalancer        # NodePort on bare metal (or front with MetalLB)
+  servicePort: 25565
+  # nodePort: 30565                # only if serviceType: NodePort
+  # loadBalancerSourceRanges: []   # restrict who can connect
+  extraEnv:                        # NeoForge build pin + mods via env passthrough
+    # CONFIRM current build at maven.neoforged.net before pinning:
+    NEOFORGE_VERSION: "21.1.186"   # [ILLUSTRATIVE build number]
+    SEED: ""                       # your custom seed (quote negative seeds)
+    MODRINTH_PROJECTS: "lithium,ferrite-core,modernfix,spark,chunky"  # server-safe [VERIFIED]
+    MODRINTH_DOWNLOAD_DEPENDENCIES: "required"
+  # NOTE: there is NO `neoForgeVersion` chart key — pin via extraEnv.NEOFORGE_VERSION. [VERIFIED negative]
+  # CONFIRM the passthrough key name (`extraEnv` vs `env`) on your chart version.
+
+persistence:
+  dataDir:
+    enabled: true                  # PVC mounted at /data
+    Size: 10Gi                     # capital S is load-bearing [VERIFIED]
+    accessModes: [ReadWriteOnce]
+    # storageClass: "<your-class>"
+
+mcbackup:
+  enabled: true                    # itzg/mc-backup sidecar
+  backupInterval: "24h"
+  backupMethod: tar
+  pruneBackupsDays: 7
+  pauseIfNoPlayers: "true"
