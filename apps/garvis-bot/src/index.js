@@ -32,6 +32,12 @@ const INSTALL_GUIDE = resolve(REPO_ROOT, 'docs/windows-client-install.md');
 // real repo. Defaults to a sibling checkout; override with GARVIS_AGENT_WORKDIR.
 const AGENT_WORKDIR = process.env.GARVIS_AGENT_WORKDIR || resolve(REPO_ROOT, '..', 'minecraft-agent');
 
+// When GARVIS_DISPATCH_MODE=openshell, the maintenance agent runs INSIDE the
+// OpenShell egress sandbox (infra/openshell) instead of on the host. These name
+// the sandbox + the repo checkout within it. Bring it up first via run.sh.
+const OPENSHELL_SANDBOX = process.env.OPENSHELL_SANDBOX || 'mc-maint-agent';
+const OPENSHELL_WORKDIR = process.env.OPENSHELL_WORKDIR || '/sandbox/minecraft';
+
 const ALLOWED_USERS = (process.env.DISCORD_ALLOWED_USERS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const ALLOWED_ROLES = (process.env.DISCORD_ALLOWED_ROLES ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const COOLDOWN_MS = Number(process.env.GARVIS_COOLDOWN_MS ?? 60_000);
@@ -83,13 +89,22 @@ function onCooldown(userId) {
 // Pass {resume} to continue a conversation, {cwd} to pick the working tree (help
 // reads the live repo; maintenance runs in the isolated clone), and {maxTurns}/
 // {timeoutMs} to size the budget to the task. Returns {ok, text, sessionId, timedOut}.
-function runClaude(prompt, { resume = null, timeoutMs = HELP_TIMEOUT_MS, maxTurns = HELP_TURNS, cwd = REPO_ROOT } = {}) {
+function runClaude(prompt, { resume = null, timeoutMs = HELP_TIMEOUT_MS, maxTurns = HELP_TURNS, cwd = REPO_ROOT, openshell = false } = {}) {
   return new Promise((done) => {
-    const args = ['-p', '--output-format', 'json', '--max-turns', String(maxTurns)];
-    if (resume) args.push('--resume', resume);
+    const claudeArgs = ['-p', '--output-format', 'json', '--max-turns', String(maxTurns)];
+    if (resume) claudeArgs.push('--resume', resume);
+    // Local: spawn `claude` in the isolated clone. OpenShell: spawn `openshell
+    // sandbox exec` which runs that same `claude` inside the egress sandbox; the
+    // prompt is forwarded over stdin either way, so only argv0 + prefix differ.
+    const cmd = openshell ? 'openshell' : 'claude';
+    const args = openshell
+      ? ['sandbox', 'exec', '-n', OPENSHELL_SANDBOX, '--workdir', OPENSHELL_WORKDIR, '--no-tty',
+         '--timeout', String(Math.ceil(timeoutMs / 1000)), '--', 'claude', ...claudeArgs]
+      : claudeArgs;
+    const spawnOpts = openshell ? { env: process.env } : { cwd, env: process.env };
     const t0 = Date.now();
-    console.log(`[claude] start cwd=${cwd} maxTurns=${maxTurns} timeout=${timeoutMs}ms resume=${resume ? 'yes' : 'no'}`);
-    const child = spawn('claude', args, { cwd, env: process.env });
+    console.log(`[claude] start via=${openshell ? `openshell:${OPENSHELL_SANDBOX}` : `local:${cwd}`} maxTurns=${maxTurns} timeout=${timeoutMs}ms resume=${resume ? 'yes' : 'no'}`);
+    const child = spawn(cmd, args, spawnOpts);
     let out = '';
     let err = '';
     let timedOut = false;
@@ -239,10 +254,13 @@ function buildMaintPrompt({ request, user }) {
   ].join('\n');
 }
 
-// Run the maintenance agent in the isolated clone with the big budget.
+// Run the maintenance agent with the big budget. In openshell mode it runs inside
+// the egress sandbox (cwd is ignored — the sandbox uses OPENSHELL_WORKDIR); in
+// local mode it runs in the isolated host clone.
 function runMaint({ request, user, resume = null }) {
   return runClaude(buildMaintPrompt({ request, user }), {
     resume, cwd: AGENT_WORKDIR, maxTurns: MAINT_TURNS, timeoutMs: MAINT_TIMEOUT_MS,
+    openshell: DISPATCH_MODE === 'openshell',
   });
 }
 
