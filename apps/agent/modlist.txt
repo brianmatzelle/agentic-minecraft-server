@@ -1,0 +1,17 @@
+# Canonical mod list — the source of truth for what ships on the server.
+# One Modrinth project slug per line. NeoForge 1.21.1, server-side-safe only.
+#
+# How this is used:
+#   - scripts/deploy.sh turns this list into MODRINTH_PROJECTS in apps/server/.env
+#     and (re)starts the container, where itzg/minecraft-server downloads the mods.
+#   - Add mods via PR only (see CLAUDE.md "How to handle a mod request"). A human
+#     merges; the deploy step applies it. Never edit the live world directly.
+#
+# Conventions:
+#   - `slug              # title — why / notes` (keep the comment, it documents intent)
+#   - Modrinth "required" dependencies are auto-resolved by itzg, but list them
+#     explicitly below a `# deps:` note so the list is self-documenting.
+#   - Blank lines and # comments are ignored by the deploy script.
+
+# ── mods ───────────────────────────────────────────────────────────────────
+# (none yet — added via PR)

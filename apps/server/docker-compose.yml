@@ -27,6 +27,10 @@ services:
       DIFFICULTY: "${MC_DIFFICULTY:-normal}"
       MAX_PLAYERS: "${MC_MAX_PLAYERS:-20}"
       OPS: "${MC_OPS:-}"
+      # --- Whitelist (only listed players may join) ---
+      WHITELIST: "${MC_WHITELIST:-}"            # comma-separated usernames; setting this turns white-list on
+      ENFORCE_WHITELIST: "TRUE"                 # kick players who get removed from the list, even mid-session
+      OVERRIDE_WHITELIST: "TRUE"                # rewrite whitelist.json from MC_WHITELIST each start (repo is source of truth)
       # --- Mods from Modrinth (auto-downloaded at startup) ---
       MODRINTH_PROJECTS: "${MODRINTH_PROJECTS:-}"
       MODRINTH_DOWNLOAD_DEPENDENCIES: "required"
