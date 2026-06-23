@@ -14,4 +14,4 @@
 #   - Blank lines and # comments are ignored by the deploy script.
 
 # ── mods ───────────────────────────────────────────────────────────────────
-# (none yet — added via PR)
+cc-tweaked            # CC: Tweaked — programmable in-game computers/turtles (ComputerCraft, maintained fork). NeoForge 1.21.1, latest v1.120.0. No required deps. client_side: REQUIRED — players must install it too.
