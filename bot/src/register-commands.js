@@ -21,7 +21,19 @@ const commands = [
     .toJSON(),
   new SlashCommandBuilder()
     .setName('installhelp')
-    .setDescription('Get step-by-step help installing the modded client on Windows.')
+    .setDescription('Ask Garvis for tailored help installing the modded client (any OS).')
+    .addStringOption((o) =>
+      o.setName('question')
+        .setDescription('Describe your setup + what you need, e.g. "Ubuntu aarch64, account but nothing installed"')
+        .setRequired(true))
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName('debug')
+    .setDescription('Open a thread where Garvis helps you debug, remembering the conversation.')
+    .addStringOption((o) =>
+      o.setName('topic')
+        .setDescription('What broke? e.g. "NeoForge installer fails on Ubuntu aarch64 with error X"')
+        .setRequired(true))
     .toJSON(),
 ];
 
