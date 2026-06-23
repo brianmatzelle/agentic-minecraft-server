@@ -17,3 +17,11 @@
 cc-tweaked            # CC: Tweaked — programmable in-game computers/turtles (ComputerCraft, maintained fork). NeoForge 1.21.1, latest v1.120.0. No required deps. client_side: REQUIRED — players must install it too.
 cobblemon             # Cobblemon — catch & battle Pokémon. NeoForge 1.21.1, latest v1.7.3. client_side: REQUIRED — players must install it too. deps: kotlin-for-forge.
 kotlin-for-forge      # Kotlin for Forge — required dependency of Cobblemon (Kotlin runtime). NeoForge 1.21.1, latest v5.11.0. client_side/server_side: optional (pulled in for Cobblemon).
+
+# ── performance / diagnostics ────────────────────────────────────────────────
+lithium               # Lithium — general game-logic optimizations. NeoForge 1.21.1, latest mc1.21.1-0.15.3-neoforge. No deps. client/server: optional — server-side only here.
+ferrite-core          # FerriteCore — reduces memory usage. NeoForge 1.21.1, latest v7.0.3. No deps. client/server: optional — server-side only here.
+modernfix             # ModernFix — startup/memory/performance fixes. NeoForge 1.21.1, latest v5.27.14+mc1.21.1. No deps. client/server: optional — server-side only here.
+spark                 # spark — performance profiler (diagnose lag/TPS). NeoForge 1.21.1, latest v1.10.124-neoforge-1.21.1. No deps. client/server: optional — server-side only here.
+chunky                # Chunky — pre-generates chunks to reduce lag spikes. NeoForge 1.21.1, latest v1.4.23. No deps. client/server: optional — server-side only here.
+noisium               # Noisium — faster worldgen. NeoForge 1.21.1, latest v2.3.0+mc1.21-1.21.1. No deps. server_side: REQUIRED, client_side: unsupported (server-only).
