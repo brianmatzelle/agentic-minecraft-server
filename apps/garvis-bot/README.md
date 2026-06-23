@@ -50,9 +50,26 @@ systemctl --user restart garvis-bot.service     # apply code changes
 journalctl --user -u garvis-bot.service -f      # tail logs
 ```
 
-## Dispatch modes (`GARVIS_DISPATCH_MODE`)
-- `dry-run` (default) — posts the exact task it *would* run; nothing executes. Safe to demo immediately.
-- `openshell` — `openshell sandbox exec <name> -- claude -p "<task>" --settings agent/claude/settings.json …` **[wire at install]**
-- `local` — spawn `claude -p` locally (dev only, no sandbox). **[wire at install]**
+## Natural-language installs (beginner-friendly)
+When `GARVIS_DISPATCH_MODE` is **not** `dry-run`, an **authorized** member can just
+@mention Garvis in plain English — "**@garvis add cobblemon**", "*can we get
+computercraft?*" — and he:
+1. researches it on Modrinth and confirms **NeoForge 1.21.1 server-side** support (+ deps, client-side need),
+2. adds it to `apps/agent/modlist.txt` on a branch,
+3. opens a **PR** for a human to merge, and
+4. replies with a friendly summary + the PR link.
 
-Authz is deny-by-default: empty `DISCORD_ALLOWED_USERS`/`ROLES` = nobody can `/requestmod`.
+No slug syntax required. `/requestmod slug:<x>` still works for the precise path.
+Q&A and `/installhelp` stay open to **everyone**; only repo-changing actions are
+gated by the allowlist.
+
+The agent does this work in an **isolated clone** (`GARVIS_AGENT_WORKDIR`), never
+the live repo, with a turn/time budget sized for real research (not the old 6-turn
+cap that made him silently "return nothing").
+
+## Dispatch modes (`GARVIS_DISPATCH_MODE`)
+- `dry-run` — posts the exact task it *would* run; nothing executes. @mentions stay help-only. Safe demo.
+- `local` — spawns a real `claude` agent in `GARVIS_AGENT_WORKDIR` that researches + opens the PR.
+- `openshell` — same agent, wrapped in the OpenShell egress sandbox (`infra/openshell`).
+
+Authz is deny-by-default: empty `DISCORD_ALLOWED_USERS`/`ROLES` = nobody can trigger installs.
