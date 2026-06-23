@@ -21,11 +21,20 @@ services:
       EULA: "TRUE"                              # accepts https://aka.ms/MinecraftEULA
       TYPE: "NEOFORGE"
       VERSION: "${MC_VERSION:-1.21.1}"          # NeoForge build auto-resolved for this MC version
-      MEMORY: "${MC_MEMORY:-6G}"
+      MEMORY: "${MC_MEMORY:-12G}"               # heap; Aikar flags set Xms=Xmx. 12G is a healthy modded heap on this 128G box (bigger ≠ better — large heaps lengthen GC pauses)
       SEED: "${LEVEL_SEED:-}"                   # <-- custom world seed (blank = random)
       MOTD: "${MC_MOTD:-A NeoForge server, maintained by Garvis}"
       DIFFICULTY: "${MC_DIFFICULTY:-normal}"
       MAX_PLAYERS: "${MC_MAX_PLAYERS:-20}"
+      # --- Render / simulation distance (applied to server.properties; OVERRIDE_SERVER_PROPERTIES re-applies on restart) ---
+      # view-distance = chunks of terrain SENT to clients (what you see). Cheap-ish; max 32.
+      # simulation-distance = chunks that actually TICK (entities/mob-spawning/redstone/crops).
+      #   This is the TPS-sensitive one and is single-thread-CPU-bound, NOT RAM-bound — more
+      #   heap does not raise its ceiling. 20 is a deliberately strong-but-stable value for a
+      #   modded server with entity-heavy mods (Cobblemon); the GB10 Grace X925 single-thread
+      #   perf + Lithium make it comfortable. Profile with `spark` before pushing toward 32.
+      VIEW_DISTANCE: "${MC_VIEW_DISTANCE:-32}"
+      SIMULATION_DISTANCE: "${MC_SIMULATION_DISTANCE:-20}"
       OPS: "${MC_OPS:-}"                        # server operators (admin) — set via MC_OPS in .env
       OVERRIDE_OPS: "TRUE"                       # rewrite ops.json from MC_OPS each start (repo is source of truth; wipes any drift / console-granted op)
       # --- Whitelist (only listed players may join) ---
