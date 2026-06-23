@@ -87,6 +87,8 @@ function runClaude(prompt, { resume = null, timeoutMs = HELP_TIMEOUT_MS, maxTurn
   return new Promise((done) => {
     const args = ['-p', '--output-format', 'json', '--max-turns', String(maxTurns)];
     if (resume) args.push('--resume', resume);
+    const t0 = Date.now();
+    console.log(`[claude] start cwd=${cwd} maxTurns=${maxTurns} timeout=${timeoutMs}ms resume=${resume ? 'yes' : 'no'}`);
     const child = spawn('claude', args, { cwd, env: process.env });
     let out = '';
     let err = '';
@@ -94,23 +96,28 @@ function runClaude(prompt, { resume = null, timeoutMs = HELP_TIMEOUT_MS, maxTurn
     const timer = setTimeout(() => {
       timedOut = true;
       try { child.kill('SIGKILL'); } catch {}
+      console.error(`[claude] TIMEOUT after ${timeoutMs}ms (maxTurns=${maxTurns}). stderr head: ${err.slice(0, 300) || '(none)'}`);
       done({ ok: false, timedOut: true, text: "That one's taking longer than I'd like — give me another go in a moment.", sessionId: resume });
     }, timeoutMs);
     child.stdout.on('data', (d) => { out += d.toString(); });
     child.stderr.on('data', (d) => { err += d.toString(); });
-    child.on('error', (e) => { clearTimeout(timer); done({ ok: false, text: `I couldn't start up just now (${e.message}). Mind trying again in a sec?`, sessionId: resume }); });
-    child.on('close', () => {
+    child.on('error', (e) => { clearTimeout(timer); console.error(`[claude] spawn error: ${e.message}`); done({ ok: false, text: `I couldn't start up just now (${e.message}). Mind trying again in a sec?`, sessionId: resume }); });
+    child.on('close', (code) => {
       clearTimeout(timer);
       if (timedOut) return; // already resolved
+      const dt = ((Date.now() - t0) / 1000).toFixed(1);
       try {
         const j = JSON.parse(out);
         const text = (j.result ?? '').toString().trim();
         if (j.is_error || !text) {
+          console.error(`[claude] soft-fail in ${dt}s (exit=${code}, is_error=${j.is_error}, turns=${j.num_turns}). stderr: ${err.slice(0, 300) || '(none)'}`);
           done({ ok: false, text: text || `Hmm, I came up empty on that one${err ? ` (${err.slice(0, 150)})` : ''}. Could you rephrase, or try again?`, sessionId: j.session_id ?? resume });
         } else {
+          console.log(`[claude] ok in ${dt}s (turns=${j.num_turns}, cost=$${j.total_cost_usd ?? '?'})`);
           done({ ok: true, text, sessionId: j.session_id ?? resume });
         }
       } catch {
+        console.error(`[claude] parse-fail in ${dt}s (exit=${code}). stderr: ${err.slice(0, 300) || '(none)'} | stdout head: ${out.slice(0, 300)}`);
         done({ ok: false, text: `I hit a snag handling my own response${err ? ` (${err.slice(0, 180)})` : ''}. Give it another shot?`, sessionId: resume });
       }
     });
