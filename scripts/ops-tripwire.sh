@@ -16,7 +16,10 @@ set -uo pipefail
 CONTAINER="${MC_CONTAINER:-mc-neoforge}"
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 # Server-log signatures of privileged actions (case-insensitive).
-LOG_PATTERN='Made .* a server operator|De-opped|Opped |Banned|ban-ip|Pardoned|Un-banned|Added .* to the whitelist|Removed .* from the whitelist|Turned (on|off) the whitelist|\[Rcon|set own game mode|set .* game mode to'
+# NOTE: match the RCON command PAYLOAD "[Rcon: <cmd>]" (note the colon), NOT the
+# all-caps thread-name brackets "[RCON Listener]" / "[RCON Client ...]" that appear on
+# every connection — otherwise every benign rcon call spams two lifecycle alarms.
+LOG_PATTERN='Made .* a server operator|De-opped|Opped |Banned|ban-ip|Pardoned|Un-banned|Added .* to the whitelist|Removed .* from the whitelist|Turned (on|off) the whitelist|\[Rcon: |set own game mode|set .* game mode to'
 
 ts() { date '+%F %T'; }
 alert() { printf '%s [ops-tripwire] 🚨 ALERT: %s\n' "$(ts)" "$1"; }
