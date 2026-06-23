@@ -1,0 +1,16 @@
+[Unit]
+Description=@Garvis Discord bot (Minecraft monorepo, Layer 3)
+# source: ~/projects/active/minecraft/apps/garvis-bot
+
+[Service]
+Type=simple
+WorkingDirectory=/home/cowboy/projects/active/minecraft/apps/garvis-bot
+# node is nvm-managed — update this path if you change node versions via nvm
+ExecStart=/home/cowboy/.nvm/versions/node/v24.15.0/bin/node src/index.js
+# ~/.local/bin is where the `claude` CLI lives; the bot spawns it for replies.
+Environment=PATH=/home/cowboy/.nvm/versions/node/v24.15.0/bin:/home/cowboy/.local/bin:/usr/local/bin:/usr/bin:/bin
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

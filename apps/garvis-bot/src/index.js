@@ -2,6 +2,9 @@
 // Design notes:
 //   - Commands: /installhelp (one-shot), /requestmod (scoped PR task), /debug
 //     (opens a THREAD with a persistent claude-code session for back-and-forth).
+//   - @mention anywhere: @Garvis in any text channel and he opens a thread,
+//     answers there, and remembers the conversation (same session machinery as
+//     /debug). Follow-ups must @mention him too — see the intent note below.
 //   - Conversation continuity: turn 1 captures session_id (--output-format json);
 //     each follow-up resumes it (--resume). Map: threadId -> {sessionId, ownerId}.
 //   - Threads use @mentions: Discord populates message content for messages that
@@ -141,6 +144,23 @@ function buildDebugPrompt({ topic, user }) {
   ].join('\n');
 }
 
+function buildAskPrompt({ question, user }) {
+  return [
+    `You are Garvis, the friendly assistant for a specific modded Minecraft Java Edition server. A player @mentioned you on Discord. Answer their question directly, accurately, and concisely. If it's an install/setup question, tailor steps to THEIR operating system and CPU architecture — never assume Windows. Ask one clarifying question if you need their platform, the exact command, or the full error text. This is the start of a thread, so you can keep the conversation going.`,
+    ``,
+    `SERVER FACTS (ground truth — use these, don't invent):`,
+    `- Mod loader: ${SERVER.loader} for Minecraft ${SERVER.mc} (requires ${SERVER.java}).`,
+    `- Connect address: ${SERVER.address}`,
+    `- Required client mods: ${SERVER.mods}`,
+    ``,
+    `Be honest about uncertainty, never fabricate download URLs. Tight, friendly markdown, no preamble.`,
+    ``,
+    `THE PLAYER'S MESSAGE:`,
+    fencedData(question, 1000),
+    `(asked by Discord user ${user})`,
+  ].join('\n');
+}
+
 function buildScopedTask({ slug, reason, user }) {
   const safeSlug = String(slug).slice(0, 64).replace(/[^a-zA-Z0-9._-]/g, '');
   const safeReason = String(reason ?? '').slice(0, 300).replace(/[`$\\]/g, '');
@@ -254,18 +274,51 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-// Continue a debug thread when the owner @mentions Garvis in it.
+// Garvis answers whenever he's @mentioned: a mention inside a tracked thread
+// resumes that conversation; a mention anywhere else opens a fresh thread.
+// (The @mention is also REQUIRED to read content — without the privileged
+// MESSAGE_CONTENT intent, Discord only populates msg.content when the bot is
+// mentioned. That's why follow-ups in a thread must @mention him too.)
 client.on(Events.MessageCreate, async (msg) => {
   if (msg.author.bot) return;
-  const sess = getSession(msg.channelId);
-  if (!sess || msg.author.id !== sess.ownerId) return;        // only the thread's owner
-  if (!msg.mentions.users.has(client.user.id)) return;        // must @mention (also how we get content)
+  if (!client.user || !msg.mentions.users.has(client.user.id)) return;  // must directly @mention Garvis
+  if (msg.mentions.everyone) return;                                    // ignore @everyone/@here noise
   const content = msg.content.replace(/<@!?\d+>/g, '').trim();
-  if (!content) return;
-  await msg.channel.sendTyping().catch(() => {});
-  const res = await runClaude(`The player's next message in this debugging thread (help them):\n${fencedData(content, 1500)}`, { resume: sess.sessionId });
-  if (res.sessionId) setSession(msg.channelId, res.sessionId, sess.ownerId);  // chain forward, persisted
-  await sendChunked(msg.channel, res.text).catch(async () => { await msg.reply('Garvis hit an error posting the reply.'); });
+
+  // Already inside a tracked thread: owner-only follow-up, resume the session.
+  const sess = getSession(msg.channelId);
+  if (sess) {
+    if (msg.author.id !== sess.ownerId || !content) return;
+    await msg.channel.sendTyping().catch(() => {});
+    const res = await runClaude(`The player's next message in this thread (help them):\n${fencedData(content, 1500)}`, { resume: sess.sessionId });
+    if (res.sessionId) setSession(msg.channelId, res.sessionId, sess.ownerId);  // chain forward, persisted
+    await sendChunked(msg.channel, res.text).catch(async () => { await msg.reply('Garvis hit an error posting the reply.'); });
+    return;
+  }
+
+  // Fresh @mention: open a thread, answer there, and remember the conversation.
+  if (!content) { await msg.reply('👋 @mention me with a question and I’ll open a thread to help.').catch(() => {}); return; }
+  const wait = onCooldown(msg.author.id);
+  if (wait > 0) { await msg.reply(`Slow down — try again in ${wait}s.`).catch(() => {}); return; }
+
+  let target = msg.channel;
+  let createdThread = false;
+  if (!msg.channel.isThread()) {  // startThread only works on a top-level channel message
+    try {
+      target = await msg.startThread({ name: `garvis: ${content.slice(0, 70)}`, autoArchiveDuration: 1440, reason: 'Garvis Q&A thread' });
+      createdThread = true;
+    } catch (e) {
+      await msg.reply(`I couldn't open a thread (do I have "Create Public Threads"?): ${e.message}`).catch(() => {});
+      return;
+    }
+  }
+  await target.sendTyping().catch(() => {});
+  const res = await runClaude(buildAskPrompt({ question: content, user: msg.author.id }));
+  if (res.sessionId) setSession(target.id, res.sessionId, msg.author.id);  // track for follow-ups
+  await sendChunked(target, res.text).catch(async () => { await msg.reply('Garvis hit an error posting the reply.'); });
+  if (createdThread && res.sessionId) {
+    await target.send('_@mention me here to keep the thread going._').catch(() => {});
+  }
 });
 
 // Lifecycle: evict sessions for deleted threads; never let a stray rejection crash us.
