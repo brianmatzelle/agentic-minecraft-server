@@ -12,6 +12,15 @@ the Discord token) and dispatches a *scoped* task into the sandbox.
   and dispatches it. Agent opens a PR for owner approval.
 - `/debug topic:<text>` — opens a thread with a persistent claude session for
   back-and-forth troubleshooting.
+- `/whitelist username:<mc-java-name>` — authz-gated; lets a trusted friend whitelist
+  a Minecraft **Java** username (theirs or someone else's). The bot adds them **live**
+  (`docker exec <MC_CONTAINER> rcon-cli whitelist add`, instant, no restart) **and**
+  persists the name to `MC_WHITELIST` in `apps/server/.env` so it survives the
+  `OVERRIDE_WHITELIST=TRUE` rewrite on the next restart. Username is validated
+  (`[A-Za-z0-9_]{3,16}`) and passed as argv, never a shell string. Unlike `/requestmod`
+  this acts on the live server directly (not via the sandboxed agent) — see
+  `src/whitelist.js` and `docs/security.md` ("Deliberate exception — `/whitelist`").
+  Requires the bot's host user to be able to run `docker`.
 
 ## @mention chat
 `@Garvis <question>` in any text channel he can see → he opens a thread, answers
@@ -23,8 +32,9 @@ Messages in Threads** in that channel.
 
 ## Files
 - `package.json` — discord.js v14 + dotenv.
-- `src/register-commands.js` — registers the two guild slash commands (run once).
+- `src/register-commands.js` — registers the guild slash commands (run once, and after adding/changing a command).
 - `src/index.js` — the bot: deny-by-default authz, per-user cooldown, scoped-task builder, dispatcher.
+- `src/whitelist.js` — `/whitelist` plumbing: username validation, idempotent MC_WHITELIST `.env` update, and the live `rcon-cli whitelist add`. The only place the bot touches the live server.
 - `garvis-bot.service` — systemd `--user` unit that runs the bot (see "Run as a service").
 - `.env.example` — copy to `bot/.env` (gitignored). **Freshly rotated token only.**
 

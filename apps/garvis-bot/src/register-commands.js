@@ -35,6 +35,14 @@ const commands = [
         .setDescription('What broke? e.g. "NeoForge installer fails on Ubuntu aarch64 with error X"')
         .setRequired(true))
     .toJSON(),
+  new SlashCommandBuilder()
+    .setName('whitelist')
+    .setDescription('Whitelist a Minecraft (Java) username so they can join — yourself or a friend.')
+    .addStringOption((o) =>
+      o.setName('username')
+        .setDescription('Minecraft Java username (3–16 chars: letters, numbers, _)')
+        .setRequired(true))
+    .toJSON(),
 ];
 
 const rest = new REST({ version: '10' }).setToken(DISCORD_BOT_TOKEN);
