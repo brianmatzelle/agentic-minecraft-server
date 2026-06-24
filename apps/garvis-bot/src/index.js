@@ -471,7 +471,7 @@ async function onInteraction(interaction) {
     const res = await runClaudeResilient(buildDebugPrompt({ topic, user: interaction.user.id }));
     await sendChunked(thread, res.text);
     if (res.sessionId) {
-      setSession(thread.id, res.sessionId, interaction.user.id);
+      setSession(thread.id, { mode: 'help', sessionId: res.sessionId, ownerId: interaction.user.id });  // /debug runs the help path (repo cwd)
       await interaction.editReply(`🧵 Opened <#${thread.id}> — **@mention me** in that thread with each message and I'll remember the conversation.`);
     } else {
       await interaction.editReply(`🧵 Opened <#${thread.id}>, but the session didn't start cleanly — re-run /debug to retry.`);
@@ -597,14 +597,24 @@ client.on(Events.MessageCreate, async (msg) => {
   const content = msg.content.replace(/<@!?\d+>/g, '').trim();
   const act = canActFor(msg);  // capable maintenance vs. read-only help
 
-  // Already inside a tracked thread: owner-only follow-up, resume the session.
+  // Already inside a tracked thread: ANYONE may continue it (shared group
+  // conversation). Write-authz is still enforced per-message via `act`, so a
+  // non-authorized friend gets read-only help here while only an authorized
+  // member can trigger repo changes — opening threads up costs nothing
+  // security-wise.
   const sess = getSession(msg.channelId);
   if (sess) {
-    if (msg.author.id !== sess.ownerId || !content) return;
+    if (!content) return;  // bare @mention with no text — nothing to answer
+    // Resume only a SAME-MODE session. Claude sessions are scoped to the dir they
+    // were created in (help→repo, maint→agent clone), so resuming across modes
+    // dies with "No conversation found". A friend (help) speaking in a thread the
+    // owner started via maintenance just gets a fresh help session here.
+    const mode = act ? 'maint' : 'help';
+    const resume = mode === 'maint' ? sess.maint : sess.help;
     await msg.channel.sendTyping().catch(() => {});
     const working = act ? await msg.channel.send('🛠️ _on it…_').catch(() => null) : null;
-    const res = await answerInThread({ content, user: msg.author.id, resume: sess.sessionId, act });
-    if (res.sessionId) setSession(msg.channelId, res.sessionId, sess.ownerId);  // chain forward, persisted
+    const res = await answerInThread({ content, user: msg.author.id, resume, act });
+    if (res.sessionId) setSession(msg.channelId, { mode, sessionId: res.sessionId, ownerId: msg.author.id });  // chain forward, persisted
     if (working) await working.delete().catch(() => {});
     await sendChunked(msg.channel, res.text).catch(async () => { await msg.reply('I hit an error posting that — mind trying once more?').catch(() => {}); });
     return;
@@ -632,7 +642,7 @@ client.on(Events.MessageCreate, async (msg) => {
   await target.sendTyping().catch(() => {});
   const working = act ? await target.send('🛠️ _on it — researching, and if it checks out I’ll open a PR. give me a couple minutes…_').catch(() => null) : null;
   const res = await answerInThread({ content, user: msg.author.id, resume: null, act });
-  if (res.sessionId) setSession(target.id, res.sessionId, msg.author.id);  // track for follow-ups
+  if (res.sessionId) setSession(target.id, { mode: act ? 'maint' : 'help', sessionId: res.sessionId, ownerId: msg.author.id });  // track for follow-ups
   if (working) await working.delete().catch(() => {});
   await sendChunked(target, res.text).catch(async () => { await msg.reply('I hit an error posting that — mind trying once more?').catch(() => {}); });
   if (createdThread && res.sessionId) {
