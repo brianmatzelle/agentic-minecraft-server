@@ -86,6 +86,17 @@ const SERVER = {
   mods: process.env.SERVER_MODS || '(none required yet — vanilla NeoForge)',
 };
 
+// Garvis's own Discord slash commands, injected into his Q&A prompts so he points
+// players to the right command (especially /whitelist for joining) instead of falling
+// back to "ask the owner". Keep in sync with register-commands.js.
+const GARVIS_COMMANDS = [
+  `GARVIS'S DISCORD SLASH COMMANDS (mention these when relevant — players type them with a leading "/"):`,
+  `- /whitelist username:<Minecraft Java name> — THE way to get onto the server: it whitelists that player immediately. An approved member can run it for themselves OR a friend; if someone isn't approved, the command itself tells them to ask the owner. So when asked "how do I join / get whitelisted?", point them here (they, an approved friend, or the owner runs it).`,
+  `- /installhelp question:<text> — tailored help installing the modded client for the player's OS/CPU.`,
+  `- /debug topic:<text> — opens a thread to troubleshoot a problem step by step.`,
+  `- /requestmod slug:<modrinth-slug> — request a mod be added (opens a PR for the owner to approve); approved members only.`,
+].join('\n');
+
 // /whitelist talks to the LIVE server DIRECTLY (docker exec ... rcon-cli) — see
 // whitelist.js for why that's allowed here but denied to the sandboxed agent. The
 // container name and the server's .env (source of truth for MC_WHITELIST) are
@@ -213,6 +224,8 @@ function buildHelpPrompt({ question, reference, user }) {
     `- Connect address: ${SERVER.address}`,
     `- Required client mods: ${SERVER.mods}`,
     ``,
+    GARVIS_COMMANDS,
+    ``,
     `REFERENCE (a Windows-only guide; ADAPT it to the player's platform, do NOT copy verbatim):`,
     `"""`,
     reference,
@@ -238,6 +251,8 @@ function buildDebugPrompt({ topic, user }) {
     `- Connect address: ${SERVER.address}`,
     `- Required client mods: ${SERVER.mods}`,
     ``,
+    GARVIS_COMMANDS,
+    ``,
     `Be specific to the player's platform, honest about uncertainty, never fabricate URLs. Tight, friendly markdown.`,
     ``,
     `THE PLAYER'S OPENING MESSAGE:`,
@@ -254,6 +269,8 @@ function buildAskPrompt({ question, user }) {
     `- Mod loader: ${SERVER.loader} for Minecraft ${SERVER.mc} (requires ${SERVER.java}).`,
     `- Connect address: ${SERVER.address}`,
     `- Required client mods: ${SERVER.mods}`,
+    ``,
+    GARVIS_COMMANDS,
     ``,
     `Be honest about uncertainty, never fabricate download URLs. Tight, friendly markdown, no preamble.`,
     ``,
@@ -275,6 +292,7 @@ function buildMaintPrompt({ request, user }) {
     `Figure out what they need:`,
     `• A QUESTION (server status, a mod, install help)? Just answer it clearly. Do NOT modify the repo.`,
     `• A request to ADD / REMOVE / CHANGE a mod or server setting? Actually DO it as a pull request, following "How to handle a mod request" in CLAUDE.md.`,
+    `• A request to WHITELIST a player (let someone join)? Do NOT open a PR or touch the repo/console for this — tell them to use the /whitelist slash command (e.g. \`/whitelist username:<MinecraftJavaName>\`), which whitelists instantly. You cannot do it yourself.`,
     ``,
     `Adding a mod (the usual case):`,
     `1. Find it on Modrinth and CONFIRM it supports ${SERVER.loader} ${SERVER.mc} SERVER-SIDE. Use the API (curl):`,
