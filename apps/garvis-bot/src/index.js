@@ -445,10 +445,14 @@ client.on(Events.MessageCreate, async (msg) => {
   const content = msg.content.replace(/<@!?\d+>/g, '').trim();
   const act = canActFor(msg);  // capable maintenance vs. read-only help
 
-  // Already inside a tracked thread: owner-only follow-up, resume the session.
+  // Already inside a tracked thread: ANYONE may continue it (shared group
+  // conversation), resuming the same session so context carries across speakers.
+  // Write-authz is still enforced per-message via `act` below — a non-authorized
+  // friend gets read-only help here, only an authorized member can trigger repo
+  // changes — so opening threads up costs nothing security-wise.
   const sess = getSession(msg.channelId);
   if (sess) {
-    if (msg.author.id !== sess.ownerId || !content) return;
+    if (!content) return;  // bare @mention with no text — nothing to answer
     await msg.channel.sendTyping().catch(() => {});
     const working = act ? await msg.channel.send('🛠️ _on it…_').catch(() => null) : null;
     const res = await answerInThread({ content, user: msg.author.id, resume: sess.sessionId, act });
