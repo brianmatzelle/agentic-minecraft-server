@@ -30,10 +30,24 @@ intent, Discord only delivers message content when the bot is directly mentioned
 Requires **View Channel**, **Send Messages**, **Create Public Threads**, and **Send
 Messages in Threads** in that channel.
 
+## Rich Modrinth previews
+Garvis renders any **Modrinth** link in his replies as a rich preview card "off rip"
+(mod icon, summary, download count, and **server/client side** — the bit players
+actually care about), instead of leaving a bare blue link for Discord to maybe
+auto-unfurl. His reply text comes from a free-form LLM, so there's no structured "mod"
+object to embed — `src/embeds.js` instead post-processes the text: it pulls out Modrinth
+project links, looks each up via the Modrinth API, and attaches the cards to the last
+message. This works on **every** path (@mention chat, `/installhelp`, `/debug`,
+`/requestmod`) because they all funnel through `sendChunked`/`editReplyChunked`. Lookups
+are cached, time-boxed, and fail soft — a metadata hiccup just means no card, never a
+missing reply. The prompts nudge the agent to drop the canonical
+`https://modrinth.com/mod/<slug>` link so the cards fire reliably.
+
 ## Files
 - `package.json` — discord.js v14 + dotenv.
 - `src/register-commands.js` — registers the guild slash commands (run once, and after adding/changing a command).
 - `src/index.js` — the bot: deny-by-default authz, per-user cooldown, scoped-task builder, dispatcher.
+- `src/embeds.js` — turns Modrinth links in replies into rich preview cards (see "Rich Modrinth previews").
 - `src/whitelist.js` — `/whitelist` plumbing: username validation, idempotent MC_WHITELIST `.env` update, and the live `rcon-cli whitelist add`. The only place the bot touches the live server.
 - `garvis-bot.service` — systemd `--user` unit that runs the bot (see "Run as a service").
 - `.env.example` — copy to `bot/.env` (gitignored). **Freshly rotated token only.**

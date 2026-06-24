@@ -23,6 +23,7 @@ import { randomUUID } from 'node:crypto';
 import { Client, GatewayIntentBits, Events, MessageFlags } from 'discord.js';
 import { getSession, setSession, deleteSession, closeDb } from './db.js';
 import { validateUsername, addUsernameToWhitelistEnv, rconWhitelistAdd, classifyWhitelistOutput } from './whitelist.js';
+import { buildModrinthEmbeds } from './embeds.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '../..');
@@ -96,6 +97,12 @@ const GARVIS_COMMANDS = [
   `- /debug topic:<text> — opens a thread to troubleshoot a problem step by step.`,
   `- /requestmod slug:<modrinth-slug> — request a mod be added (opens a PR for the owner to approve); approved members only.`,
 ].join('\n');
+
+// Garvis post-processes his own replies: any Modrinth link he writes is auto-rendered as
+// a rich preview card (icon, summary, server/client side) — see embeds.js. Telling him so
+// makes the cards fire reliably: when a player wants a mod, just drop the canonical link.
+const EMBED_HINT =
+  `When you point a player to a specific mod, include its canonical Modrinth URL on its own (e.g. https://modrinth.com/mod/<slug>). Garvis automatically turns any Modrinth link into a rich preview card (icon, summary, server/client side), so you don't need to describe the page — just include the link.`;
 
 // /whitelist talks to the LIVE server DIRECTLY (docker exec ... rcon-cli) — see
 // whitelist.js for why that's allowed here but denied to the sandboxed agent. The
@@ -235,6 +242,7 @@ function buildHelpPrompt({ question, reference, user }) {
     `- Concrete, correct, step-by-step instructions for the player's exact platform.`,
     `- Be honest where something is uncertain/unavailable for their platform; never fabricate download URLs.`,
     `- Tight and friendly. Plain markdown, no preamble.`,
+    `- ${EMBED_HINT}`,
     ``,
     `PLAYER'S QUESTION:`,
     fencedData(question, 600),
@@ -254,6 +262,7 @@ function buildDebugPrompt({ topic, user }) {
     GARVIS_COMMANDS,
     ``,
     `Be specific to the player's platform, honest about uncertainty, never fabricate URLs. Tight, friendly markdown.`,
+    `${EMBED_HINT}`,
     ``,
     `THE PLAYER'S OPENING MESSAGE:`,
     fencedData(topic, 800),
@@ -273,6 +282,7 @@ function buildAskPrompt({ question, user }) {
     GARVIS_COMMANDS,
     ``,
     `Be honest about uncertainty, never fabricate download URLs. Tight, friendly markdown, no preamble.`,
+    `${EMBED_HINT}`,
     ``,
     `THE PLAYER'S MESSAGE:`,
     fencedData(question, 1000),
@@ -304,7 +314,7 @@ function buildMaintPrompt({ request, user }) {
     `4. Commit (conventional-commit message), \`git push -u origin add-mod/<slug>\`, then open a PR with \`gh pr create\` whose body covers: the mod + Modrinth URL, confirmed ${SERVER.loader} ${SERVER.mc} server-side support, required deps, and whether it's needed client-side. Do NOT merge. Do NOT touch server-data/.`,
     `5. If it does NOT support ${SERVER.loader} ${SERVER.mc} server-side, do NOT open a PR — say so plainly and suggest an alternative if you know one.`,
     ``,
-    `Finally, reply for Discord: a short, friendly summary of what you found and did, including the PR link (or why there isn't one). No raw command logs.`,
+    `Finally, reply for Discord: a short, friendly summary of what you found and did, including the PR link (or why there isn't one). No raw command logs. ${EMBED_HINT}`,
     ``,
     `SERVER FACTS (ground truth): ${SERVER.loader} ${SERVER.mc}, ${SERVER.java}; connect ${SERVER.address}; current required client mods: ${SERVER.mods}.`,
     ``,
@@ -368,14 +378,36 @@ function chunkMessage(text, size = 1900) {
   return chunks.length ? chunks : ['(empty response)'];
 }
 
+// Render any Modrinth links in `text` as rich cards. Attached to the LAST message so the
+// card(s) land after the prose that references them. Never throws — a metadata hiccup
+// just means no card, never a missing reply.
+async function modrinthEmbedsFor(text) {
+  return buildModrinthEmbeds(text).catch(() => []);
+}
+
 async function editReplyChunked(interaction, text, opts = {}) {
   const chunks = chunkMessage(text);
+  const embeds = await modrinthEmbedsFor(text);
+  const lastIdx = chunks.length - 1;
+  if (chunks.length === 1) {
+    await interaction.editReply(embeds.length ? { content: chunks[0], embeds } : chunks[0]);
+    return;
+  }
   await interaction.editReply(chunks[0]);
-  for (const c of chunks.slice(1)) await interaction.followUp({ content: c, ...opts });
+  for (let i = 1; i <= lastIdx; i++) {
+    const payload = { content: chunks[i], ...opts };
+    if (i === lastIdx && embeds.length) payload.embeds = embeds;
+    await interaction.followUp(payload);
+  }
 }
 
 async function sendChunked(channel, text) {
-  for (const c of chunkMessage(text)) await channel.send(c);
+  const chunks = chunkMessage(text);
+  const embeds = await modrinthEmbedsFor(text);
+  const lastIdx = chunks.length - 1;
+  for (let i = 0; i <= lastIdx; i++) {
+    await channel.send(i === lastIdx && embeds.length ? { content: chunks[i], embeds } : chunks[i]);
+  }
 }
 
 // An @mention gets the CAPABLE maintenance agent only when the speaker may act AND
