@@ -7,9 +7,11 @@
 //     /debug). Follow-ups must @mention him too — see the intent note below.
 //   - Conversation continuity: turn 1 captures session_id (--output-format json);
 //     each follow-up resumes it (--resume). Map: threadId -> {sessionId, ownerId}.
-//   - Threads use @mentions: Discord populates message content for messages that
-//     mention the bot even WITHOUT the privileged MESSAGE_CONTENT intent, so we
-//     only need the (non-privileged) GuildMessages intent.
+//   - Triggers on a mention of the bot USER *or* its role: Discord's "@garvis"
+//     autocomplete inserts either (the bot account and its managed integration
+//     role share the name), and they're indistinguishable to a player. We request
+//     the MESSAGE_CONTENT intent so a role-mention message — which does NOT get the
+//     user-mention content exemption — still arrives with readable text.
 //   - Untrusted text is always treated as DATA, never as the agent's instruction.
 //   - NOTE: the threadId->session map is in-memory; it resets if the bot restarts
 //     (sessions persist in claude's store, but the mapping is lost). Persist to
@@ -426,7 +428,7 @@ async function answerInThread({ content, user, resume, act }) {
   return runClaudeResilient(prompt, { resume });
 }
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 client.once(Events.ClientReady, (c) => console.log(`@Garvis online as ${c.user.tag} (dispatch=${DISPATCH_MODE})`));
 
@@ -584,16 +586,30 @@ client.on(Events.InteractionCreate, (interaction) => {
   onInteraction(interaction).catch((err) => notifyInteractionError(interaction, err));
 });
 
-// Garvis answers whenever he's @mentioned: a mention inside a tracked thread
-// resumes that conversation; a mention anywhere else opens a fresh thread.
-// (The @mention is also REQUIRED to read content — without the privileged
-// MESSAGE_CONTENT intent, Discord only populates msg.content when the bot is
-// mentioned. That's why follow-ups in a thread must @mention him too.)
+// Garvis triggers on EITHER a direct @mention of the bot user OR a mention of his
+// role. Discord's "@garvis" autocomplete inserts whichever the typist picks — the
+// bot account or its (managed) integration role — and the two look identical to a
+// player. The gate used to check only mentions.users, so a friend who picked the
+// role from the popup was silently dropped ("works for me, not my friends").
+function mentionsGarvis(msg) {
+  if (!client.user) return false;
+  if (msg.mentions.users.has(client.user.id)) return true;              // direct @mention of the bot user
+  if (msg.mentions.roles.size === 0) return false;
+  const me = msg.guild?.members?.me;                                    // the bot's own member (cached under Guilds intent)
+  if (!me) return false;
+  const botRole = me.roles.botRole;                                     // the bot's managed integration role, if any
+  if (botRole && msg.mentions.roles.has(botRole.id)) return true;
+  return msg.mentions.roles.some((r) => r.id !== msg.guild.id && me.roles.cache.has(r.id)); // a custom role assigned to the bot
+}
+
+// A mention inside a tracked thread resumes that conversation; a mention anywhere
+// else opens a fresh thread. Follow-ups must mention Garvis again — that's how we
+// scope which messages are meant for him.
 client.on(Events.MessageCreate, async (msg) => {
   if (msg.author.bot) return;
-  if (!client.user || !msg.mentions.users.has(client.user.id)) return;  // must directly @mention Garvis
+  if (!mentionsGarvis(msg)) return;                                     // must mention Garvis (his user OR his role)
   if (msg.mentions.everyone) return;                                    // ignore @everyone/@here noise
-  const content = msg.content.replace(/<@!?\d+>/g, '').trim();
+  const content = msg.content.replace(/<@[!&]?\d+>/g, '').trim();       // strip user <@..>/<@!..> AND role <@&..> mentions
   const act = canActFor(msg);  // capable maintenance vs. read-only help
 
   // Already inside a tracked thread: ANYONE may continue it (shared group
