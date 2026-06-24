@@ -25,3 +25,35 @@ modernfix             # ModernFix — startup/memory/performance fixes. NeoForge
 spark                 # spark — performance profiler (diagnose lag/TPS). NeoForge 1.21.1, latest v1.10.124-neoforge-1.21.1. No deps. client/server: optional — server-side only here.
 chunky                # Chunky — pre-generates chunks to reduce lag spikes. NeoForge 1.21.1, latest v1.4.23. No deps. client/server: optional — server-side only here.
 noisium               # Noisium — faster worldgen. NeoForge 1.21.1, latest v2.3.0+mc1.21-1.21.1. No deps. server_side: REQUIRED, client_side: unsupported (server-only).
+
+# ── Cobblemon add-ons (ATMons-inspired bundle) ───────────────────────────────
+# All require Cobblemon (already listed above). Several have beta-channel latest
+# builds on Modrinth — relies on MODRINTH_ALLOWED_VERSION_TYPE accepting beta.
+# Players need these client-side too (an installer is planned to distribute them).
+rctmod                # Radical Cobblemon Trainers — NPC trainers to battle in the world. NeoForge 1.21.1, latest 0.18.1-beta. client_side: REQUIRED. deps: rctapi, cobblemon.
+cobblemon-mega-showdown  # Cobblemon: Mega Showdown — Mega Evolution, Dynamax, Z-moves. NeoForge 1.21.1, latest 1.8.4+1.7.3+1.21.1. client_side: REQUIRED. deps: architectury-api, accessories, owo-lib, cobblemon.
+simpletms-tms-and-trs-for-cobblemon  # SimpleTMs — TMs & TRs to teach moves. NeoForge 1.21.1, latest 2.3.3. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge, architectury-api.
+cobbledollars         # CobbleDollars — in-game Pokémon currency / shops. NeoForge 1.21.1, latest 2.0.0+Beta-5.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge.
+cobblemon-ride-on     # Cobblemon: Ride On! — ride your Pokémon. NeoForge 1.21.1, latest 0.3.3. client_side: REQUIRED. deps: cobblemon.
+cobblemon-counter     # Cobblemon Counter — catch/encounter stats tracker. NeoForge 1.21.1, latest 1.7.3-neoforge-1.9.0. client_side: REQUIRED. deps: cobblemon, cobblemon-tim-core.
+cobblepedia           # Cobblemon Poképedia (Cobblepedia) — in-game Pokédex. NeoForge 1.21.1, latest 0.7.1-neoforge. client_side: REQUIRED. deps: cobblemon, patchouli.
+# Cobblemon-addon dependencies:
+rctapi                # Radical Cobblemon Trainers API — required by rctmod. NeoForge 1.21.1, latest 0.15.2-beta. client/server: optional. deps: cobblemon, architectury-api.
+cobblemon-tim-core    # Cobblemon Tim Core — required by cobblemon-counter. NeoForge 1.21.1, latest 1.8.0-neoforge-1.32.0-r1. server_side: REQUIRED, client_side: unsupported. deps: cobblemon.
+
+# ── content & quality-of-life ────────────────────────────────────────────────
+create                # Create — mechanical contraptions & automation. NeoForge 1.21.1, latest 6.0.10+mc1.21.1. server_side: REQUIRED, client_side: optional. No deps.
+jade                  # Jade — "what am I looking at" tooltip overlay. NeoForge 1.21.1, latest 15.10.5+neoforge. client/server: optional. No deps.
+jei                   # Just Enough Items (JEI) — in-game recipe viewer. NeoForge 1.21.1, latest 19.27.0.343. client/server: optional. No deps.
+waystones             # Waystones — fast-travel network. NeoForge 1.21.1, latest 21.1.34+neoforge-1.21.1. client_side: REQUIRED. deps: balm.
+sophisticated-backpacks  # Sophisticated Backpacks — upgradable backpacks. NeoForge 1.21.1, latest 1.21.1-3.25.64.1919. client_side: REQUIRED. deps: sophisticated-core.
+farmers-delight       # Farmer's Delight — cooking & farming expansion. NeoForge 1.21.1, latest 1.21.1-1.3.2. client_side: REQUIRED. No deps.
+# QoL dependencies:
+balm                  # Balm — required by Waystones (shared config/util lib). NeoForge 1.21.1, latest 21.0.59+neoforge-1.21.1. client/server: optional.
+sophisticated-core    # Sophisticated Core — required by Sophisticated Backpacks. NeoForge 1.21.1, latest 1.21.1-1.4.60.2044. client_side: REQUIRED.
+
+# ── shared libraries (pulled in by the Cobblemon add-ons above) ───────────────
+architectury-api      # Architectury API — required by Mega Showdown, SimpleTMs, rctapi. NeoForge 1.21.1, latest 13.0.8+neoforge. client_side: REQUIRED.
+accessories           # Accessories — required by Cobblemon: Mega Showdown. NeoForge 1.21.1, latest 1.1.0-beta.53+1.21.1. client_side: REQUIRED. deps: owo-lib.
+owo-lib               # oωo (owo-lib) — required by Mega Showdown & Accessories. NeoForge 1.21.1, latest 0.12.15.5-beta.1+1.21. client_side: REQUIRED.
+patchouli             # Patchouli — in-game documentation lib, required by Cobblepedia. NeoForge 1.21.1, latest 1.21.1-93-neoforge. client_side: REQUIRED.
