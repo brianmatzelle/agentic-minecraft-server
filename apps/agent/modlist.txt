@@ -29,7 +29,9 @@ noisium               # Noisium — faster worldgen. NeoForge 1.21.1, latest v2.
 # ── Cobblemon add-ons (ATMons-inspired bundle) ───────────────────────────────
 # All require Cobblemon (already listed above). Several have beta-channel latest
 # builds on Modrinth — relies on MODRINTH_ALLOWED_VERSION_TYPE accepting beta.
-# Players need these client-side too (an installer is planned to distribute them).
+# Players need these client-side too — they ship in the one-click client modpack
+# (apps/client/starting-cc-client.mrpack). After ANY change to this list,
+# regenerate the pack: `node scripts/build-client-mrpack.mjs` (see apps/client/README.md).
 rctmod                # Radical Cobblemon Trainers — NPC trainers to battle in the world. NeoForge 1.21.1, latest 0.18.1-beta. client_side: REQUIRED. deps: rctapi, cobblemon.
 cobblemon-mega-showdown  # Cobblemon: Mega Showdown — Mega Evolution, Dynamax, Z-moves. NeoForge 1.21.1, latest 1.8.4+1.7.3+1.21.1. client_side: REQUIRED. deps: architectury-api, accessories, owo-lib, cobblemon.
 simpletms-tms-and-trs-for-cobblemon  # SimpleTMs — TMs & TRs to teach moves. NeoForge 1.21.1, latest 2.3.3. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge, architectury-api.
