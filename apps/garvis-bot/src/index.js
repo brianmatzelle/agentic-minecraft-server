@@ -373,7 +373,13 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 
 client.once(Events.ClientReady, (c) => console.log(`@Garvis online as ${c.user.tag} (dispatch=${DISPATCH_MODE})`));
 
-client.on(Events.InteractionCreate, async (interaction) => {
+// All slash-command handling lives here. It is registered DEFENSIVELY below: a thrown
+// error — most commonly 10062 "Unknown interaction" when Discord's 3-second ack window
+// lapses because the event loop was briefly busy (e.g. a dispatch=local `claude` spawn
+// spiking CPU) — must never reject the listener. discord.js (captureRejections) turns
+// an unhandled listener rejection into a FATAL Client 'error' that crashes the bot for
+// everyone. See notifyInteractionError + the client 'error' backstop near the bottom.
+async function onInteraction(interaction) {
   if (!interaction.isChatInputCommand()) return;
 
   // /installhelp — LIVE one-shot answer.
@@ -496,6 +502,30 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
     return;
   }
+}
+
+// Best-effort reporter for a failed interaction. Swallows 10062 (the ack window already
+// lapsed — the interaction is dead, nothing can be sent) and otherwise tries a single
+// ephemeral note, never throwing again.
+function notifyInteractionError(interaction, err) {
+  const code = err?.code ?? '';
+  console.error(`[interaction] ${interaction?.commandName ?? '?'} failed: ${code} ${err?.message ?? err}`);
+  if (code === 10062) return; // "Unknown interaction" — too late to respond
+  (async () => {
+    try {
+      if (interaction.deferred && !interaction.replied) {
+        await interaction.editReply('Something went wrong handling that — give it another go in a moment.');
+      } else if (interaction.isRepliable?.() && !interaction.replied) {
+        await interaction.reply({ content: 'Something went wrong handling that — give it another go in a moment.', flags: MessageFlags.Ephemeral });
+      }
+    } catch { /* nothing more we can do */ }
+  })();
+}
+
+// Keep the listener itself non-throwing: route any rejection out-of-band so it can't
+// become a fatal Client 'error' (see the comment on onInteraction).
+client.on(Events.InteractionCreate, (interaction) => {
+  onInteraction(interaction).catch((err) => notifyInteractionError(interaction, err));
 });
 
 // Garvis answers whenever he's @mentioned: a mention inside a tracked thread
@@ -555,6 +585,12 @@ client.on(Events.MessageCreate, async (msg) => {
 
 // Lifecycle: evict sessions for deleted threads; never let a stray rejection crash us.
 client.on(Events.ThreadDelete, (thread) => { try { deleteSession(thread.id); } catch (e) { console.error(e); } });
+// Backstop: discord.js routes unhandled async-listener rejections (interaction AND
+// @mention message handlers) plus gateway/REST faults to the Client 'error' event;
+// with NO listener, Node throws it and the process dies. Log instead, so one bad event
+// can never take Garvis down (this is exactly what crashed the bot on a late defer).
+client.on('error', (err) => console.error('[client error]', err?.stack ?? err));
+client.on('shardError', (err) => console.error('[shard error]', err?.stack ?? err));
 process.on('unhandledRejection', (err) => console.error('unhandledRejection:', err));
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { closeDb(); process.exit(0); });
 
