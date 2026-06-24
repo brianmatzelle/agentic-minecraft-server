@@ -42,6 +42,9 @@ const OPENSHELL_WORKDIR = process.env.OPENSHELL_WORKDIR || '/sandbox/minecraft';
 const ALLOWED_USERS = (process.env.DISCORD_ALLOWED_USERS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const ALLOWED_ROLES = (process.env.DISCORD_ALLOWED_ROLES ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const COOLDOWN_MS = Number(process.env.GARVIS_COOLDOWN_MS ?? 60_000);
+// /whitelist is cheap (a docker exec + .env edit), so it gets its own short cooldown
+// rather than the 60s anti-spam gate that throttles the expensive claude-spawning paths.
+const WHITELIST_COOLDOWN_MS = Number(process.env.GARVIS_WHITELIST_COOLDOWN_MS ?? 1_000);
 const DISPATCH_MODE = process.env.GARVIS_DISPATCH_MODE ?? 'dry-run'; // 'dry-run' | 'openshell' | 'local'
 
 // Turn/time budgets. Q&A is quick; a real install (research + edit + commit + PR)
@@ -109,11 +112,15 @@ function isAuthorizedMessage(msg) {
   return isAuthorizedActor(msg.author.id, msg.member?.roles?.cache);
 }
 
-function onCooldown(userId) {
+// Per-user anti-spam. Each `ns` is an independent bucket, so a cheap action (whitelist)
+// and an expensive one (agent spawn) don't share a clock. Returns seconds remaining
+// (0 = allowed) and starts the clock when it allows.
+function onCooldown(userId, ms = COOLDOWN_MS, ns = 'agent') {
   const now = Date.now();
-  const prev = lastUse.get(userId) ?? 0;
-  if (now - prev < COOLDOWN_MS) return Math.ceil((COOLDOWN_MS - (now - prev)) / 1000);
-  lastUse.set(userId, now);
+  const key = `${ns}:${userId}`;
+  const prev = lastUse.get(key) ?? 0;
+  if (now - prev < ms) return Math.ceil((ms - (now - prev)) / 1000);
+  lastUse.set(key, now);
   return 0;
 }
 
@@ -458,7 +465,7 @@ async function onInteraction(interaction) {
       await interaction.reply({ content: 'Not authorized to whitelist players — ask the server owner to add you to the crew.', flags: MessageFlags.Ephemeral });
       return;
     }
-    const wait = onCooldown(interaction.user.id);
+    const wait = onCooldown(interaction.user.id, WHITELIST_COOLDOWN_MS, 'whitelist');
     if (wait > 0) {
       await interaction.reply({ content: `Slow down — try again in ${wait}s.`, flags: MessageFlags.Ephemeral });
       return;
