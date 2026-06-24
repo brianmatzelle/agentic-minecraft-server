@@ -78,3 +78,36 @@ hard(er) stops. Full trace + analysis: the `harden/op-guardrails` PR.
   admin. Privileged live-server actions (op/ban/etc.) are done by the human on the
   host, never by the agent acting on a chat message — which is exactly what Garvis
   told the impersonator.
+
+## Deliberate exception — `/whitelist` self-service (2026-06-24)
+
+The owner chose to let trusted friends whitelist players from Discord (UX over the
+strict G4 posture; the owner's standing priority is beginner-friendliness). `/whitelist
+{username}` is the first command where the **bot itself** performs a privileged
+live-server action. The blast radius is intentionally the smallest possible privilege:
+**whitelist add only** — *not* op, deop, ban, or arbitrary console. Whitelisting only
+grants the ability to *join* an already-survival server; it grants no in-game power.
+
+What keeps this in line with the model:
+
+- **It runs in the bot, not the sandboxed agent.** The handler calls `docker exec …
+  rcon-cli whitelist add` directly via `execFile` (no shell) in `apps/garvis-bot/src/
+  whitelist.js`. The G1 deny rules (`AGENT_DENY_TOOLS`) are unchanged, so a
+  prompt-injected *agent* still cannot reach docker/rcon — only this one fixed,
+  authz-gated, parameterless-except-username code path can.
+- **Deny-by-default authz + cooldown.** Gated by the same `isAuthorized` allowlist
+  (`DISCORD_ALLOWED_USERS`/`ROLES`) and per-user cooldown as `/requestmod`. Empty
+  allowlist ⇒ nobody can use it.
+- **Username is data, never a command.** Validated against `^[A-Za-z0-9_]{3,16}$`
+  (Minecraft Java charset) and passed as argv, so it cannot inject a shell/rcon command.
+- **Repo stays source of truth.** The add is also persisted to `MC_WHITELIST` in
+  `apps/server/.env` (idempotent, atomic write, file mode preserved) so it survives the
+  `OVERRIDE_WHITELIST=TRUE` rewrite on restart — same source-of-truth discipline as G2.
+- **Still audited.** This intentionally trips the **G3 tripwire** (`Added … to the
+  whitelist` + a `whitelist.json` / `.env` write). That is expected, not an incident —
+  `/whitelist` is now a known-legitimate source of those events.
+
+Residual risk (accepted by the owner): a friend on the allowlist can whitelist anyone
+(including griefers), and the bot process holds a docker socket reach to one rcon verb.
+If the posture tightens later, the safer alternatives are the `/requestmod`-style
+PR-for-approval flow, or moving whitelist writes behind a reviewed deploy.

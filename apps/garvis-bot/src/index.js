@@ -22,6 +22,7 @@ import { dirname, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Client, GatewayIntentBits, Events, MessageFlags } from 'discord.js';
 import { getSession, setSession, deleteSession, closeDb } from './db.js';
+import { validateUsername, addUsernameToWhitelistEnv, rconWhitelistAdd, classifyWhitelistOutput } from './whitelist.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '../..');
@@ -81,6 +82,14 @@ const SERVER = {
   address: process.env.SERVER_ADDRESS || 'ask the server owner for the current address',
   mods: process.env.SERVER_MODS || '(none required yet — vanilla NeoForge)',
 };
+
+// /whitelist talks to the LIVE server DIRECTLY (docker exec ... rcon-cli) — see
+// whitelist.js for why that's allowed here but denied to the sandboxed agent. The
+// container name and the server's .env (source of truth for MC_WHITELIST) are
+// overridable for non-default layouts. NOTE: REPO_ROOT above resolves to apps/, so we
+// anchor the .env path from __dirname (apps/garvis-bot/src) up to the real repo root.
+const MC_CONTAINER = process.env.MC_CONTAINER || 'mc-neoforge';
+const MC_SERVER_ENV = process.env.MC_SERVER_ENV || resolve(__dirname, '../../../apps/server/.env');
 
 const lastUse = new Map();      // userId -> timestamp (anti-spam)
 // thread -> { sessionId, ownerId } is persisted in SQLite (see db.js) so debug
@@ -430,6 +439,62 @@ client.on(Events.InteractionCreate, async (interaction) => {
     } catch (err) {
       await interaction.editReply(`Couldn't dispatch the request: ${err.message}`);
     }
+    return;
+  }
+
+  // /whitelist — authz-gated. Adds a Minecraft username to the LIVE server (instant,
+  // no restart) AND persists it to apps/server/.env so it survives the next restart
+  // (compose has OVERRIDE_WHITELIST=TRUE, which would otherwise wipe a live-only add).
+  // The bot does this DIRECTLY — not via the sandboxed agent, which is denied
+  // docker/rcon on purpose. See whitelist.js and docs/security.md.
+  if (interaction.commandName === 'whitelist') {
+    if (!isAuthorized(interaction)) {
+      await interaction.reply({ content: 'Not authorized to whitelist players — ask the server owner to add you to the crew.', flags: MessageFlags.Ephemeral });
+      return;
+    }
+    const wait = onCooldown(interaction.user.id);
+    if (wait > 0) {
+      await interaction.reply({ content: `Slow down — try again in ${wait}s.`, flags: MessageFlags.Ephemeral });
+      return;
+    }
+    const raw = interaction.options.getString('username', true);
+    const username = validateUsername(raw);
+    if (!username) {
+      await interaction.reply({ content: `\`${raw.slice(0, 32)}\` isn't a valid Minecraft **Java** username (3–16 characters: letters, numbers, or _).`, flags: MessageFlags.Ephemeral });
+      return;
+    }
+    await interaction.deferReply();
+    try {
+      // 1) Live add for instant effect (no restart, nobody kicked). Also tells us
+      //    whether the Mojang account actually exists.
+      const live = await rconWhitelistAdd(MC_CONTAINER, username);
+      const outcome = live.ran ? classifyWhitelistOutput(live.output) : 'offline';
+
+      // A clear "no such account" is almost always a typo — don't persist a bogus name.
+      if (outcome === 'nonexistent') {
+        await interaction.editReply(`I couldn't find a Minecraft **Java Edition** account named \`${username}\`. Double-check the spelling — it has to be their Java username, not a Bedrock/Xbox gamertag.`);
+        console.log(`[whitelist] ${interaction.user.tag}(${interaction.user.id}) -> ${username} outcome=nonexistent (not persisted)`);
+        return;
+      }
+
+      // 2) Persist to the repo's source of truth so the add survives a server restart.
+      const persisted = await addUsernameToWhitelistEnv(MC_SERVER_ENV, username);
+
+      let reply;
+      if (outcome === 'offline') {
+        reply = `📝 Added \`${username}\` to the whitelist. The server didn't answer just now (it may be restarting), but they'll be able to join \`${SERVER.address}\` once it's back up.`;
+      } else if (outcome === 'already' || persisted.alreadyPresent) {
+        reply = `✅ \`${username}\` is already whitelisted — good to go at \`${SERVER.address}\`.`;
+      } else {
+        reply = `✅ \`${username}\` is whitelisted — hop on at \`${SERVER.address}\`!`;
+      }
+      await interaction.editReply(reply);
+      console.log(`[whitelist] ${interaction.user.tag}(${interaction.user.id}) -> ${username} outcome=${outcome} persistedAlready=${persisted.alreadyPresent}`);
+    } catch (err) {
+      console.error(`[whitelist] failed for ${username}: ${err.message}`);
+      await interaction.editReply(`Couldn't whitelist \`${username}\` cleanly: ${err.message}. Ping the server owner if it keeps happening.`);
+    }
+    return;
   }
 });
 
