@@ -34,12 +34,16 @@ rctmod                # Radical Cobblemon Trainers — NPC trainers to battle in
 cobblemon-mega-showdown  # Cobblemon: Mega Showdown — Mega Evolution, Dynamax, Z-moves. NeoForge 1.21.1, latest 1.8.4+1.7.3+1.21.1. client_side: REQUIRED. deps: architectury-api, accessories, owo-lib, cobblemon.
 simpletms-tms-and-trs-for-cobblemon  # SimpleTMs — TMs & TRs to teach moves. NeoForge 1.21.1, latest 2.3.3. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge, architectury-api.
 cobbledollars         # CobbleDollars — in-game Pokémon currency / shops. NeoForge 1.21.1, latest 2.0.0+Beta-5.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge.
-cobblemon-ride-on     # Cobblemon: Ride On! — ride your Pokémon. NeoForge 1.21.1, latest 0.3.3. client_side: REQUIRED. deps: cobblemon.
-cobblemon-counter     # Cobblemon Counter — catch/encounter stats tracker. NeoForge 1.21.1, latest 1.7.3-neoforge-1.9.0. client_side: REQUIRED. deps: cobblemon, cobblemon-tim-core.
 cobblepedia           # Cobblemon Poképedia (Cobblepedia) — in-game Pokédex. NeoForge 1.21.1, latest 0.7.1-neoforge. client_side: REQUIRED. deps: cobblemon, patchouli.
 # Cobblemon-addon dependencies:
 rctapi                # Radical Cobblemon Trainers API — required by rctmod. NeoForge 1.21.1, latest 0.15.2-beta. client/server: optional. deps: cobblemon, architectury-api.
-cobblemon-tim-core    # Cobblemon Tim Core — required by cobblemon-counter. NeoForge 1.21.1, latest 1.8.0-neoforge-1.32.0-r1. server_side: REQUIRED, client_side: unsupported. deps: cobblemon.
+# REMOVED 2026-06-23 — boot-fatal against the shipped Cobblemon 1.7.3. Their only
+# NeoForge-1.21.1 builds target a different Cobblemon version, so itzg installed them and
+# NeoForge refused to load. Re-add when we bump to Cobblemon 1.8.x.
+#   cobblemon-ride-on    — v0.3.3 is incompatible with Cobblemon 1.7+ (conflicts with the new
+#                          built-in riding system added in 1.7). No 1.7.3-compatible build.
+#   cobblemon-counter    — requires cobblemon-tim-core, which needs Cobblemon 1.8.0-SNAPSHOT.
+#   cobblemon-tim-core   — (dep of counter) requires Cobblemon 1.8.0-SNAPSHOT; we ship 1.7.3.
 
 # ── content & quality-of-life ────────────────────────────────────────────────
 create                # Create — mechanical contraptions & automation. NeoForge 1.21.1, latest 6.0.10+mc1.21.1. server_side: REQUIRED, client_side: optional. No deps.
