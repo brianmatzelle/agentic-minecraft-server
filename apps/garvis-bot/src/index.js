@@ -92,7 +92,7 @@ const SERVER = {
 // back to "ask the owner". Keep in sync with register-commands.js.
 const GARVIS_COMMANDS = [
   `GARVIS'S DISCORD SLASH COMMANDS (mention these when relevant — players type them with a leading "/"):`,
-  `- /whitelist username:<Minecraft Java name> — THE way to get onto the server: it whitelists that player immediately. An approved member can run it for themselves OR a friend; if someone isn't approved, the command itself tells them to ask the owner. So when asked "how do I join / get whitelisted?", point them here (they, an approved friend, or the owner runs it).`,
+  `- /whitelist username:<Minecraft Java name> — THE way to get onto the server: it whitelists that player immediately. ANYONE can run it, for themselves OR a friend — no approval needed. So when asked "how do I join / get whitelisted?", point them straight here.`,
   `- /installhelp question:<text> — tailored help installing the modded client for the player's OS/CPU.`,
   `- /debug topic:<text> — opens a thread to troubleshoot a problem step by step.`,
   `- /requestmod slug:<modrinth-slug> — request a mod be added (opens a PR for the owner to approve); approved members only.`,
@@ -505,16 +505,15 @@ async function onInteraction(interaction) {
     return;
   }
 
-  // /whitelist — authz-gated. Adds a Minecraft username to the LIVE server (instant,
-  // no restart) AND persists it to apps/server/.env so it survives the next restart
-  // (compose has OVERRIDE_WHITELIST=TRUE, which would otherwise wipe a live-only add).
+  // /whitelist — open to EVERYONE (self-service joining), unlike the repo-changing
+  // WRITE actions (mod installs / PRs) which stay authz-gated. Adds a Minecraft
+  // username to the LIVE server (instant, no restart) AND persists it to
+  // apps/server/.env so it survives the next restart (compose has
+  // OVERRIDE_WHITELIST=TRUE, which would otherwise wipe a live-only add). The only
+  // gates here are username validation (charset) + a per-user anti-spam cooldown.
   // The bot does this DIRECTLY — not via the sandboxed agent, which is denied
   // docker/rcon on purpose. See whitelist.js and docs/security.md.
   if (interaction.commandName === 'whitelist') {
-    if (!isAuthorized(interaction)) {
-      await interaction.reply({ content: 'Not authorized to whitelist players — ask the server owner to add you to the crew.', flags: MessageFlags.Ephemeral });
-      return;
-    }
     const wait = onCooldown(interaction.user.id, WHITELIST_COOLDOWN_MS, 'whitelist');
     if (wait > 0) {
       await interaction.reply({ content: `Slow down — try again in ${wait}s.`, flags: MessageFlags.Ephemeral });
