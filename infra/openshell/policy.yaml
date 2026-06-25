@@ -34,7 +34,9 @@ network_policies:
     endpoints:
       - { host: api.modrinth.com, port: 443, protocol: rest, enforcement: enforce, access: read-only }
       - { host: cdn.modrinth.com, port: 443, protocol: rest, enforcement: enforce, access: read-only }
-    binaries: [ { path: /usr/bin/curl } ]
+    # curl = the agent's Modrinth research; node = scripts/build-client-mrpack.mjs,
+    # which fetch()es api.modrinth.com to repin the client .mrpack in the same PR.
+    binaries: [ { path: /usr/bin/curl }, { path: /usr/local/bin/node } ]
   github:                                        # clone repo + open PRs (POST needs read-write)
     name: github
     endpoints:
@@ -47,7 +49,9 @@ network_policies:
     name: neoforge-maven
     endpoints:
       - { host: maven.neoforged.net, port: 443, protocol: rest, enforcement: enforce, access: read-only }
-    binaries: [ { path: /usr/bin/curl } ]
+    # curl = loader-version checks; node = build-client-mrpack.mjs resolves the
+    # latest NeoForge 21.1.x loader from Maven metadata when rebuilding the pack.
+    binaries: [ { path: /usr/bin/curl }, { path: /usr/local/bin/node } ]
   # Enable ONLY if you switch the server to AUTO_CURSEFORGE:
   # curseforge:
   #   name: curseforge

@@ -7,11 +7,12 @@
 #   - the OpenShell supervisor REPLACES the CMD at runtime (start cmd passed after `--`)
 #
 # Toolchain the agent needs INSIDE the box (this is what the stock image lacked):
-#   claude (the agent), git + gh (branch/commit/PR), curl + jq (Modrinth research).
+#   claude (the agent), git + gh (branch/commit/PR), curl + jq (Modrinth research),
+#   zip (rebuild the client .mrpack via scripts/build-client-mrpack.mjs).
 FROM node:22-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl wget git iproute2 nftables ca-certificates jq gnupg \
+        curl wget git iproute2 nftables ca-certificates jq gnupg zip \
     && rm -rf /var/lib/apt/lists/*
 
 # GitHub CLI (official apt repo) — needed so the agent can open PRs from the sandbox.
@@ -35,8 +36,8 @@ USER sandbox
 WORKDIR /sandbox
 
 # Verify tool locations match infra/openshell/policy.yaml `binaries[].path`:
-#   docker run --rm <img> sh -c 'command -v git curl gh node claude'
-#   -> /usr/bin/git /usr/bin/curl /usr/bin/gh /usr/local/bin/node /usr/local/bin/claude
+#   docker run --rm <img> sh -c 'command -v git curl gh node claude zip'
+#   -> /usr/bin/git /usr/bin/curl /usr/bin/gh /usr/local/bin/node /usr/local/bin/claude /usr/bin/zip
 #
 # The real start command is supplied after `--` at `sandbox create` time (run.sh uses
 # `sleep infinity` to keep the box alive); this CMD is only a fallback.
