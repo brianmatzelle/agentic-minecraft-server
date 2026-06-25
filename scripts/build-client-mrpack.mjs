@@ -52,7 +52,10 @@ const CLIENT_MODS = [
   { slug: 'kotlin-for-forge',                    client: 'required', server: 'required' }, // Cobblemon runtime
   { slug: 'rctmod',                              client: 'required', server: 'required' },
   { slug: 'rctapi',                              client: 'required', server: 'required' }, // rctmod dep
-  { slug: 'cobblemon-mega-showdown',             client: 'required', server: 'required' },
+  // cobblemon-mega-showdown DISABLED 2026-06-24: mega_showdown 1.8.4 fatally NPEs on
+  // server datapack load (HeldItems.reload → receiveHeldItemDataFn null) vs Cobblemon
+  // 1.7.3. Removed from the server modlist + client pack in lockstep. Re-add (both
+  // here and in modlist.txt) once a compatible/pinned Cobblemon↔mega-showdown pair exists.
   { slug: 'simpletms-tms-and-trs-for-cobblemon', client: 'required', server: 'required' },
   { slug: 'cobbledollars',                       client: 'required', server: 'required' },
   { slug: 'cobblepedia',                         client: 'required', server: 'required' },
