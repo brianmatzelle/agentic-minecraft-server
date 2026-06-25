@@ -12,14 +12,6 @@ if (!DISCORD_BOT_TOKEN || !DISCORD_APP_ID || !DISCORD_GUILD_ID) {
 
 const commands = [
   new SlashCommandBuilder()
-    .setName('requestmod')
-    .setDescription('Request a mod be added to the server (opens a PR for owner approval).')
-    .addStringOption((o) =>
-      o.setName('slug').setDescription('Modrinth project slug, e.g. "create"').setRequired(true))
-    .addStringOption((o) =>
-      o.setName('reason').setDescription('Why you want it (optional)').setRequired(false))
-    .toJSON(),
-  new SlashCommandBuilder()
     .setName('installhelp')
     .setDescription('Ask Garvis for tailored help installing the modded client (any OS).')
     .addStringOption((o) =>

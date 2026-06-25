@@ -14,8 +14,8 @@ inevitably breaks" is the job — expect these.
 - **Diagnose:** the bot logs `[claude] soft-fail … turns=N stderr=…` to the journal.
 
 ### Garvis answers questions but won't install
-- **Cause:** `GARVIS_DISPATCH_MODE=dry-run` (only echoes), or the speaker isn't in
-  `DISCORD_ALLOWED_USERS`, or the message wasn't a real @mention.
+- **Cause:** `GARVIS_DISPATCH_MODE=dry-run` (only echoes), the message wasn't a real
+  @mention, or the speaker hit the 60s per-user cooldown.
 - **Fix:** set `GARVIS_DISPATCH_MODE=local` in `apps/garvis-bot/.env`; restart bot.
   Confirm `dispatch=local` in the startup log line.
 

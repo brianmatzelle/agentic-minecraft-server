@@ -23,11 +23,12 @@ Connect to `host-ip:25565`. Custom seed = `LEVEL_SEED` (first world-gen only).
 ## 2. @Garvis bot (Layer 3) — start in dry-run
 ```bash
 cd bot && npm install
-cp .env.example .env          # DISCORD_* + allowlist; GARVIS_DISPATCH_MODE=dry-run
+cp .env.example .env          # fill DISCORD_*; GARVIS_DISPATCH_MODE=dry-run
 npm run register && npm start
 ```
-`/installhelp` and `/requestmod` work immediately; `/requestmod` shows the scoped
-task it *would* run. Wire `GARVIS_DISPATCH_MODE=openshell` only after Layer 5.
+`/installhelp` and `/whitelist` work immediately; @mention Garvis for Q&A. In dry-run
+@mentions stay Q&A-only — set `GARVIS_DISPATCH_MODE=local` (or `openshell`, only after
+Layer 5) for real mod-request PRs.
 
 ## 3. Maintenance agent (Layer 2)
 - Copy `agent/config.yaml` → `~/.hermes/config.yaml`; run `hermes setup`.

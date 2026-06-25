@@ -5,7 +5,8 @@
 // deliberate: the sandboxed maintenance agent is denied docker/rcon (AGENT_DENY_TOOLS
 // in index.js, see docs/security.md) because it acts on untrusted chat text; the bot
 // process itself is trusted (it holds the token, runs on the host) and only reaches
-// here behind an authz + cooldown gate. Keep this file small and easy to audit.
+// here behind a username-validation + cooldown gate (no allowlist — /whitelist is
+// open to everyone). Keep this file small and easy to audit.
 //
 // Mechanism is "live + persist":
 //   1. `docker exec <container> rcon-cli whitelist add <name>` — instant, no restart,

@@ -44,4 +44,5 @@ Clear it first: focus composer → `browser_press_key("Control+a")` → `browser
   Follow-ups resume it (`resume=yes` in the log). To start a *fresh* session in that
   thread, delete its row from `thread_sessions` (the bot restart won't clear it).
 - Per-user cooldown is 60s (`GARVIS_COOLDOWN_MS`). Space out rapid requests.
-- Only allow-listed users (`DISCORD_ALLOWED_USERS`) trigger installs; everyone gets Q&A.
+- Anyone can trigger an install by @mentioning Garvis (no allowlist); the per-user
+  60s cooldown is the only gate. Every install still lands as a PR a human must merge.

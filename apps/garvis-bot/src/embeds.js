@@ -7,7 +7,7 @@
 // Links permission AND a successful server-side OG fetch, and often just doesn't fire).
 //
 // Doing it here means it works UNIFORMLY across every send path — @mention Q&A,
-// /installhelp, /debug, /requestmod — because they all funnel through sendChunked /
+// @mention mod-requests, /installhelp, /debug — because they all funnel through sendChunked /
 // editReplyChunked. Anywhere a Modrinth link appears in a reply, a card appears.
 import { EmbedBuilder } from 'discord.js';
 
