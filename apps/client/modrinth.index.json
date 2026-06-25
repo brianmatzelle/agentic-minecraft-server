@@ -156,6 +156,21 @@
       "fileSize": 3163042
     },
     {
+      "path": "mods/IndustrialUpgrade-1.21.1-3.4.jar",
+      "hashes": {
+        "sha1": "9c86586f62cf25642102f75e92537669baff9351",
+        "sha512": "add43a273eaadfa4a6acc62449828d5ff7b2b6ef520a22b008e912acc73de9f9e3fac2c65d0d5ff5b2b33362b4ce2f1f671ded3920bd47689709b4a5092d8f78"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/uWvWTs7C/versions/kMKzug35/IndustrialUpgrade-1.21.1-3.4.jar"
+      ],
+      "fileSize": 36700790
+    },
+    {
       "path": "mods/Jade-1.21.1-NeoForge-15.10.5.jar",
       "hashes": {
         "sha1": "d5bf134b3dbde9f5258666823900e21341dc0a50",
@@ -246,6 +261,36 @@
       "fileSize": 646777
     },
     {
+      "path": "mods/Power Utilities-1.3.jar",
+      "hashes": {
+        "sha1": "1ca0d8661d5c91a44505a70980066c9c8c0a9dd1",
+        "sha512": "72cce760050f7dacbef91a16a34b70aeece486aa1ec4fe9f6bee18b0e38fc3ff0eb66d0012ece6f0b379c200586585cedc3fd63d9f8a4898c4fe6548816e2e40"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/EqI9kqZg/versions/pJnhqSyM/Power%20Utilities-1.3.jar"
+      ],
+      "fileSize": 112444
+    },
+    {
+      "path": "mods/Quantum Generators-1.4.jar",
+      "hashes": {
+        "sha1": "7362b1c8ef5e3eaca44037697a352f34c36567fb",
+        "sha512": "0ea3c0e92a09f788a6479c8b5d892e848fed3594fb2428f0e1d0a6a196686d847901ba7efc2c9cde27845547ffa24bb33badf86e7d2715f1c4d572995deed6c4"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/MLHIc0w1/versions/GRNPWwKT/Quantum%20Generators-1.4.jar"
+      ],
+      "fileSize": 200437
+    },
+    {
       "path": "mods/rctapi-neoforge-1.21.1-0.15.2-beta.jar",
       "hashes": {
         "sha1": "06914d0d3dde9e92d14b5944db4e494527d89df0",
@@ -304,6 +349,21 @@
         "https://cdn.modrinth.com/data/yFqR0DNc/versions/uaKfPMYS/SimpleTMs-neoforge-2.3.3.jar"
       ],
       "fileSize": 825317
+    },
+    {
+      "path": "mods/Simply Quarries-1.3.jar",
+      "hashes": {
+        "sha1": "1d72274b2b46c1ca7b24247f214d0ddb92604b94",
+        "sha512": "599b5b39b6b35ecfa8bc9958ff769ca46c7da0b58b1a7aafa6eebbe8bc1744484d3cc6f3e145fe4cca2ef22a3fe466dfeabcfbe9f9a04096f85be11a4e4d1a45"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/nbGJGzDE/versions/IvzrqoUv/Simply%20Quarries-1.3.jar"
+      ],
+      "fileSize": 134648
     },
     {
       "path": "mods/sophisticatedbackpacks-1.21.1-3.25.64.1919.jar",

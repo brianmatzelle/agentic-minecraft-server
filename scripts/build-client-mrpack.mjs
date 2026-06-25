@@ -69,6 +69,11 @@ const CLIENT_MODS = [
   { slug: 'create',                              client: 'required', server: 'required' }, // now required: Create: Aeronautics depends on it
   { slug: 'create-aeronautics',                  client: 'required', server: 'required' },
   { slug: 'sable',                               client: 'required', server: 'required' }, // create-aeronautics dep
+  // ── Industrial Upgrade tech suite (mutually required; all client+server) ──
+  { slug: 'industrialupgrade',                   client: 'required', server: 'required' },
+  { slug: 'power-utilities',                     client: 'required', server: 'required' }, // IU addon
+  { slug: 'simply-quarries',                     client: 'required', server: 'required' }, // IU addon
+  { slug: 'quantum-generators',                  client: 'required', server: 'required' }, // IU addon
   // ── Quality-of-life — optional on the client (deselectable on import) ─────
   { slug: 'jei',                                 client: 'optional', server: 'optional' },
   { slug: 'jade',                                client: 'optional', server: 'optional' },
