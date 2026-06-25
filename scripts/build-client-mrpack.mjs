@@ -64,6 +64,7 @@ const CLIENT_MODS = [
   { slug: 'sophisticated-backpacks',             client: 'required', server: 'required' },
   { slug: 'sophisticated-core',                  client: 'required', server: 'required' }, // backpacks dep
   { slug: 'farmers-delight',                     client: 'required', server: 'required' },
+  { slug: 'ars-nouveau',                         client: 'required', server: 'required' }, // glyph spellcrafting magic
   { slug: 'architectury-api',                    client: 'required', server: 'required' },
   { slug: 'accessories',                         client: 'required', server: 'required' },
   { slug: 'owo-lib',                             client: 'required', server: 'required' },
