@@ -49,8 +49,9 @@ The old bot returned *"Garvis returned nothing"* on the ComputerCraft request �
   opening a broken PR.
 - **Safe by construction:** the agent works in an **isolated clone**, never the live
   repo; runs are serialized; he never merges or deploys — a human does.
-- Q&A / `/installhelp` stay open to everyone; only repo-changing actions are
-  allowlist-gated (`DISCORD_ALLOWED_USERS`). Friendly errors + a quiet auto-retry.
+- Q&A / `/installhelp` and mod requests are now open to everyone — no allowlist; a
+  per-user cooldown (`GARVIS_COOLDOWN_MS`) is the only anti-spam gate, and every mod
+  PR still needs a human to merge. Friendly errors + a quiet auto-retry.
 
 Track record tonight: **3/3 install requests succeeded** (~1 min each), each with an
 accurate PR; **1/1 bad request declined correctly**. He even caught a dependency I'd
@@ -61,8 +62,9 @@ gotten wrong — Cobblemon needs **Kotlin for Forge**, not Architectury.
   yourself. Then **merge the PR** and run **`scripts/deploy.sh`**.
 - **Deploy:** `scripts/deploy.sh` (or `--dry-run` to preview). Never touches the live
   world (`server-data/`).
-- **Let a friend drive Garvis:** add their Discord user ID to `DISCORD_ALLOWED_USERS`
-  (bot `.env`) and restart the bot (`systemctl --user restart garvis-bot.service`).
+- **Let a friend drive Garvis:** nothing to configure — anyone can @mention Garvis to
+  ask a question or request a mod. (Set `GARVIS_DISPATCH_MODE=local` so requests
+  actually open PRs; `dry-run` keeps @mentions Q&A-only.)
 
 ## OpenShell (egress sandbox) — prepared, not enabled
 You said to park security for later, so this is OFF (`GARVIS_DISPATCH_MODE=local`) but

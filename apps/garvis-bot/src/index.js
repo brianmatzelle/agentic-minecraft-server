@@ -1,10 +1,12 @@
 // @Garvis (Layer 3) — friend-facing Discord bot.
 // Design notes:
-//   - Commands: /installhelp (one-shot), /requestmod (scoped PR task), /debug
+//   - Commands: /installhelp (one-shot), /whitelist (self-service join), /debug
 //     (opens a THREAD with a persistent claude-code session for back-and-forth).
 //   - @mention anywhere: @Garvis in any text channel and he opens a thread,
 //     answers there, and remembers the conversation (same session machinery as
-//     /debug). Follow-ups must @mention him too — see the intent note below.
+//     /debug). ANYONE can @mention him to ask a question OR request a mod/modpack;
+//     when dispatch is live he researches it and opens a PR (a human still merges).
+//     There is no /requestmod command — just ask. Follow-ups must @mention him too.
 //   - Conversation continuity: turn 1 captures session_id (--output-format json);
 //     each follow-up resumes it (--resume). Map: threadId -> {sessionId, ownerId}.
 //     Fallback: when there's no resumable session for the actor's mode (a cross-mode
@@ -46,8 +48,6 @@ const AGENT_WORKDIR = process.env.GARVIS_AGENT_WORKDIR || resolve(REPO_ROOT, '..
 const OPENSHELL_SANDBOX = process.env.OPENSHELL_SANDBOX || 'mc-maint-agent';
 const OPENSHELL_WORKDIR = process.env.OPENSHELL_WORKDIR || '/sandbox/minecraft';
 
-const ALLOWED_USERS = (process.env.DISCORD_ALLOWED_USERS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-const ALLOWED_ROLES = (process.env.DISCORD_ALLOWED_ROLES ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const COOLDOWN_MS = Number(process.env.GARVIS_COOLDOWN_MS ?? 60_000);
 // /whitelist is cheap (a docker exec + .env edit), so it gets its own short cooldown
 // rather than the 60s anti-spam gate that throttles the expensive claude-spawning paths.
@@ -101,7 +101,7 @@ const GARVIS_COMMANDS = [
   `- /whitelist username:<Minecraft Java name> — THE way to get onto the server: it whitelists that player immediately. ANYONE can run it, for themselves OR a friend — no approval needed. So when asked "how do I join / get whitelisted?", point them straight here.`,
   `- /installhelp question:<text> — tailored help installing the modded client for the player's OS/CPU.`,
   `- /debug topic:<text> — opens a thread to troubleshoot a problem step by step.`,
-  `- /requestmod slug:<modrinth-slug> — request a mod be added (opens a PR for the owner to approve); approved members only.`,
+  `To request a mod there's NO command — anyone can just @mention Garvis and ask in plain English (e.g. "@garvis add cobblemon"); he researches it and opens a PR for the owner to approve.`,
 ].join('\n');
 
 // Garvis post-processes his own replies: any Modrinth link he writes is auto-rendered as
@@ -121,20 +121,6 @@ const MC_SERVER_ENV = process.env.MC_SERVER_ENV || resolve(__dirname, '../../../
 const lastUse = new Map();      // userId -> timestamp (anti-spam)
 // thread -> { sessionId, ownerId } is persisted in SQLite (see db.js) so debug
 // threads survive a bot restart.
-
-// Shared authz core: who may trigger WRITE actions (mod installs / PRs). Q&A and
-// install-help stay open to everyone; only repo-changing actions are gated.
-function isAuthorizedActor(userId, memberRolesCache) {
-  if (ALLOWED_USERS.length === 0 && ALLOWED_ROLES.length === 0) return false; // deny-by-default
-  if (ALLOWED_USERS.includes(userId)) return true;
-  return Boolean(memberRolesCache && ALLOWED_ROLES.some((r) => memberRolesCache.has(r)));
-}
-function isAuthorized(interaction) {
-  return isAuthorizedActor(interaction.user.id, interaction.member?.roles?.cache);
-}
-function isAuthorizedMessage(msg) {
-  return isAuthorizedActor(msg.author.id, msg.member?.roles?.cache);
-}
 
 // Per-user anti-spam. Each `ns` is an independent bucket, so a cheap action (whitelist)
 // and an expensive one (agent spawn) don't share a clock. Returns seconds remaining
@@ -397,26 +383,6 @@ function runMaintSerial(args) {
   return run;
 }
 
-function buildScopedTask({ slug, reason, user }) {
-  const safeSlug = String(slug).slice(0, 64).replace(/[^a-zA-Z0-9._-]/g, '');
-  const safeReason = String(reason ?? '').slice(0, 300).replace(/[`$\\]/g, '');
-  return `Add the Modrinth mod "${safeSlug}" to the server.${safeReason ? ` Requester's reason: ${safeReason}` : ''}`;
-}
-
-async function dispatchToAgent({ slug, reason, user }) {
-  const request = buildScopedTask({ slug, reason, user });
-  if (DISPATCH_MODE === 'dry-run') {
-    return { note: 'DRY-RUN — not executed. Garvis would research it and open a PR for:\n```\n' + request + '\n```' };
-  }
-  if (DISPATCH_MODE === 'local' || DISPATCH_MODE === 'openshell') {
-    // openshell currently shares the local agent path; the sandbox wrapper is wired
-    // separately (see infra/openshell). Either way the agent works in AGENT_WORKDIR.
-    const res = await runMaintSerial({ request, user });
-    return { note: res.text };
-  }
-  throw new Error(`DISPATCH_MODE='${DISPATCH_MODE}' not recognized (use dry-run | local | openshell).`);
-}
-
 function chunkMessage(text, size = 1900) {
   const chunks = [];
   let cur = '';
@@ -463,11 +429,10 @@ async function sendChunked(channel, text) {
   }
 }
 
-// An @mention gets the CAPABLE maintenance agent only when the speaker may act AND
-// we're wired to actually do things. Everyone else (and dry-run) gets friendly help.
-function canActFor(msg) {
-  return DISPATCH_MODE !== 'dry-run' && isAuthorizedMessage(msg);
-}
+// An @mention reaches the CAPABLE maintenance agent (it researches mods + opens PRs)
+// whenever dispatch is wired to actually do things — open to EVERYONE now, with NO
+// allowlist. In dry-run nothing executes, so @mentions fall back to friendly Q&A.
+const CAN_ACT = DISPATCH_MODE !== 'dry-run';
 
 // One entry point for answering inside a thread: maintenance (can change the repo)
 // vs. help/Q&A (read-only, retried once). Returns {ok, text, sessionId, ...}.
@@ -537,36 +502,10 @@ async function onInteraction(interaction) {
     return;
   }
 
-  // /requestmod — authz-gated scoped task.
-  if (interaction.commandName === 'requestmod') {
-    if (!isAuthorized(interaction)) {
-      await interaction.reply({ content: 'Not authorized to request mods. Ask the server owner to add you.', flags: MessageFlags.Ephemeral });
-      return;
-    }
-    const wait = onCooldown(interaction.user.id);
-    if (wait > 0) {
-      await interaction.reply({ content: `Slow down — try again in ${wait}s.`, flags: MessageFlags.Ephemeral });
-      return;
-    }
-    const slug = interaction.options.getString('slug', true);
-    const reason = interaction.options.getString('reason') ?? '';
-    await interaction.deferReply();
-    try {
-      if (DISPATCH_MODE !== 'dry-run') {
-        await interaction.editReply(`🛠️ On it — checking \`${slug}\` for ${SERVER.loader} ${SERVER.mc} server-side support and opening a PR. This can take a couple minutes…`);
-      }
-      const result = await dispatchToAgent({ slug, reason, user: interaction.user.id });
-      await editReplyChunked(interaction, `Request for \`${slug}\`:\n\n${result.note ?? 'The agent will open a PR for owner approval.'}`);
-    } catch (err) {
-      await interaction.editReply(`Couldn't dispatch the request: ${err.message}`);
-    }
-    return;
-  }
-
-  // /whitelist — open to EVERYONE (self-service joining), unlike the repo-changing
-  // WRITE actions (mod installs / PRs) which stay authz-gated. Adds a Minecraft
-  // username to the LIVE server (instant, no restart) AND persists it to
-  // apps/server/.env so it survives the next restart (compose has
+  // /whitelist — open to EVERYONE (self-service joining), like @mention mod requests.
+  // What's special here isn't authz (there is none) but that it talks to the LIVE
+  // server DIRECTLY. Adds a Minecraft username to the LIVE server (instant, no
+  // restart) AND persists it to apps/server/.env so it survives the next restart (compose has
   // OVERRIDE_WHITELIST=TRUE, which would otherwise wipe a live-only add). The only
   // gates here are username validation (charset) + a per-user anti-spam cooldown.
   // The bot does this DIRECTLY — not via the sandboxed agent, which is denied
@@ -666,24 +605,22 @@ client.on(Events.MessageCreate, async (msg) => {
   if (!mentionsGarvis(msg)) return;                                     // must mention Garvis (his user OR his role)
   if (msg.mentions.everyone) return;                                    // ignore @everyone/@here noise
   const content = msg.content.replace(/<@[!&]?\d+>/g, '').trim();       // strip user <@..>/<@!..> AND role <@&..> mentions
-  const act = canActFor(msg);  // capable maintenance vs. read-only help
 
-  // Already inside a tracked thread: ANYONE may continue it (shared group
-  // conversation). Write-authz is still enforced per-message via `act`, so a
-  // non-authorized friend gets read-only help here while only an authorized
-  // member can trigger repo changes — opening threads up costs nothing
-  // security-wise.
+  // Already inside a tracked thread: continue it in the mode it was created in — a
+  // mod-request thread stays maintenance (can change the repo), a Q&A/debug thread
+  // stays read-only help. Claude sessions are dir-scoped (help→repo, maint→agent
+  // clone), so resuming across modes dies with "No conversation found"; we resume
+  // only the mode that already has a stored session (preferring maint). ANYONE may
+  // continue any thread now that requesting mods is open to all.
   const sess = getSession(msg.channelId);
   if (sess) {
     if (!content) return;  // bare @mention with no text — nothing to answer
-    // Resume only a SAME-MODE session. Claude sessions are scoped to the dir they
-    // were created in (help→repo, maint→agent clone), so resuming across modes
-    // dies with "No conversation found". A cross-mode handoff — e.g. a friend's help
-    // thread the owner then drives via maintenance — therefore has no session to
-    // resume; answerInThread back-reads the thread's messages for context instead of
-    // starting blind (which used to make Garvis ask "which mod?" mid-conversation).
-    const mode = act ? 'maint' : 'help';
+    // When the chosen mode has no resumable session (cold session after a restart, a
+    // human-started thread), answerInThread back-reads the thread's messages for
+    // context instead of starting blind (which used to make Garvis ask "which mod?").
+    const mode = sess.maint ? 'maint' : 'help';
     const resume = mode === 'maint' ? sess.maint : sess.help;
+    const act = mode === 'maint';
     await msg.channel.sendTyping().catch(() => {});
     const working = act ? await msg.channel.send('🛠️ _on it…_').catch(() => null) : null;
     const res = await answerInThread({ content, user: msg.author.id, resume, act, channel: msg.channel, beforeId: msg.id });
@@ -695,11 +632,12 @@ client.on(Events.MessageCreate, async (msg) => {
 
   // Fresh @mention: open a thread, answer/act there, and remember the conversation.
   if (!content) {
-    await msg.reply('👋 @mention me with a question — or, if you help run the server, ask me to add a mod (e.g. “add cobblemon”) and I’ll research it and open a PR.').catch(() => {});
+    await msg.reply('👋 @mention me with a question — or just ask me to add a mod (e.g. “@garvis add cobblemon”) and I’ll research it and open a PR for the owner to approve.').catch(() => {});
     return;
   }
   const wait = onCooldown(msg.author.id);
   if (wait > 0) { await msg.reply(`Slow down — try again in ${wait}s.`).catch(() => {}); return; }
+  const act = CAN_ACT;  // live dispatch → capable maintenance agent for everyone; dry-run → read-only Q&A
 
   let target = msg.channel;
   let createdThread = false;

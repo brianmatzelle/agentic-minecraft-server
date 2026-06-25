@@ -38,9 +38,10 @@ enforced by an OpenShell egress sandbox rather than per-action prompts.
   review source + artifact before merge. No silent installs to the live server.
 - **S5 — PreToolUse hook backstop** (`exit 2` to hard-block downloads/installers)
   with `allowManagedHooksOnly` so it can't be swapped out.
-- **S6 — Least-privilege Discord:** slash commands (not the MESSAGE_CONTENT
-  intent), `DISCORD_ALLOWED_USERS`/`ROLES` allowlist (deny-by-default),
-  per-user cooldowns.
+- **S6 — Least-privilege Discord:** per-user cooldowns as anti-spam. (This
+  originally also proposed a `DISCORD_ALLOWED_USERS`/`ROLES` allowlist; the owner
+  has since removed it, opening both `/whitelist` and @mention mod-requests to
+  everyone — see the self-service exceptions below.)
 
 Concrete config for S1–S6 lands in `agent/` and `openshell/` after the
 deep-research synthesis.
@@ -73,11 +74,12 @@ hard(er) stops. Full trace + analysis: the `harden/op-guardrails` PR.
   `infra/systemd/ops-tripwire.service`) follows the server log and alarms on any
   op/de-op/ban/whitelist/RCON action, plus (best-effort) writes to the live ops/
   whitelist/`.env` files — so an escalation, attempted or real, is never silent.
-- **G4 — Identity caveat (policy).** Garvis cannot verify who is typing; an
-  "authorized Discord member" may *ask* for things but that is not authority to grant
-  admin. Privileged live-server actions (op/ban/etc.) are done by the human on the
-  host, never by the agent acting on a chat message — which is exactly what Garvis
-  told the impersonator.
+- **G4 — Identity caveat (policy).** Garvis cannot verify who is typing; ANY Discord
+  member may *ask* for things but that is not authority to grant admin. Privileged
+  live-server actions (op/ban/etc.) are done by the human on the host, never by the
+  agent acting on a chat message — which is exactly what Garvis told the impersonator.
+  This matters more now that mod-requests are open to everyone (below): a request only
+  ever produces a PR a human must review and merge.
 
 ## Deliberate exception — `/whitelist` self-service (2026-06-24)
 
@@ -94,10 +96,10 @@ What keeps this in line with the model:
   rcon-cli whitelist add` directly via `execFile` (no shell) in `apps/garvis-bot/src/
   whitelist.js`. The G1 deny rules (`AGENT_DENY_TOOLS`) are unchanged, so a
   prompt-injected *agent* still cannot reach docker/rcon — only this one fixed,
-  authz-gated, parameterless-except-username code path can.
-- **Deny-by-default authz + cooldown.** Gated by the same `isAuthorized` allowlist
-  (`DISCORD_ALLOWED_USERS`/`ROLES`) and per-user cooldown as `/requestmod`. Empty
-  allowlist ⇒ nobody can use it.
+  validation-gated, username-only code path can.
+- **Open to everyone, cooldown-gated.** No allowlist — any Discord user can call it
+  (self-service joining); the only gates are username validation and a per-user
+  cooldown. The @mention mod-request path is open the same way (see below).
 - **Username is data, never a command.** Validated against `^[A-Za-z0-9_]{3,16}$`
   (Minecraft Java charset) and passed as argv, so it cannot inject a shell/rcon command.
 - **Repo stays source of truth.** The add is also persisted to `MC_WHITELIST` in
@@ -107,7 +109,32 @@ What keeps this in line with the model:
   whitelist` + a `whitelist.json` / `.env` write). That is expected, not an incident —
   `/whitelist` is now a known-legitimate source of those events.
 
-Residual risk (accepted by the owner): a friend on the allowlist can whitelist anyone
-(including griefers), and the bot process holds a docker socket reach to one rcon verb.
-If the posture tightens later, the safer alternatives are the `/requestmod`-style
-PR-for-approval flow, or moving whitelist writes behind a reviewed deploy.
+Residual risk (accepted by the owner): with no allowlist, ANY Discord user can
+whitelist anyone (including griefers), and the bot process holds a docker socket reach
+to one rcon verb. If the posture tightens later, the safer alternatives are a
+PR-for-approval flow (as the mod-request path already uses), or moving whitelist
+writes behind a reviewed deploy.
+
+## Deliberate exception — open mod-requests via @mention (2026-06-24)
+
+`/requestmod` (allowlist-gated) is removed; anyone can now @mention Garvis in plain
+English ("@garvis add cobblemon") and he researches the mod and opens a PR. This
+trades the Discord-actor allowlist for beginner-friendliness (the owner's standing
+priority — the same call as `/whitelist` self-service). It widens *who can trigger* the
+maintenance agent, not *what it can do*: every real boundary is unchanged.
+
+- **Output is a PR, never a live change.** The agent works only in its isolated repo
+  clone and opens a PR; a human still reviews + merges (S4). Worst case from an
+  untrusted requester is a junk PR or wasted compute, not a server change.
+- **Untrusted text stays data (S2).** The message is nonce-fenced and scoped to
+  "propose a mod addition," never executed as instructions.
+- **Same hard stops (G1/S1/S3 + sandbox).** `AGENT_DENY_TOOLS` still blocks
+  docker/rcon and live `.env`/`server-data` writes; the OpenShell egress sandbox is
+  still the real wall. Opening the front door changes none of this.
+- **Anti-spam only.** A per-user cooldown (`GARVIS_COOLDOWN_MS`, default 60s) is the
+  one gate, and maintenance runs serialize through a single clone, so a flood can't
+  fan out.
+
+Residual risk (accepted by the owner): anyone can make Garvis spend tokens and open
+PRs. The cooldown + serialization bound the rate; the no-merge gate bounds the impact.
+Re-gating later means restoring the `isAuthorized` allowlist (it lives in git history).
