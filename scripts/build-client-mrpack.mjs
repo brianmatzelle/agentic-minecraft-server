@@ -65,6 +65,11 @@ const CLIENT_MODS = [
   { slug: 'accessories',                         client: 'required', server: 'required' },
   { slug: 'owo-lib',                             client: 'required', server: 'required' },
   { slug: 'patchouli',                           client: 'required', server: 'required' },
+  // ── Industrial Upgrade tech suite (mutually required; all client+server) ──
+  { slug: 'industrialupgrade',                   client: 'required', server: 'required' },
+  { slug: 'power-utilities',                     client: 'required', server: 'required' }, // IU addon
+  { slug: 'simply-quarries',                     client: 'required', server: 'required' }, // IU addon
+  { slug: 'quantum-generators',                  client: 'required', server: 'required' }, // IU addon
   // ── Quality-of-life — optional on the client (deselectable on import) ─────
   { slug: 'create',                              client: 'optional', server: 'required' },
   { slug: 'jei',                                 client: 'optional', server: 'optional' },

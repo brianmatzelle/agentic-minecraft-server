@@ -58,6 +58,16 @@ farmers-delight       # Farmer's Delight — cooking & farming expansion. NeoFor
 balm                  # Balm — required by Waystones (shared config/util lib). NeoForge 1.21.1, latest 21.0.59+neoforge-1.21.1. client/server: optional.
 sophisticated-core    # Sophisticated Core — required by Sophisticated Backpacks. NeoForge 1.21.1, latest 1.21.1-1.4.60.2044. client_side: REQUIRED.
 
+# ── Industrial Upgrade tech suite (IC2-style machines/power) ──────────────────
+# Industrial Upgrade + its three official addons. They MUTUALLY require each other
+# (IU requires all three; each addon requires IU), so they ship as one set — no
+# other deps. All four are client_side: REQUIRED, so they're also in the one-click
+# client pack (regenerate after changes: node scripts/build-client-mrpack.mjs).
+industrialupgrade     # [IU] Industrial Upgrade — IC2-style tech: machines, power, ore processing. NeoForge 1.21.1, latest 3.4. client_side: REQUIRED, server_side: REQUIRED. deps: power-utilities, simply-quarries, quantum-generators.
+power-utilities       # Power Utilities — Industrial Upgrade addon (power gen/transfer). NeoForge 1.21.1, latest 1.4. client_side: REQUIRED, server_side: REQUIRED. deps: industrialupgrade.
+simply-quarries       # Simply Quarries — Industrial Upgrade addon (automated mining quarries). NeoForge 1.21.1, latest 1.3. client_side: REQUIRED, server_side: REQUIRED. deps: industrialupgrade.
+quantum-generators    # Quantum Generators — Industrial Upgrade addon (high-tier power generation). NeoForge 1.21.1, latest 1.4. client_side: REQUIRED, server_side: REQUIRED. deps: industrialupgrade.
+
 # ── shared libraries (pulled in by the Cobblemon add-ons above) ───────────────
 architectury-api      # Architectury API — required by Mega Showdown, SimpleTMs, rctapi. NeoForge 1.21.1, latest 13.0.8+neoforge. client_side: REQUIRED.
 accessories           # Accessories — required by Cobblemon: Mega Showdown. NeoForge 1.21.1, latest 1.1.0-beta.53+1.21.1. client_side: REQUIRED. deps: owo-lib.
