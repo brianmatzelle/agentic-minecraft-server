@@ -65,8 +65,11 @@ const CLIENT_MODS = [
   { slug: 'accessories',                         client: 'required', server: 'required' },
   { slug: 'owo-lib',                             client: 'required', server: 'required' },
   { slug: 'patchouli',                           client: 'required', server: 'required' },
+  // ── Create + addons (content mods — required client-side once on the server) ─
+  { slug: 'create',                              client: 'required', server: 'required' }, // now required: Create: Aeronautics depends on it
+  { slug: 'create-aeronautics',                  client: 'required', server: 'required' },
+  { slug: 'sable',                               client: 'required', server: 'required' }, // create-aeronautics dep
   // ── Quality-of-life — optional on the client (deselectable on import) ─────
-  { slug: 'create',                              client: 'optional', server: 'required' },
   { slug: 'jei',                                 client: 'optional', server: 'optional' },
   { slug: 'jade',                                client: 'optional', server: 'optional' },
 ];
