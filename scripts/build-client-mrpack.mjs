@@ -82,8 +82,10 @@ const CLIENT_MODS = [
   { slug: 'jade',                                client: 'optional', server: 'optional' },
 ];
 
-// Server-only perf/diagnostic mods that must NEVER ship to a client.
-const SERVER_ONLY = ['lithium', 'ferrite-core', 'modernfix', 'spark', 'chunky', 'noisium'];
+// Server-only mods that must NEVER ship to a client: perf/diagnostic tools plus
+// server-side-only content (e.g. worldgen whose structures use vanilla blocks, so
+// the client needs nothing extra to see them).
+const SERVER_ONLY = ['lithium', 'ferrite-core', 'modernfix', 'spark', 'chunky', 'noisium', 'when-dungeons-arise'];
 
 function modlistSlugs() {
   return readFileSync(MODLIST, 'utf8')
