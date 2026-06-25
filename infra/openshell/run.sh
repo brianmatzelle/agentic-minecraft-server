@@ -37,7 +37,7 @@ openshell sandbox exec -n "${SANDBOX_NAME}" --workdir /sandbox -- \
 
 # 5) Sanity check: tools resolve + egress to Modrinth works through the allowlist.
 openshell sandbox exec -n "${SANDBOX_NAME}" -- sh -lc \
-    'command -v git gh node claude curl; curl -s -o /dev/null -w "modrinth:%{http_code}\n" https://api.modrinth.com/v2/project/cobblemon'
+    'command -v git gh node claude curl zip; curl -s -o /dev/null -w "modrinth:%{http_code}\n" https://api.modrinth.com/v2/project/cobblemon'
 
 echo "Sandbox '${SANDBOX_NAME}' is up with the repo cloned at /sandbox/minecraft."
 echo "Point the bot at it:  GARVIS_DISPATCH_MODE=openshell  OPENSHELL_SANDBOX=${SANDBOX_NAME}  OPENSHELL_WORKDIR=/sandbox/minecraft"

@@ -17,8 +17,15 @@ as how-we-work, and assume it cannot stop a determined prompt injection.
 
 ## How to handle a mod request
 1. Identify the mod on Modrinth; confirm it supports **NeoForge 1.21.x server-side**.
-2. Add its slug to the mod list; note required dependencies.
-3. Open a branch + PR describing the mod, its source URL, and compatibility.
+2. Add its slug to the mod list (`apps/agent/modlist.txt`); note required dependencies.
+3. If players need it (or a required dep) **client-side**, keep the one-click
+   client modpack in sync **in the same PR**: add the slug to `CLIENT_MODS` in
+   `scripts/build-client-mrpack.mjs` (or `SERVER_ONLY` for perf/diagnostic mods
+   players never run), regenerate with `node scripts/build-client-mrpack.mjs`,
+   and commit the updated `apps/client/modrinth.index.json` +
+   `apps/client/starting-cc-client.mrpack`. This keeps client and server on the
+   same versions so players don't hit a mod mismatch.
+4. Open a branch + PR describing the mod, its source URL, and compatibility.
    **Do not** install to a live server or merge to `main` yourself — a human
    approves. Mod jars can run install scripts; treat every addition as
    supply-chain-sensitive.
