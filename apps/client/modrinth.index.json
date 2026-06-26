@@ -141,21 +141,6 @@
       "fileSize": 33120013
     },
     {
-      "path": "mods/embeddium-1.0.15+mc1.21.1.jar",
-      "hashes": {
-        "sha1": "56063839172a000d079272794bad366f2ad4cbbd",
-        "sha512": "d073cf52dcf2aeec3ac9f746d4571c7b4b1ad746fa11d4bcc5a21a264ae3119ac6d341d08cc9a70042cf0ddffc3b3ef3329ed30217035d4551c9d6788b6dc1e6"
-      },
-      "env": {
-        "client": "required",
-        "server": "unsupported"
-      },
-      "downloads": [
-        "https://cdn.modrinth.com/data/sk9rgfiA/versions/J7b96IEd/embeddium-1.0.15%2Bmc1.21.1.jar"
-      ],
-      "fileSize": 1048745
-    },
-    {
       "path": "mods/entityculling-neoforge-1.10.5-mc1.21.1.jar",
       "hashes": {
         "sha1": "420d0006dbc0a20b1c2dd0b3c7c20ddb5cc51fcf",
@@ -394,6 +379,21 @@
         "https://cdn.modrinth.com/data/nbGJGzDE/versions/IvzrqoUv/Simply%20Quarries-1.3.jar"
       ],
       "fileSize": 134648
+    },
+    {
+      "path": "mods/sodium-neoforge-0.8.12-beta.2+mc1.21.1.jar",
+      "hashes": {
+        "sha1": "2b4da8def3970f56e021a1f5109517cd83a4fe84",
+        "sha512": "62242a3b7a8f1c564fd267e0dce71e587d8615083b8da69c3bb585eb93d0f6590d8df231104c4dca1c64c513e5d73b56661930af9c88d7ac869afe792996631f"
+      },
+      "env": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/AANobbMI/versions/7XOIgnrf/sodium-neoforge-0.8.12-beta.2%2Bmc1.21.1.jar"
+      ],
+      "fileSize": 1291421
     },
     {
       "path": "mods/sophisticatedbackpacks-1.21.1-3.25.64.1933.jar",

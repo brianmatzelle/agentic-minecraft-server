@@ -94,9 +94,11 @@ const CLIENT_MODS = [
   // Pure rendering/culling optimizations: the server's view-distance=16 forces
   // each client to render ~1k chunks of heavy modded terrain, and the pack ships
   // the vanilla renderer. These restore framerate without touching the server.
-  // Embeddium = the stable NeoForge Sodium fork (1.0.15); Sodium's own NeoForge
-  // build exists but is still beta — swap the slug to 'sodium' once it stabilizes.
-  { slug: 'embeddium',                           client: 'required', server: 'unsupported' }, // Sodium-class renderer: the big FPS win
+  // Renderer = Sodium, NOT Embeddium: Sable jar-in-jars Veil (4.1.4), which hard-
+  // refuses to load with Embeddium ("incompatible: embeddium any") but supports
+  // Sodium 0.6.9+. Sodium's NeoForge build is beta-tagged but is the only renderer
+  // compatible with this pack. (Was embeddium 1.0.15 — crashed clients on launch.)
+  { slug: 'sodium',                              client: 'required', server: 'unsupported' }, // Veil-compatible renderer: the big FPS win
   { slug: 'entityculling',                       client: 'required', server: 'unsupported' }, // skips rendering hidden mobs/Cobblemon
   { slug: 'immediatelyfast',                     client: 'required', server: 'unsupported' }, // faster text/UI/JEI batching
 ];

@@ -46,11 +46,6 @@ hash = "eddfdf96b56f51bd37e4c78b95061d91a36ad4ba9eded561c7c3bac9aee85646"
 metafile = true
 
 [[files]]
-file = "mods/embeddium.pw.toml"
-hash = "7d0c4b71780d231242a0cf83de91096d155c14982f974f7e95c2942ebb44f20d"
-metafile = true
-
-[[files]]
 file = "mods/entityculling.pw.toml"
 hash = "5b79bd9559106dce80b8e90b559a4f3b84cccad3a0c8f3f6af46b39ed06e5419"
 metafile = true
@@ -128,6 +123,11 @@ metafile = true
 [[files]]
 file = "mods/simply-quarries.pw.toml"
 hash = "dd6ec05983e858e970f12ebfd027ea47b609e619e95822b525536f47597470ae"
+metafile = true
+
+[[files]]
+file = "mods/sodium.pw.toml"
+hash = "6232384a49a1ff36ae59032992d4a54fdba33b9b4ca06d7d7867f30a68bbd9ac"
 metafile = true
 
 [[files]]
