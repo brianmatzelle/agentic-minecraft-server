@@ -15,7 +15,7 @@
 
 # ── mods ───────────────────────────────────────────────────────────────────
 cc-tweaked            # CC: Tweaked — programmable in-game computers/turtles (ComputerCraft, maintained fork). NeoForge 1.21.1, latest v1.120.0. No required deps. client_side: REQUIRED — players must install it too.
-cobblemon             # Cobblemon — catch & battle Pokémon. NeoForge 1.21.1, latest v1.7.3. client_side: REQUIRED — players must install it too. deps: kotlin-for-forge.
+cobblemon:Uz1QF4Md    # Cobblemon — catch & battle Pokémon. NeoForge 1.21.1. PINNED to 1.7.1 (version id Uz1QF4Md) to match the exact build the client modpack ships (apps/client/modrinth.index.json). DO NOT unpin: an unpinned slug resolves to Modrinth "latest" and silently drifts ahead of the pinned client → join rejections (the recurring "wrong Cobblemon version" bug). To bump: update BOTH this version id AND the client pack in the same PR. client_side: REQUIRED — players must install it too. deps: kotlin-for-forge.
 kotlin-for-forge      # Kotlin for Forge — required dependency of Cobblemon (Kotlin runtime). NeoForge 1.21.1, latest v5.11.0. client_side/server_side: optional (pulled in for Cobblemon).
 
 # ── performance / diagnostics ────────────────────────────────────────────────
@@ -32,7 +32,6 @@ noisium               # Noisium — faster worldgen. NeoForge 1.21.1, latest v2.
 # Players need these client-side too — they ship in the one-click client modpack
 # (apps/client/starting-cc-client.mrpack). After ANY change to this list,
 # regenerate the pack: `node scripts/build-client-mrpack.mjs` (see apps/client/README.md).
-rctmod                # Radical Cobblemon Trainers — NPC trainers to battle in the world. NeoForge 1.21.1, latest 0.18.1-beta. client_side: REQUIRED. deps: rctapi, cobblemon.
 # [DISABLED 2026-06-24 — server boot crash] cobblemon-mega-showdown  # Cobblemon: Mega Showdown — Mega Evolution, Dynamax, Z-moves. NeoForge 1.21.1, latest 1.8.4+1.7.3+1.21.1. client_side: REQUIRED. deps: architectury-api, accessories, owo-lib, cobblemon.
 # ^ Temporarily removed: mega_showdown 1.8.4 fatally NPEs on datapack load
 #   (HeldItems.reload → receiveHeldItemDataFn is null) against the Cobblemon 1.7.3
@@ -41,7 +40,9 @@ simpletms-tms-and-trs-for-cobblemon  # SimpleTMs — TMs & TRs to teach moves. N
 cobbledollars         # CobbleDollars — in-game Pokémon currency / shops. NeoForge 1.21.1, latest 2.0.0+Beta-5.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge.
 cobblepedia           # Cobblemon Poképedia (Cobblepedia) — in-game Pokédex. NeoForge 1.21.1, latest 0.7.1-neoforge. client_side: REQUIRED. deps: cobblemon, patchouli.
 # Cobblemon-addon dependencies:
-rctapi                # Radical Cobblemon Trainers API — required by rctmod. NeoForge 1.21.1, latest 0.15.2-beta. client/server: optional. deps: cobblemon, architectury-api.
+# REMOVED 2026-06-25 — rctmod (Radical Cobblemon Trainers) + rctapi (its API)
+#   removed by request. rctapi was only needed by rctmod, so both go together.
+#   architectury-api stays — still required by SimpleTMs (and Mega Showdown).
 # REMOVED 2026-06-23 — boot-fatal against the shipped Cobblemon 1.7.3. Their only
 # NeoForge-1.21.1 builds target a different Cobblemon version, so itzg installed them and
 # NeoForge refused to load. Re-add when we bump to Cobblemon 1.8.x.
@@ -75,7 +76,7 @@ simply-quarries       # Simply Quarries — Industrial Upgrade addon (automated 
 quantum-generators    # Quantum Generators — Industrial Upgrade addon (high-tier power generation). NeoForge 1.21.1, latest 1.4. client_side: REQUIRED, server_side: REQUIRED. deps: industrialupgrade.
 
 # ── shared libraries (pulled in by the Cobblemon add-ons above) ───────────────
-architectury-api      # Architectury API — required by Mega Showdown, SimpleTMs, rctapi. NeoForge 1.21.1, latest 13.0.8+neoforge. client_side: REQUIRED.
+architectury-api      # Architectury API — required by Mega Showdown, SimpleTMs. NeoForge 1.21.1, latest 13.0.8+neoforge. client_side: REQUIRED.
 accessories           # Accessories — required by Cobblemon: Mega Showdown. NeoForge 1.21.1, latest 1.1.0-beta.53+1.21.1. client_side: REQUIRED. deps: owo-lib.
 owo-lib               # oωo (owo-lib) — required by Mega Showdown & Accessories. NeoForge 1.21.1, latest 0.12.15.5-beta.1+1.21. client_side: REQUIRED.
 patchouli             # Patchouli — in-game documentation lib, required by Cobblepedia. NeoForge 1.21.1, latest 1.21.1-93-neoforge. client_side: REQUIRED.
