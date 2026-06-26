@@ -60,8 +60,7 @@ const CLIENT_MODS = [
   // Cobblemon and the server re-resolves upward. See apps/agent/modlist.txt.
   { slug: 'cobblemon',                           client: 'required', server: 'required', pin: '1.7.1' },
   { slug: 'kotlin-for-forge',                    client: 'required', server: 'required' }, // Cobblemon runtime
-  { slug: 'rctmod',                              client: 'required', server: 'required' },
-  { slug: 'rctapi',                              client: 'required', server: 'required' }, // rctmod dep
+  // rctmod (Radical Cobblemon Trainers) + rctapi removed 2026-06-25 by request.
   // cobblemon-mega-showdown DISABLED 2026-06-24: mega_showdown 1.8.4 fatally NPEs on
   // server datapack load (HeldItems.reload → receiveHeldItemDataFn null) vs Cobblemon
   // 1.7.3. Removed from the server modlist + client pack in lockstep. Re-add (both

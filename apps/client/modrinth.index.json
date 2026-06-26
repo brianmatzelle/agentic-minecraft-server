@@ -306,36 +306,6 @@
       "fileSize": 200437
     },
     {
-      "path": "mods/rctapi-neoforge-1.21.1-0.15.2-beta.jar",
-      "hashes": {
-        "sha1": "06914d0d3dde9e92d14b5944db4e494527d89df0",
-        "sha512": "0dd820eda43fe09974bc144d3cd029135472aa1d3e46eec76f9b2ed9d2e7fe9b429f4b247d7bedf59878a9959ad19123aba7ad4642105922527dcf6685c59902"
-      },
-      "env": {
-        "client": "required",
-        "server": "required"
-      },
-      "downloads": [
-        "https://cdn.modrinth.com/data/CBfM2yw7/versions/zpphgptV/rctapi-neoforge-1.21.1-0.15.2-beta.jar"
-      ],
-      "fileSize": 235207
-    },
-    {
-      "path": "mods/rctmod-neoforge-1.21.1-0.18.1-beta.jar",
-      "hashes": {
-        "sha1": "98afe295a4ac17dc6fd1427df623b721fbf11b50",
-        "sha512": "5169e5839348c766724ea3a0d18dbcfd78c105afadb4584eb8b05ec2392d7e5a2ea28f1a58e005cf9ba71409e7f26efe5ede86cabe85f077a9d2065427c5f75f"
-      },
-      "env": {
-        "client": "required",
-        "server": "required"
-      },
-      "downloads": [
-        "https://cdn.modrinth.com/data/lRwTUnD7/versions/qyxrdzND/rctmod-neoforge-1.21.1-0.18.1-beta.jar"
-      ],
-      "fileSize": 7536984
-    },
-    {
       "path": "mods/sable-neoforge-1.21.1-2.0.3.jar",
       "hashes": {
         "sha1": "f3ba9a497122ba29d9e94ebe6f9a3a3aaa5fa756",
