@@ -46,8 +46,23 @@ hash = "eddfdf96b56f51bd37e4c78b95061d91a36ad4ba9eded561c7c3bac9aee85646"
 metafile = true
 
 [[files]]
+file = "mods/embeddium.pw.toml"
+hash = "7d0c4b71780d231242a0cf83de91096d155c14982f974f7e95c2942ebb44f20d"
+metafile = true
+
+[[files]]
+file = "mods/entityculling.pw.toml"
+hash = "5b79bd9559106dce80b8e90b559a4f3b84cccad3a0c8f3f6af46b39ed06e5419"
+metafile = true
+
+[[files]]
 file = "mods/farmers-delight.pw.toml"
 hash = "b7f5ee4986d5f58638b6b6879eb4f6909a3765ae3657dbb7f9667b7eaf9348b7"
+metafile = true
+
+[[files]]
+file = "mods/immediatelyfast.pw.toml"
+hash = "a33ca4f92283e7545bc2e336c1142f8087c1e4ad5b8f5acc869ea34823e9ad5d"
 metafile = true
 
 [[files]]

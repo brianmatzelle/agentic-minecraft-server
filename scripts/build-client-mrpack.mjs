@@ -90,6 +90,15 @@ const CLIENT_MODS = [
   // ── Quality-of-life — optional on the client (deselectable on import) ─────
   { slug: 'jei',                                 client: 'optional', server: 'optional' },
   { slug: 'jade',                                client: 'optional', server: 'optional' },
+  // ── Client-side FPS mods (server never runs them → server: 'unsupported') ──
+  // Pure rendering/culling optimizations: the server's view-distance=16 forces
+  // each client to render ~1k chunks of heavy modded terrain, and the pack ships
+  // the vanilla renderer. These restore framerate without touching the server.
+  // Embeddium = the stable NeoForge Sodium fork (1.0.15); Sodium's own NeoForge
+  // build exists but is still beta — swap the slug to 'sodium' once it stabilizes.
+  { slug: 'embeddium',                           client: 'required', server: 'unsupported' }, // Sodium-class renderer: the big FPS win
+  { slug: 'entityculling',                       client: 'required', server: 'unsupported' }, // skips rendering hidden mobs/Cobblemon
+  { slug: 'immediatelyfast',                     client: 'required', server: 'unsupported' }, // faster text/UI/JEI batching
 ];
 
 // Server-only mods that must NEVER ship to a client: perf/diagnostic tools plus
@@ -142,7 +151,12 @@ const server = new Set(modlistSlugs());
 const clientSet = new Set(CLIENT_MODS.map((m) => m.slug));
 const serverOnly = new Set(SERVER_ONLY);
 
-const notOnServer = [...clientSet].filter((s) => !server.has(s));
+// Client mods must be on the server too — EXCEPT pure client-side mods declared
+// server:'unsupported' (e.g. FPS/render mods), which the server never runs.
+const notOnServer = CLIENT_MODS
+  .filter((m) => m.server !== 'unsupported')
+  .map((m) => m.slug)
+  .filter((s) => !server.has(s));
 if (notOnServer.length) {
   console.error(`ERROR: client mods not in modlist.txt (server doesn't run them): ${notOnServer.join(', ')}`);
   process.exit(1);
