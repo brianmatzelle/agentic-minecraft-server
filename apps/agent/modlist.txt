@@ -15,7 +15,7 @@
 
 # ── mods ───────────────────────────────────────────────────────────────────
 cc-tweaked            # CC: Tweaked — programmable in-game computers/turtles (ComputerCraft, maintained fork). NeoForge 1.21.1, latest v1.120.0. No required deps. client_side: REQUIRED — players must install it too.
-cobblemon             # Cobblemon — catch & battle Pokémon. NeoForge 1.21.1, latest v1.7.3. client_side: REQUIRED — players must install it too. deps: kotlin-for-forge.
+cobblemon:Uz1QF4Md    # Cobblemon — catch & battle Pokémon. NeoForge 1.21.1. PINNED to 1.7.1 (version id Uz1QF4Md) to match the exact build the client modpack ships (apps/client/modrinth.index.json). DO NOT unpin: an unpinned slug resolves to Modrinth "latest" and silently drifts ahead of the pinned client → join rejections (the recurring "wrong Cobblemon version" bug). To bump: update BOTH this version id AND the client pack in the same PR. client_side: REQUIRED — players must install it too. deps: kotlin-for-forge.
 kotlin-for-forge      # Kotlin for Forge — required dependency of Cobblemon (Kotlin runtime). NeoForge 1.21.1, latest v5.11.0. client_side/server_side: optional (pulled in for Cobblemon).
 
 # ── performance / diagnostics ────────────────────────────────────────────────
