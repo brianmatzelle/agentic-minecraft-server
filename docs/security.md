@@ -139,6 +139,43 @@ Residual risk (accepted by the owner): anyone can make Garvis spend tokens and o
 PRs. The cooldown + serialization bound the rate; the no-merge gate bounds the impact.
 Re-gating later means restoring the `isAuthorized` allowlist (it lives in git history).
 
+## Deliberate exception — auto-deploy of mod-add PRs (2026-06-25)
+
+The owner chose to remove the human-merge + manual-`deploy.sh` latency: a friend's mod
+request should go live on its own (the "auto-deploy mods" decision). This relaxes **S4
+(human-in-the-loop for mod installs)** — bounded hard so the relaxation is narrow. Full
+operator guide: `docs/auto-deploy.md`.
+
+What keeps this in line with the model:
+
+- **The agent's constraints are UNCHANGED.** The maintenance agent still only edits the
+  repo in its isolated clone and opens a PR — it does **not** merge, push to `main`,
+  `docker`, or deploy (still blocked by `AGENT_DENY_TOOLS` + its own deny rules). The
+  agent rule in `CLAUDE.md` ("do not install to a live server or merge to main yourself")
+  still holds for the *agent*.
+- **Auto-merge is a separate, trusted host process, not the agent.** `scripts/auto-deploy.sh`
+  (an opt-in systemd `--user` timer) is fixed code on the host — the same trusted-process
+  posture as the `/whitelist` and live-moderation paths, not an LLM with a shell.
+- **File allowlist = the supply-chain boundary.** A PR is auto-merged **only** if its whole
+  diff is within `apps/agent/modlist.txt` + the two client-pack files. Any code, compose,
+  `.env`, workflow, or script change is never auto-merged and still needs a human. So the
+  automated path can only change *which Modrinth slugs* are installed — nothing executable
+  in the repo. (It does **not** review the jar contents themselves — see residual risk.)
+- **Boot-health rollback bounds the blast radius.** `deploy.sh --health-check` waits for
+  itzg's `Done` marker and, on a crash-loop, restores the previous `MODRINTH_PROJECTS` and
+  redeploys — so a bad mod auto-add can never leave the world down. The failing commit is
+  quarantined (never auto-retried) and an alert fires.
+- **Off by default.** `GARVIS_AUTODEPLOY` and `GARVIS_AUTOMERGE` are both `off` until the
+  owner enables them; the kill switch is `systemctl --user disable --now
+  garvis-auto-deploy.timer`.
+
+Residual risk (accepted by the owner): dropping human review means a mod jar reaches the
+live server without a person inspecting its source/artifact. The allowlist limits *what
+files* change and the boot-rollback limits *downtime*, but neither inspects jar contents —
+a malicious-but-stable mod would deploy. Mitigations if the posture tightens: leave
+`GARVIS_AUTOMERGE=off` (auto-deploy only what a human merged), or add a pre-merge Modrinth
+validation/allowlist of trusted authors.
+
 ## Live moderation — the fixed verb catalog (2026-06-25)
 
 Goal: let friends act as full Minecraft **server moderators** in plain English, through
