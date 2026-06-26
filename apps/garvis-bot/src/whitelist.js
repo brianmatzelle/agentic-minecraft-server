@@ -39,19 +39,22 @@ function serializeEnv(fn) {
   return run;
 }
 
-// Idempotently add `username` to the MC_WHITELIST=... line of a docker-compose .env,
-// preserving every other line, the key's spacing, and any inline `# comment`. Dedupe is
-// case-insensitive (Minecraft matches names that way) but the caller's casing is kept.
-// Atomic write (temp + rename) so a crash can't truncate the live .env, and the file's
-// original mode (likely 0600) is preserved. Returns {alreadyPresent, list}.
-export function addUsernameToWhitelistEnv(envPath, username) {
+// Idempotently add (or, with {remove:true}, drop) `name` in a comma-separated env LIST
+// — MC_WHITELIST, MC_OPS, … — preserving every other line, the key's spacing, and any
+// inline `# comment`. Dedupe/match is case-insensitive (Minecraft matches names that
+// way) but the caller's casing is kept on add. Atomic write (temp + rename) so a crash
+// can't truncate the live .env, and the file's original mode (likely 0600) is preserved.
+// `key` is an internal constant (never user input), so building a RegExp from it is safe.
+// Returns {alreadyPresent, removed, list}.
+export function upsertEnvListName(envPath, key, name, { remove = false } = {}) {
   return serializeEnv(async () => {
     const content = await readFile(envPath, 'utf8');
     const lines = content.split('\n');
-    const idx = lines.findIndex((l) => /^\s*MC_WHITELIST\s*=/.test(l));
-    if (idx === -1) throw new Error(`MC_WHITELIST not found in ${envPath}`);
+    const keyRe = new RegExp(`^\\s*${key}\\s*=`);
+    const idx = lines.findIndex((l) => keyRe.test(l));
+    if (idx === -1) throw new Error(`${key} not found in ${envPath}`);
 
-    const m = lines[idx].match(/^(\s*MC_WHITELIST\s*=)(.*)$/);
+    const m = lines[idx].match(new RegExp(`^(\\s*${key}\\s*=)(.*)$`));
     const prefix = m[1];
     let rest = m[2];
     let comment = '';
@@ -59,21 +62,28 @@ export function addUsernameToWhitelistEnv(envPath, username) {
     if (cm) { comment = rest.slice(cm.index); rest = rest.slice(0, cm.index); }
 
     const current = rest.trim() ? rest.trim().split(',').map((s) => s.trim()).filter(Boolean) : [];
-    const alreadyPresent = current.some((u) => u.toLowerCase() === username.toLowerCase());
-    if (!alreadyPresent) current.push(username);
+    const alreadyPresent = current.some((u) => u.toLowerCase() === name.toLowerCase());
+    let list = current;
+    if (remove) list = current.filter((u) => u.toLowerCase() !== name.toLowerCase());
+    else if (!alreadyPresent) list = [...current, name];
 
-    lines[idx] = `${prefix}${current.join(',')}${comment}`;
+    lines[idx] = `${prefix}${list.join(',')}${comment}`;
     const next = lines.join('\n');
 
     if (next !== content) {
       const mode = await stat(envPath).then((s) => s.mode & 0o777).catch(() => 0o600);
-      const tmp = join(dirname(envPath), `.env.garvis-whitelist.${process.pid}.tmp`);
+      const tmp = join(dirname(envPath), `.env.garvis.${process.pid}.tmp`);
       await writeFile(tmp, next, { mode });
       await chmod(tmp, mode).catch(() => {});
       await rename(tmp, envPath);              // atomic on the same filesystem
     }
-    return { alreadyPresent, list: current };
+    return { alreadyPresent, removed: remove && alreadyPresent, list };
   });
+}
+
+// Back-compat thin wrapper: /whitelist still calls this. Adds to MC_WHITELIST.
+export function addUsernameToWhitelistEnv(envPath, username) {
+  return upsertEnvListName(envPath, 'MC_WHITELIST', username);
 }
 
 // `docker exec <container> rcon-cli whitelist add <username>`. execFile => no shell =>

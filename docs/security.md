@@ -138,3 +138,58 @@ maintenance agent, not *what it can do*: every real boundary is unchanged.
 Residual risk (accepted by the owner): anyone can make Garvis spend tokens and open
 PRs. The cooldown + serialization bound the rate; the no-merge gate bounds the impact.
 Re-gating later means restoring the `isAuthorized` allowlist (it lives in git history).
+
+## Live moderation — the fixed verb catalog (2026-06-25)
+
+Goal: let friends act as full Minecraft **server moderators** in plain English, through
+Garvis — *without* exposing any path to arbitrary code execution on the host. This is
+the `/whitelist` exception generalized into a full toolkit, and it relies on the same
+property that made `/whitelist` safe.
+
+**The mechanism (`apps/garvis-bot/src/moderation.js`).** A `@mention` is first run through
+a cheap classifier that asks Garvis to map the message to **one verb from a hard-coded
+catalog + its args** (`{"action": "ban", "args": {"player": "Steve"}}`). The bot then:
+1. **re-validates** every arg against a strict allowlist (usernames `^[A-Za-z0-9_]{3,16}$`,
+   gamerules against a fixed map, enums, bounded ints, item-id regex, IPv4) — `resolveAction()`;
+2. **role-gates** destructive verbs (below);
+3. runs a **fixed** `docker exec <container> rcon-cli <verb> <validated argv…>` via
+   `execFile` (no shell) — `runAction()` / `rconExec()`.
+
+**Why this is safe-by-construction — the load-bearing claim.** The LLM never holds a
+shell and never constructs a command; it only ever emits a *verb name + args*, and the
+bot independently validates and executes. **A fully prompt-injected Garvis cannot escalate:**
+- It can only name verbs that exist in the catalog. There is no `Bash`, no `docker run`,
+  no file write, no host shell in this code path — those capabilities are not present to
+  be abused. The blast radius is the union of the catalog verbs, nothing more.
+- Destructive verbs (`ban`/`pardon`, `op`/`deop`, `kick`, `whitelist_remove`, `gamemode`,
+  `ban-ip`, `restart`) are gated on the **Discord author's** role/identity (`GARVIS_MOD_ROLE_ID`
+  / `GARVIS_OWNER_ID`), checked in the bot — injection of the *message* cannot grant a role.
+- The worst an injected OPEN verb (`whitelist_add`, `tp`, `give`, `time`, `weather`,
+  `broadcast`, `difficulty`, `gamerule`, `list`) achieves is a reversible, audited action
+  the actual author was already permitted to run. So injection yields **no privilege gain**.
+
+This is the deliberate division of labor: **OpenShell (Layer 5) is the wall for the one
+component that legitimately needs a shell — the mod-research agent.** Live moderation
+needs *no* shell, so it gets a *no-shell* design instead of a sandbox. The two dangers
+("agent with a shell reaching the host" vs. "friends performing live server admin") have
+different walls.
+
+**Runs in the bot, not the agent.** Like `/whitelist`, these verbs execute in the trusted
+bot process (it holds the token, runs on the host) — NOT the sandboxed maintenance agent,
+which is still denied docker/rcon by `AGENT_DENY_TOOLS`. The split is unchanged.
+
+**Persistence.** Verbs whose effect the compose `OVERRIDE_*` rewrite would wipe on
+restart are written back to the repo `.env` source of truth: `op`/`deop` → `MC_OPS`,
+`whitelist_add`/`whitelist_remove` → `MC_WHITELIST` (`OVERRIDE_OPS`/`OVERRIDE_WHITELIST`
+are `TRUE`). Bans live in `server-data/banned-*.json` and survive restarts on their own.
+
+**Audit.** Every action logs `[mod-action] <user> -> <verb> <args>` and trips the G3
+ops-tripwire (expected, like `/whitelist`). Anti-spam: a short per-user `modaction`
+cooldown (`GARVIS_MOD_ACTION_COOLDOWN_MS`), separate from the 60s gate on paid paths.
+Kill switch: `GARVIS_MODERATION=off`.
+
+Residual risk (accepted by the owner): a mod (or the owner) can ban/op the wrong person,
+and OPEN verbs let any guild member nudge world state (weather/time/give) — all reversible
+and audited. Identity is Discord-level (the G4 caveat): we trust who Discord says sent a
+message; we can't verify the human behind the account. To tighten, narrow the OPEN set or
+the catalog itself — both are one-line edits in `moderation.js` (`gated` flags / `VERBS`).
