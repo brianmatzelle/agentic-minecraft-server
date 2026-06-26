@@ -1,0 +1,31 @@
+# Garvis auto-deploy — merge file-allowlisted mod-add PRs and deploy them live, safely.
+# Oneshot service driven by garvis-auto-deploy.timer. Install as a systemd --user unit
+# (same pattern as ops-tripwire.service / garvis-bot.service):
+#   cp infra/systemd/garvis-auto-deploy.{service,timer} ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now garvis-auto-deploy.timer
+#   journalctl --user -u garvis-auto-deploy.service -f      # watch deploys/rollbacks
+#
+# INERT until you flip GARVIS_AUTODEPLOY=on below. GARVIS_AUTOMERGE=on additionally lets
+# it auto-merge mod-add PRs whose diff is confined to the mod-list/client-pack files
+# (the supply-chain boundary — see docs/auto-deploy.md + docs/security.md). Prereqs on
+# the host user: `docker` works, `git fetch` over SSH works non-interactively (key has no
+# passphrase or an agent is available), and `gh auth status` is logged in.
+[Unit]
+Description=Garvis auto-deploy (merge allowlisted mod PRs + health-checked deploy + rollback)
+After=docker.service
+
+[Service]
+Type=oneshot
+# Adjust this path if your checkout lives elsewhere.
+WorkingDirectory=/home/cowboy/projects/active/minecraft
+ExecStart=/home/cowboy/projects/active/minecraft/scripts/auto-deploy.sh
+# --- Config: edit these, then `systemctl --user daemon-reload` ---
+Environment=GARVIS_AUTODEPLOY=on
+Environment=GARVIS_AUTOMERGE=on
+Environment=GARVIS_DEPLOY_TIMEOUT=420
+# Optional: a Discord webhook URL to get pinged on deploys/rollbacks.
+# Environment=GARVIS_ALERT_WEBHOOK=https://discord.com/api/webhooks/...
+
+[Install]
+WantedBy=default.target

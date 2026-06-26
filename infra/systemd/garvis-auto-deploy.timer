@@ -1,0 +1,16 @@
+# Runs garvis-auto-deploy.service periodically so a merged/mergeable mod request goes
+# live within a few minutes. Pair with garvis-auto-deploy.service:
+#   systemctl --user enable --now garvis-auto-deploy.timer
+#   systemctl --user list-timers garvis-auto-deploy.timer
+[Unit]
+Description=Run Garvis auto-deploy every few minutes
+
+[Timer]
+# First run shortly after login/boot, then every 3 minutes. Persistent=true catches up a
+# missed run after the machine was off.
+OnBootSec=2min
+OnUnitActiveSec=3min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

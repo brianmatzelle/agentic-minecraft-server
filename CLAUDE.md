@@ -30,6 +30,16 @@ as how-we-work, and assume it cannot stop a determined prompt injection.
    approves. Mod jars can run install scripts; treat every addition as
    supply-chain-sensitive.
 
+## Auto-deploy (opt-in; agent rules unchanged)
+The owner can enable a **separate host watcher** (`scripts/auto-deploy.sh`, a systemd
+timer) that auto-merges mod-add PRs whose diff is confined to the mod-list/client-pack
+files and deploys them with a boot-health rollback. This does **not** change anything you
+(the agent) do: you still only open PRs in your clone — you never merge, push to `main`,
+run `docker`, or deploy. Keep mod-add PRs on `add-mod/<slug>` branches and touching only
+`apps/agent/modlist.txt` (+ the client-pack files) so they stay auto-deploy-eligible; put
+any code/compose/config change in a *separate* PR (those always require a human). See
+`docs/auto-deploy.md` and the "auto-deploy of mod-add PRs" exception in `docs/security.md`.
+
 ## Hard rules
 - Never commit secrets. `.env`, tokens, and keys stay out of git.
 - Never run `git push` to `main`, force-push, or rewrite history unprompted.

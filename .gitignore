@@ -8,6 +8,10 @@ apps/server/server-data/
 apps/server/data/
 *.log
 
+# === Auto-deploy watcher state (scripts/auto-deploy.sh) — host-local, not source ===
+apps/server/.auto-deploy-state
+apps/server/.auto-deploy-state.*
+
 # === Garvis Discord bot (Node) ===
 node_modules/
 npm-debug.log*
