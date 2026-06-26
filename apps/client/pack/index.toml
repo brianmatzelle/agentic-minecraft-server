@@ -61,11 +61,6 @@ hash = "a33ca4f92283e7545bc2e336c1142f8087c1e4ad5b8f5acc869ea34823e9ad5d"
 metafile = true
 
 [[files]]
-file = "mods/industrialupgrade.pw.toml"
-hash = "f45b2686013e68f708c46618b6845413030d44c4f21ce312884f56d2546a8576"
-metafile = true
-
-[[files]]
 file = "mods/jade.pw.toml"
 hash = "9570cf6ead5716d5784e3732cb35c83ae62eeed7c62c3270381c7dddf1f51081"
 metafile = true
@@ -91,16 +86,6 @@ hash = "a2e2ecb36408a488e87dee71462d99376aae2a62df0ccb40eb299aa5037ca69c"
 metafile = true
 
 [[files]]
-file = "mods/power-utilities.pw.toml"
-hash = "09732eb81a0547e96dd97784e3995151986819c643fcd30ca8d18aac3f3a9421"
-metafile = true
-
-[[files]]
-file = "mods/quantum-generators.pw.toml"
-hash = "609df86dde0ec1f889defd85e84096f8ca164aa1c4561fb7fa4ad710205ee09a"
-metafile = true
-
-[[files]]
 file = "mods/sable.pw.toml"
 hash = "9d2bfd56b708f836600a9b37fa5923a2189cdecaed87643f1a8f9ef65732c500"
 metafile = true
@@ -108,11 +93,6 @@ metafile = true
 [[files]]
 file = "mods/simpletms-tms-and-trs-for-cobblemon.pw.toml"
 hash = "611e2f98143de53af78bb9aa9606416f11a90eb9f057179abe2bb18cc1a86bc4"
-metafile = true
-
-[[files]]
-file = "mods/simply-quarries.pw.toml"
-hash = "dd6ec05983e858e970f12ebfd027ea47b609e619e95822b525536f47597470ae"
 metafile = true
 
 [[files]]
