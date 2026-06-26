@@ -1,0 +1,13 @@
+name = "quantum-generators"
+filename = "Quantum Generators-1.4.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/MLHIc0w1/versions/GRNPWwKT/Quantum%20Generators-1.4.jar"
+hash-format = "sha512"
+hash = "0ea3c0e92a09f788a6479c8b5d892e848fed3594fb2428f0e1d0a6a196686d847901ba7efc2c9cde27845547ffa24bb33badf86e7d2715f1c4d572995deed6c4"
+
+[update]
+[update.modrinth]
+mod-id = "MLHIc0w1"
+version = "GRNPWwKT"

@@ -1,0 +1,131 @@
+hash-format = "sha256"
+
+[[files]]
+file = "mods/accessories.pw.toml"
+hash = "a07542dec20841408e127d49e6cfb59946cc08bb95156aaf327b94ddfc9c178d"
+metafile = true
+
+[[files]]
+file = "mods/architectury-api.pw.toml"
+hash = "6dab8d2507eeacddfad622e58416aae44ed7425de6cae35f8e5694f88ac270f7"
+metafile = true
+
+[[files]]
+file = "mods/balm.pw.toml"
+hash = "b9cbf9bb7d7c8a62739c30d7681dcee33bb2b56dd0c6ab70a9da23acb62a89f2"
+metafile = true
+
+[[files]]
+file = "mods/cc-tweaked.pw.toml"
+hash = "321902218709249a46c9bfc25c0364ad44a0abf6bed9516d9d7d7811a848d1bd"
+metafile = true
+
+[[files]]
+file = "mods/cobbledollars.pw.toml"
+hash = "b8d59b4d8b972e87365c1cafbc1d1e07b8be8ab3fc5df12a403886d9c033e4c2"
+metafile = true
+
+[[files]]
+file = "mods/cobblemon.pw.toml"
+hash = "116cf6fc697132d270a93241c63d9216f99b41fa9efa43e0d990245b593fdafa"
+metafile = true
+
+[[files]]
+file = "mods/cobblepedia.pw.toml"
+hash = "a854fdb2d676d7e940448c6f5405dc0fa05d262669a7d34e0404732c307fde3b"
+metafile = true
+
+[[files]]
+file = "mods/create.pw.toml"
+hash = "70a8c4a77c6de1a3769e2c00b279c6ff904f7572d0fc097a72e7a33ec444fcd5"
+metafile = true
+
+[[files]]
+file = "mods/create-aeronautics.pw.toml"
+hash = "eddfdf96b56f51bd37e4c78b95061d91a36ad4ba9eded561c7c3bac9aee85646"
+metafile = true
+
+[[files]]
+file = "mods/farmers-delight.pw.toml"
+hash = "b7f5ee4986d5f58638b6b6879eb4f6909a3765ae3657dbb7f9667b7eaf9348b7"
+metafile = true
+
+[[files]]
+file = "mods/industrialupgrade.pw.toml"
+hash = "f45b2686013e68f708c46618b6845413030d44c4f21ce312884f56d2546a8576"
+metafile = true
+
+[[files]]
+file = "mods/jade.pw.toml"
+hash = "9570cf6ead5716d5784e3732cb35c83ae62eeed7c62c3270381c7dddf1f51081"
+metafile = true
+
+[[files]]
+file = "mods/jei.pw.toml"
+hash = "44ba7c6e06a1891f16f21bbc48c70f618cd2e6b03f9e98adf3509193135ee3e7"
+metafile = true
+
+[[files]]
+file = "mods/kotlin-for-forge.pw.toml"
+hash = "464e92f88ee1ffe24cc59093ee5b45a3c43753e532d031d0f584447492e84480"
+metafile = true
+
+[[files]]
+file = "mods/owo-lib.pw.toml"
+hash = "c01bb401c7a66b2db9921ca561a706f21b2c939983b7d1896dfac8fa5b848ac1"
+metafile = true
+
+[[files]]
+file = "mods/patchouli.pw.toml"
+hash = "a2e2ecb36408a488e87dee71462d99376aae2a62df0ccb40eb299aa5037ca69c"
+metafile = true
+
+[[files]]
+file = "mods/power-utilities.pw.toml"
+hash = "09732eb81a0547e96dd97784e3995151986819c643fcd30ca8d18aac3f3a9421"
+metafile = true
+
+[[files]]
+file = "mods/quantum-generators.pw.toml"
+hash = "609df86dde0ec1f889defd85e84096f8ca164aa1c4561fb7fa4ad710205ee09a"
+metafile = true
+
+[[files]]
+file = "mods/rctapi.pw.toml"
+hash = "a4c4ed54b6f79a8c5a65aa8779c4770c65ac4bb96ae79aad5be9d895e50495d3"
+metafile = true
+
+[[files]]
+file = "mods/rctmod.pw.toml"
+hash = "897c0f014c7e82f55f4aa05d7b1363c8f148cee2118cf7830d8daa5d572265a7"
+metafile = true
+
+[[files]]
+file = "mods/sable.pw.toml"
+hash = "9d2bfd56b708f836600a9b37fa5923a2189cdecaed87643f1a8f9ef65732c500"
+metafile = true
+
+[[files]]
+file = "mods/simpletms-tms-and-trs-for-cobblemon.pw.toml"
+hash = "611e2f98143de53af78bb9aa9606416f11a90eb9f057179abe2bb18cc1a86bc4"
+metafile = true
+
+[[files]]
+file = "mods/simply-quarries.pw.toml"
+hash = "dd6ec05983e858e970f12ebfd027ea47b609e619e95822b525536f47597470ae"
+metafile = true
+
+[[files]]
+file = "mods/sophisticated-backpacks.pw.toml"
+hash = "8257696ccc96c2bd025525fb26dbf7910ebc059929d5735b0bee4facb0e488ab"
+metafile = true
+
+[[files]]
+file = "mods/sophisticated-core.pw.toml"
+hash = "c41d4e6e20ad74aaa0e865f43bb00f096b6d3745314879a2d8d2ae5d4f933a46"
+metafile = true
+
+[[files]]
+file = "mods/waystones.pw.toml"
+hash = "6cf6ab0cab0184b6de0bfded28d2a1ba1a669b42461adad0837a856c7209a42a"
+metafile = true

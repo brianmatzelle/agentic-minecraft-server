@@ -19,6 +19,10 @@
 //   2. Resolve the newest NeoForge 21.1.x loader build.
 //   3. Write apps/client/modrinth.index.json (human-readable, committed for PR
 //      review) and zip it to apps/client/starting-cc-client.mrpack.
+//   4. Emit apps/client/pack/ in packwiz format (pack.toml + index.toml +
+//      mods/*.pw.toml) — the same mods, served over the raw GitHub URL so
+//      packwiz-installer can auto-update clients on launch (no re-import).
+//      The .mrpack stays the first-time installer (it carries the loader).
 //
 // IMPORTANT: regenerate this in the SAME PR that changes apps/agent/modlist.txt.
 // Both the server and this pack track "latest 1.21.1", so generating the pack
@@ -29,6 +33,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -48,7 +53,12 @@ const VERSION_ID = process.env.PACK_VERSION_ID || new Date().toISOString().slice
 const CLIENT_MODS = [
   // ── Required to connect (content/registry mods + the libs they need) ──────
   { slug: 'cc-tweaked',                          client: 'required', server: 'required' },
-  { slug: 'cobblemon',                           client: 'required', server: 'required' },
+  // PINNED to 1.7.1: SimpleTMs 2.3.3 declares a *required* Modrinth dependency on
+  // Cobblemon 1.7.1 exactly, so itzg resolves the SERVER down to 1.7.1 (not the
+  // newer 1.7.3). The pack MUST match or clients fail the handshake ("Incompatible
+  // client! Please use NeoForge ..."). Drop the pin when SimpleTMs supports a newer
+  // Cobblemon and the server re-resolves upward. See apps/agent/modlist.txt.
+  { slug: 'cobblemon',                           client: 'required', server: 'required', pin: '1.7.1' },
   { slug: 'kotlin-for-forge',                    client: 'required', server: 'required' }, // Cobblemon runtime
   { slug: 'rctmod',                              client: 'required', server: 'required' },
   { slug: 'rctapi',                              client: 'required', server: 'required' }, // rctmod dep
@@ -145,7 +155,7 @@ if (unclassified.length) {
 
 // ── Resolve each client mod's file from Modrinth ─────────────────────────────
 console.error(`Resolving ${CLIENT_MODS.length} client mods for ${LOADER} ${MC_VERSION}…`);
-const files = [];
+const resolved = [];
 for (const mod of CLIENT_MODS) {
   const q =
     `https://api.modrinth.com/v2/project/${mod.slug}/version` +
@@ -154,17 +164,26 @@ for (const mod of CLIENT_MODS) {
   const versions = await getJSON(q);
   if (!versions.length) throw new Error(`No ${LOADER} ${MC_VERSION} build for ${mod.slug}`);
   versions.sort((a, b) => new Date(b.date_published) - new Date(a.date_published));
-  const v = versions[0];
+  // Default: newest compatible build (the same "latest" policy itzg uses). `pin`
+  // overrides it for mods whose server version is forced by a dependency (e.g.
+  // SimpleTMs pins Cobblemon), so the pack can't drift off what the server runs.
+  const v = mod.pin ? versions.find((x) => x.version_number === mod.pin) : versions[0];
+  if (!v) throw new Error(`Pinned ${mod.slug} ${mod.pin} not found among ${LOADER} ${MC_VERSION} builds`);
   const file = pickFile(v);
   if (!file?.hashes?.sha1 || !file?.hashes?.sha512) {
     throw new Error(`Missing hashes for ${mod.slug} ${v.version_number}`);
   }
-  files.push({
-    path: `mods/${file.filename}`,
-    hashes: { sha1: file.hashes.sha1, sha512: file.hashes.sha512 },
-    env: { client: mod.client, server: mod.server },
-    downloads: [file.url],
+  resolved.push({
+    slug: mod.slug,
+    client: mod.client,
+    server: mod.server,
+    filename: file.filename,
+    sha1: file.hashes.sha1,
+    sha512: file.hashes.sha512,
+    url: file.url,
     fileSize: file.size,
+    projectId: v.project_id, // Modrinth IDs let `packwiz update` re-resolve later
+    versionId: v.id,
   });
   console.error(`  ${mod.slug.padEnd(38)} ${String(v.version_number).padEnd(28)} (client:${mod.client})`);
 }
@@ -172,8 +191,16 @@ for (const mod of CLIENT_MODS) {
 const neoforge = await latestNeoforge();
 console.error(`NeoForge loader: ${neoforge}`);
 
-// Stable ordering for clean diffs.
-files.sort((a, b) => a.path.localeCompare(b.path));
+// mrpack file list — Modrinth-schema fields only. Stable ordering for clean diffs.
+const files = resolved
+  .map((r) => ({
+    path: `mods/${r.filename}`,
+    hashes: { sha1: r.sha1, sha512: r.sha512 },
+    env: { client: r.client, server: r.server },
+    downloads: [r.url],
+    fileSize: r.fileSize,
+  }))
+  .sort((a, b) => a.path.localeCompare(b.path));
 
 const index = {
   formatVersion: 1,
@@ -195,3 +222,60 @@ execFileSync('zip', ['-j', '-X', '-q', packPath, indexPath]);
 
 console.error(`\nWrote ${indexPath}`);
 console.error(`Wrote ${packPath}  (versionId ${VERSION_ID}, ${files.length} mods)`);
+
+// ── Emit a packwiz pack/ for auto-updating clients ───────────────────────────
+// Same mods as the .mrpack, in packwiz's git-friendly format. Players point
+// packwiz-installer-bootstrap at pack/pack.toml (raw GitHub URL) as a Prism
+// pre-launch command; it re-syncs mods from this folder on every launch, so a
+// modlist change lands on clients automatically — no re-import. See
+// apps/client/README.md. The .mrpack above is still the first-time installer
+// (it carries the NeoForge loader, which packwiz does not install).
+const PACKWIZ_DIR = join(OUT_DIR, 'pack');
+const sha256 = (s) => createHash('sha256').update(s).digest('hex');
+// TOML basic-string: quote + escape backslash/quote/newline. Modrinth names can
+// carry em-dashes etc. (fine as UTF-8); URLs/hashes/ids are ASCII-safe.
+const toml = (s) => '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n') + '"';
+
+rmSync(PACKWIZ_DIR, { recursive: true, force: true }); // rebuild fresh — drop stale .pw.toml for removed mods
+mkdirSync(join(PACKWIZ_DIR, 'mods'), { recursive: true });
+
+const indexEntries = [];
+for (const r of [...resolved].sort((a, b) => a.slug.localeCompare(b.slug))) {
+  // packwiz `side`: unsupported on one side narrows it; everything else is "both".
+  const side = r.client === 'unsupported' ? 'server' : r.server === 'unsupported' ? 'client' : 'both';
+  let body =
+    `name = ${toml(r.slug)}\n` +
+    `filename = ${toml(r.filename)}\n` +
+    `side = ${toml(side)}\n\n` +
+    `[download]\n` +
+    `url = ${toml(r.url)}\n` +
+    `hash-format = "sha512"\n` +
+    `hash = ${toml(r.sha512)}\n`;
+  if (r.client === 'optional') {
+    // Mirrors the .mrpack's "optional" — installed by default, deselectable in
+    // packwiz-installer's GUI.
+    body += `\n[option]\noptional = true\ndefault = true\ndescription = ${toml('Quality-of-life — deselect to skip.')}\n`;
+  }
+  body += `\n[update]\n[update.modrinth]\nmod-id = ${toml(r.projectId)}\nversion = ${toml(r.versionId)}\n`;
+
+  const rel = `mods/${r.slug}.pw.toml`;
+  writeFileSync(join(PACKWIZ_DIR, rel), body);
+  indexEntries.push({ file: rel, hash: sha256(body) });
+}
+
+let indexToml = `hash-format = "sha256"\n`;
+for (const e of indexEntries) {
+  indexToml += `\n[[files]]\nfile = ${toml(e.file)}\nhash = ${toml(e.hash)}\nmetafile = true\n`;
+}
+writeFileSync(join(PACKWIZ_DIR, 'index.toml'), indexToml);
+
+const packToml =
+  `name = ${toml(index.name)}\n` +
+  `author = "mc.starting.cc"\n` +
+  `version = ${toml(VERSION_ID)}\n` +
+  `pack-format = "packwiz:1.1.0"\n\n` +
+  `[index]\nfile = "index.toml"\nhash-format = "sha256"\nhash = ${toml(sha256(indexToml))}\n\n` +
+  `[versions]\nminecraft = ${toml(MC_VERSION)}\nneoforge = ${toml(neoforge)}\n`;
+writeFileSync(join(PACKWIZ_DIR, 'pack.toml'), packToml);
+
+console.error(`Wrote ${PACKWIZ_DIR}/  (pack.toml + index.toml + ${indexEntries.length} mods)`);

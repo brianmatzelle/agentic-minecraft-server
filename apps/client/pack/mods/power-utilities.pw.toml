@@ -1,0 +1,13 @@
+name = "power-utilities"
+filename = "Power Utilities-1.3.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/EqI9kqZg/versions/pJnhqSyM/Power%20Utilities-1.3.jar"
+hash-format = "sha512"
+hash = "72cce760050f7dacbef91a16a34b70aeece486aa1ec4fe9f6bee18b0e38fc3ff0eb66d0012ece6f0b379c200586585cedc3fd63d9f8a4898c4fe6548816e2e40"
+
+[update]
+[update.modrinth]
+mod-id = "EqI9kqZg"
+version = "pJnhqSyM"

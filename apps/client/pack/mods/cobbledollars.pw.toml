@@ -1,0 +1,13 @@
+name = "cobbledollars"
+filename = "CobbleDollars-neoforge-2.0.0+Beta-5.1+1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/s7N7AsqL/versions/QSl34Qen/CobbleDollars-neoforge-2.0.0%2BBeta-5.1%2B1.21.1.jar"
+hash-format = "sha512"
+hash = "b4fd057936f87ef443206229a789d56469b81f827285a7c88bcbd7edf9cf7d10070ac94defea3b712386540cd801f433321ab3b536d0f193ac3e2c9074656b65"
+
+[update]
+[update.modrinth]
+mod-id = "s7N7AsqL"
+version = "QSl34Qen"

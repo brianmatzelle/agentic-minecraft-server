@@ -1,0 +1,13 @@
+name = "rctmod"
+filename = "rctmod-neoforge-1.21.1-0.18.1-beta.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/lRwTUnD7/versions/qyxrdzND/rctmod-neoforge-1.21.1-0.18.1-beta.jar"
+hash-format = "sha512"
+hash = "5169e5839348c766724ea3a0d18dbcfd78c105afadb4584eb8b05ec2392d7e5a2ea28f1a58e005cf9ba71409e7f26efe5ede86cabe85f077a9d2065427c5f75f"
+
+[update]
+[update.modrinth]
+mod-id = "lRwTUnD7"
+version = "qyxrdzND"
