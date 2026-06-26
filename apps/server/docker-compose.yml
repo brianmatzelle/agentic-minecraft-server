@@ -30,11 +30,15 @@ services:
       # view-distance = chunks of terrain SENT to clients (what you see). Cheap-ish; max 32.
       # simulation-distance = chunks that actually TICK (entities/mob-spawning/redstone/crops).
       #   This is the TPS-sensitive one and is single-thread-CPU-bound, NOT RAM-bound — more
-      #   heap does not raise its ceiling. 20 is a deliberately strong-but-stable value for a
-      #   modded server with entity-heavy mods (Cobblemon); the GB10 Grace X925 single-thread
-      #   perf + Lithium make it comfortable. Profile with `spark` before pushing toward 32.
-      VIEW_DISTANCE: "${MC_VIEW_DISTANCE:-32}"
-      SIMULATION_DISTANCE: "${MC_SIMULATION_DISTANCE:-20}"
+      #   heap does not raise its ceiling. Lowered 20 -> 12 (2026-06-25) in response to player
+      #   reports of server lag: fewer ticking chunks per player directly relieves the
+      #   single-thread tick budget, the usual cause of slowness on an entity-heavy modded
+      #   server (Cobblemon). 12 still beats vanilla's 10. Profile with `spark` to confirm the
+      #   real bottleneck before tuning further (raise back toward 20 if TPS has headroom).
+      # view-distance lowered 32 -> 16 at the same time: trims terrain chunks loaded/sent
+      #   (memory + chunk-gen + network), still a generous render range well above vanilla 10.
+      VIEW_DISTANCE: "${MC_VIEW_DISTANCE:-16}"
+      SIMULATION_DISTANCE: "${MC_SIMULATION_DISTANCE:-12}"
       OPS: "${MC_OPS:-}"                        # server operators (admin) — set via MC_OPS in .env
       OVERRIDE_OPS: "TRUE"                       # rewrite ops.json from MC_OPS each start (repo is source of truth; wipes any drift / console-granted op)
       # --- Whitelist (only listed players may join) ---
