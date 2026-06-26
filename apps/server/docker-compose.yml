@@ -67,5 +67,38 @@ services:
       # CF_API_KEY: "${CF_API_KEY:-}"
       USE_AIKAR_FLAGS: "true"                   # GC tuning recommended for modded
       OVERRIDE_SERVER_PROPERTIES: "true"        # re-apply env-driven props on restart
+      # --- RCON (internal only — port 25575 is NOT published in `ports:`) ---
+      # Already enabled by default on this image (that's how `rcon-cli` works); declared
+      # explicitly now because the backups sidecar below connects over RCON to flush +
+      # pause world saves for a consistent snapshot. The in-container socket used by
+      # `docker compose exec minecraft rcon-cli` and Garvis (whitelist/moderation) is
+      # unaffected by this password. Set a strong RCON_PASSWORD in .env — the default is
+      # kept only for back-compat and the port is never reachable off-host.
+      ENABLE_RCON: "true"
+      RCON_PASSWORD: "${RCON_PASSWORD:-minecraft}"
     volumes:
       - ./server-data:/data                     # world + mods + logs (gitignored)
+
+  # --- World backups (local) -------------------------------------------------
+  # itzg/mc-backup sidecar (same author as the server image). Connects over RCON to run
+  # save-off + save-all before archiving and save-on after, so each .tgz is a consistent
+  # snapshot of the world. Archives land on the host in ./backups (gitignored). Local-only
+  # for now — see docs/backups.md for restore steps and the offsite-copy TODO.
+  backups:
+    image: itzg/mc-backup
+    container_name: mc-backup
+    restart: unless-stopped
+    depends_on:
+      minecraft:
+        condition: service_healthy             # wait for the server's healthcheck before connecting RCON
+    environment:
+      RCON_HOST: minecraft                      # reach the server by its compose service name (internal network)
+      RCON_PASSWORD: "${RCON_PASSWORD:-minecraft}"   # MUST match the minecraft service above
+      BACKUP_INTERVAL: "${BACKUP_INTERVAL:-24h}"     # daily, matching infra/k8s/values.yaml
+      PRUNE_BACKUPS_DAYS: "${BACKUP_PRUNE_DAYS:-7}"  # delete local archives older than N days
+      PAUSE_IF_NO_PLAYERS: "true"               # skip the snapshot when nobody is online (no idle churn)
+      BACKUP_METHOD: tar                         # plain .tgz archives — restore = extract over /data
+      TZ: "${TZ:-UTC}"                           # timezone for backup-filename timestamps
+    volumes:
+      - ./server-data:/data:ro                   # read the live world, read-only — the sidecar never writes here
+      - ./backups:/backups                       # archives written here on the host

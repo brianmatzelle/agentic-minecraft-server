@@ -6,6 +6,7 @@
 # === Minecraft runtime data (world, logs, runtime-downloaded mods) ===
 apps/server/server-data/
 apps/server/data/
+apps/server/backups/
 *.log
 
 # === Auto-deploy watcher state (scripts/auto-deploy.sh) — host-local, not source ===
