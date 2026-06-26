@@ -36,9 +36,9 @@ noisium               # Noisium — faster worldgen. NeoForge 1.21.1, latest v2.
 # ^ Temporarily removed: mega_showdown 1.8.4 fatally NPEs on datapack load
 #   (HeldItems.reload → receiveHeldItemDataFn is null) against the Cobblemon 1.7.3
 #   build itzg resolved. Re-add once a compatible pair is pinned (slug:versionId).
-simpletms-tms-and-trs-for-cobblemon  # SimpleTMs — TMs & TRs to teach moves. NeoForge 1.21.1, latest 2.3.3. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge, architectury-api.
-cobbledollars         # CobbleDollars — in-game Pokémon currency / shops. NeoForge 1.21.1, latest 2.0.0+Beta-5.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge.
-cobblepedia           # Cobblemon Poképedia (Cobblepedia) — in-game Pokédex. NeoForge 1.21.1, latest 0.7.1-neoforge. client_side: REQUIRED. deps: cobblemon, patchouli.
+simpletms-tms-and-trs-for-cobblemon:uaKfPMYS  # SimpleTMs — TMs & TRs to teach moves. PINNED 2.3.3 (id uaKfPMYS) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge, architectury-api.
+cobbledollars:QSl34Qen  # CobbleDollars — in-game Pokémon currency / shops. PINNED 2.0.0+Beta-5.1 (id QSl34Qen) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge.
+cobblepedia:dEMwrap5    # Cobblemon Poképedia (Cobblepedia) — in-game Pokédex. PINNED 0.7.1 (id dEMwrap5) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, patchouli.
 # Cobblemon-addon dependencies:
 # REMOVED 2026-06-25 — rctmod (Radical Cobblemon Trainers) + rctapi (its API)
 #   removed by request. rctapi was only needed by rctmod, so both go together.

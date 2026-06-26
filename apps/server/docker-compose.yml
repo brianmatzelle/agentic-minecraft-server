@@ -47,7 +47,16 @@ services:
       OVERRIDE_WHITELIST: "TRUE"                # rewrite whitelist.json from MC_WHITELIST each start (repo is source of truth)
       # --- Mods from Modrinth (auto-downloaded at startup) ---
       MODRINTH_PROJECTS: "${MODRINTH_PROJECTS:-}"
-      MODRINTH_DOWNLOAD_DEPENDENCIES: "required"
+      # MUST stay "none". With "required", itzg re-resolves every listed mod's
+      # required dependencies to their LATEST compatible build and UPGRADES over
+      # any explicit version pin — e.g. the Cobblemon add-ons (SimpleTMs etc.)
+      # declare Cobblemon as required, so itzg dragged our pinned cobblemon 1.7.1
+      # back up to 1.7.3 on each recreate (boot log: "cobblemon (1.7.1 -> 1.7.3)"),
+      # silently re-breaking client/server parity → the recurring join rejections.
+      # Our modlist.txt already lists EVERY required dep explicitly (verified: all
+      # installed jars map 1:1 to a listed slug), so "none" drops nothing and makes
+      # the modlist + its :versionId pins the single source of truth.
+      MODRINTH_DOWNLOAD_DEPENDENCIES: "none"
       # Some mods publish their STABLE builds on Modrinth's "alpha"/"beta" release
       # channel (CC: Tweaked is the classic case — all its uploads are channel=alpha).
       # itzg defaults to release-only and would reject them, so accept alpha+ here.
