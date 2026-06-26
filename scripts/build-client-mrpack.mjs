@@ -81,11 +81,9 @@ const CLIENT_MODS = [
   { slug: 'create',                              client: 'required', server: 'required' }, // now required: Create: Aeronautics depends on it
   { slug: 'create-aeronautics',                  client: 'required', server: 'required' },
   { slug: 'sable',                               client: 'required', server: 'required' }, // create-aeronautics dep
-  // ── Industrial Upgrade tech suite (mutually required; all client+server) ──
-  { slug: 'industrialupgrade',                   client: 'required', server: 'required' },
-  { slug: 'power-utilities',                     client: 'required', server: 'required' }, // IU addon
-  { slug: 'simply-quarries',                     client: 'required', server: 'required' }, // IU addon
-  { slug: 'quantum-generators',                  client: 'required', server: 'required' }, // IU addon
+  // Industrial Upgrade tech suite (industrialupgrade + power-utilities +
+  // simply-quarries + quantum-generators) REMOVED 2026-06-26 by request — taken
+  // out of modlist.txt and this pack together; see modlist.txt for the note.
   // ── Quality-of-life — optional on the client (deselectable on import) ─────
   { slug: 'jei',                                 client: 'optional', server: 'optional' },
   { slug: 'jade',                                client: 'optional', server: 'optional' },
@@ -112,7 +110,10 @@ function modlistSlugs() {
     .split('\n')
     .map((l) => l.split('#')[0].trim())
     .filter(Boolean)
-    .map((l) => l.split(/\s+/)[0]);
+    // A modlist entry may pin a version as `slug:versionId` (itzg syntax, e.g.
+    // `cobblemon:Uz1QF4Md`). Strip the `:versionId` so the reconcile compares
+    // bare slugs against CLIENT_MODS (which carries its own `pin` field).
+    .map((l) => l.split(/\s+/)[0].split(':')[0]);
 }
 
 async function getJSON(url) {
