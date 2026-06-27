@@ -26,6 +26,11 @@ services:
       MOTD: "${MC_MOTD:-A NeoForge server, maintained by Garvis}"
       DIFFICULTY: "${MC_DIFFICULTY:-normal}"
       MAX_PLAYERS: "${MC_MAX_PLAYERS:-20}"
+      # Command blocks (server.properties enable-command-block). Lets ops place/run
+      # command blocks for redstone contraptions, datapack-style automation, etc.
+      # Only operators can place or edit them, so this doesn't widen who can run
+      # commands — it just unlocks the in-world block for the existing ops.
+      ENABLE_COMMAND_BLOCK: "${MC_ENABLE_COMMAND_BLOCK:-true}"
       # --- Render / simulation distance (applied to server.properties; OVERRIDE_SERVER_PROPERTIES re-applies on restart) ---
       # view-distance = chunks of terrain SENT to clients (what you see). Cheap-ish; max 32.
       # simulation-distance = chunks that actually TICK (entities/mob-spawning/redstone/crops).
