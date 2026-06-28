@@ -56,8 +56,23 @@ hash = "eddfdf96b56f51bd37e4c78b95061d91a36ad4ba9eded561c7c3bac9aee85646"
 metafile = true
 
 [[files]]
+file = "mods/easy-piglins.pw.toml"
+hash = "74499b14a31f358268a747f59fab174a1e25bee7ebe8859eb303fa998c8a8f71"
+metafile = true
+
+[[files]]
+file = "mods/easy-villagers.pw.toml"
+hash = "04e355534f36bbc6808210e2c0a720897a7b6b394f355e1ffb23f17edfbbbc2e"
+metafile = true
+
+[[files]]
 file = "mods/entityculling.pw.toml"
 hash = "5b79bd9559106dce80b8e90b559a4f3b84cccad3a0c8f3f6af46b39ed06e5419"
+metafile = true
+
+[[files]]
+file = "mods/extra-disks.pw.toml"
+hash = "1bfc4ab92abf81cf356821b7a219b1f6b3831b59030f4c33046eaaab71687ce2"
 metafile = true
 
 [[files]]
@@ -86,6 +101,26 @@ hash = "464e92f88ee1ffe24cc59093ee5b45a3c43753e532d031d0f584447492e84480"
 metafile = true
 
 [[files]]
+file = "mods/mekanism.pw.toml"
+hash = "9370b6cdb864db93172a5640e88f6ca40bf3de396d97ccca478c051ee585c5ba"
+metafile = true
+
+[[files]]
+file = "mods/mekanism-additions.pw.toml"
+hash = "806136eff84048319102871fa0efe9a6576f56362ba22af4064a3193f4c9cf1f"
+metafile = true
+
+[[files]]
+file = "mods/mekanism-generators.pw.toml"
+hash = "2717634e1e344023e12938210b1e2df57c0a106435363d16d30c24bd5e48bfd4"
+metafile = true
+
+[[files]]
+file = "mods/mekanism-tools.pw.toml"
+hash = "39fb69e4e8faefccefbe41ca415066ce6d8fa23f69422637d2bd18f6b77cb526"
+metafile = true
+
+[[files]]
 file = "mods/owo-lib.pw.toml"
 hash = "c01bb401c7a66b2db9921ca561a706f21b2c939983b7d1896dfac8fa5b848ac1"
 metafile = true
@@ -93,6 +128,16 @@ metafile = true
 [[files]]
 file = "mods/patchouli.pw.toml"
 hash = "a2e2ecb36408a488e87dee71462d99376aae2a62df0ccb40eb299aa5037ca69c"
+metafile = true
+
+[[files]]
+file = "mods/pylons.pw.toml"
+hash = "370f75402d55ed882bc5de1dc9966f75392fc2973ab183f937ae0e743c4c82a1"
+metafile = true
+
+[[files]]
+file = "mods/refined-storage.pw.toml"
+hash = "d192606862a63fe21003919be2c32271a0e867c27d91b56e01d8f0fd079e6ad8"
 metafile = true
 
 [[files]]
@@ -118,6 +163,11 @@ metafile = true
 [[files]]
 file = "mods/sophisticated-core.pw.toml"
 hash = "c41d4e6e20ad74aaa0e865f43bb00f096b6d3745314879a2d8d2ae5d4f933a46"
+metafile = true
+
+[[files]]
+file = "mods/trade-cycling.pw.toml"
+hash = "6a55e09cf44a282f2882a8dadb7cd4864f092d30aa2674e1434cda47a656efd4"
 metafile = true
 
 [[files]]

@@ -91,6 +91,17 @@ const CLIENT_MODS = [
   { slug: 'create',                              client: 'required', server: 'required' }, // now required: Create: Aeronautics depends on it
   { slug: 'create-aeronautics',                  client: 'required', server: 'required' },
   { slug: 'sable',                               client: 'required', server: 'required' }, // create-aeronautics dep
+  // ── Tech, storage & villager QoL (Discord req 2026-06-28) — content mods, required client-side ─
+  { slug: 'mekanism',                            client: 'required', server: 'required' },
+  { slug: 'mekanism-generators',                 client: 'required', server: 'required' }, // mekanism addon
+  { slug: 'mekanism-tools',                      client: 'required', server: 'required' }, // mekanism addon
+  { slug: 'mekanism-additions',                  client: 'required', server: 'required' }, // mekanism addon
+  { slug: 'refined-storage',                     client: 'required', server: 'required' },
+  { slug: 'extra-disks',                         client: 'required', server: 'required' }, // refined-storage addon
+  { slug: 'pylons',                              client: 'required', server: 'required' },
+  { slug: 'easy-villagers',                      client: 'required', server: 'required' },
+  { slug: 'easy-piglins',                        client: 'required', server: 'required' },
+  { slug: 'trade-cycling',                       client: 'required', server: 'required' },
   // Industrial Upgrade tech suite (industrialupgrade + power-utilities +
   // simply-quarries + quantum-generators) REMOVED 2026-06-26 by request — taken
   // out of modlist.txt and this pack together; see modlist.txt for the note.
