@@ -59,7 +59,10 @@ const CLIENT_MODS = [
   // client! Please use NeoForge ..."). Drop the pin when SimpleTMs supports a newer
   // Cobblemon and the server re-resolves upward. See apps/agent/modlist.txt.
   { slug: 'cobblemon',                           client: 'required', server: 'required', pin: '1.7.1' },
-  { slug: 'kotlin-for-forge',                    client: 'required', server: 'required' }, // Cobblemon runtime
+  // PINNED to 5.11.0: 5.12.0 has shipped, so leaving this unpinned lets the server
+  // (and a regen of this pack) drift onto it independently → client/server mismatch.
+  // Pin both sides to the build the server runs. Matches modlist.txt kotlin-for-forge:NrSebcsG.
+  { slug: 'kotlin-for-forge',                    client: 'required', server: 'required', pin: '5.11.0' }, // Cobblemon runtime
   // rctmod (Radical Cobblemon Trainers) + rctapi removed 2026-06-25 by request.
   // cobblemon-mega-showdown DISABLED 2026-06-24: mega_showdown 1.8.4 fatally NPEs on
   // server datapack load (HeldItems.reload → receiveHeldItemDataFn null) vs Cobblemon
@@ -75,7 +78,9 @@ const CLIENT_MODS = [
   { slug: 'waystones',                           client: 'required', server: 'required' },
   { slug: 'balm',                                client: 'required', server: 'required' }, // waystones dep
   { slug: 'sophisticated-backpacks',             client: 'required', server: 'required' },
-  { slug: 'sophisticated-core',                  client: 'required', server: 'required' }, // backpacks dep
+  // PINNED to 1.4.60.2057: 1.4.61.x has shipped; pin both sides so the pack can't
+  // drift off the server. Matches modlist.txt sophisticated-core:IAisFkLf.
+  { slug: 'sophisticated-core',                  client: 'required', server: 'required', pin: '1.21.1-1.4.60.2057' }, // backpacks dep
   { slug: 'farmers-delight',                     client: 'required', server: 'required' },
   { slug: 'architectury-api',                    client: 'required', server: 'required' },
   { slug: 'accessories',                         client: 'required', server: 'required' },
