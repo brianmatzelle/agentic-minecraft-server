@@ -68,6 +68,7 @@ const CLIENT_MODS = [
   { slug: 'simpletms-tms-and-trs-for-cobblemon', client: 'required', server: 'required' },
   { slug: 'cobbledollars',                       client: 'required', server: 'required' },
   { slug: 'cobblepedia',                         client: 'required', server: 'required' },
+  { slug: 'cobblemon-myths-and-legends-sidemod', client: 'required', server: 'required' }, // legendary/mythical encounters; deps cobblemon + architectury (already present)
   { slug: 'waystones',                           client: 'required', server: 'required' },
   { slug: 'balm',                                client: 'required', server: 'required' }, // waystones dep
   { slug: 'sophisticated-backpacks',             client: 'required', server: 'required' },

@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-06-26",
+  "versionId": "2026-06-28",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -229,6 +229,21 @@
         "https://cdn.modrinth.com/data/ordsPcFz/versions/NrSebcsG/kotlinforforge-5.11.0-all.jar"
       ],
       "fileSize": 6869790
+    },
+    {
+      "path": "mods/MythsAndLegends-neoforge-1.9.0.jar",
+      "hashes": {
+        "sha1": "b90873d4a478753d099e641d7f1b7649c360e868",
+        "sha512": "9ae04632e18444e70a8d7ffadd7cac7df3be3828ff7007ec24a132381789a09ea6a5541a7f7e7f06904451d60511457df3c8e4e7205bd17581f49df62836d07b"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/CaOWby9K/versions/IsIw5iAW/MythsAndLegends-neoforge-1.9.0.jar"
+      ],
+      "fileSize": 3254096
     },
     {
       "path": "mods/owo-lib-neoforge-0.12.15.5-beta.1+1.21.jar",
