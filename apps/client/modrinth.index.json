@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-06-26",
+  "versionId": "2026-06-28",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -94,6 +94,21 @@
         "https://cdn.modrinth.com/data/MdwFAVRL/versions/Uz1QF4Md/Cobblemon-neoforge-1.7.1%2B1.21.1.jar"
       ],
       "fileSize": 123744060
+    },
+    {
+      "path": "mods/cobblenav-neoforge-2.3.3.jar",
+      "hashes": {
+        "sha1": "329349ecd8dd08130d967a4706374571cf193119",
+        "sha512": "86299cb3db5be5241442d7460e04c990fdb42bad9192a516a00832369ceadc739bcd857416700c1e1991225934b4b67b9993a73ebf94476dac9b15d56d6d6b11"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/bI8Nt3uA/versions/yCSofpNb/cobblenav-neoforge-2.3.3.jar"
+      ],
+      "fileSize": 1098652
     },
     {
       "path": "mods/Cobblepedia-NeoForge-0.7.1.jar",
@@ -216,19 +231,19 @@
       "fileSize": 1529892
     },
     {
-      "path": "mods/kotlinforforge-5.11.0-all.jar",
+      "path": "mods/kotlinforforge-5.12.0-all.jar",
       "hashes": {
-        "sha1": "4d83e8a8e8cb06b306d2cea1e903680fe513f1f3",
-        "sha512": "b32faa6d616511aff4f8b32197877c53b9f8bee103884ec37c632b5d017bb59a498ec971b68d8d94787043b0c5be666a330b61d285033c341bff83ac28a90992"
+        "sha1": "d10d062caf1aad9aec82d7852f2fee1781735c1f",
+        "sha512": "b8c3942f4d33179edf3f102f3d870b99dd436f8b8236dbbd31aa51b888162c692cfd88927295f24dc8b4375232f4c6c17360c5d6c4823f93cbcd7cf4bdc8bd14"
       },
       "env": {
         "client": "required",
         "server": "required"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/ordsPcFz/versions/NrSebcsG/kotlinforforge-5.11.0-all.jar"
+        "https://cdn.modrinth.com/data/ordsPcFz/versions/uhJhCT7X/kotlinforforge-5.12.0-all.jar"
       ],
-      "fileSize": 6869790
+      "fileSize": 7279264
     },
     {
       "path": "mods/owo-lib-neoforge-0.12.15.5-beta.1+1.21.jar",
@@ -321,19 +336,19 @@
       "fileSize": 1140831
     },
     {
-      "path": "mods/sophisticatedcore-1.21.1-1.4.60.2057.jar",
+      "path": "mods/sophisticatedcore-1.21.1-1.4.61.2066.jar",
       "hashes": {
-        "sha1": "630b49623f30e579742dc59ad4be957f60ea786b",
-        "sha512": "6e4ca1944d64028c86f60ff1772673aef9d7d57586f4ff8069696a1270c2ee8c136874ba282b5f00e7f86c5f0ddf4c340cfab67c63157827d25e85200bafc91d"
+        "sha1": "004a7822244c8b517bcc63fe31e0b20656044ca5",
+        "sha512": "82820e94ed4860f783f16dcf8629ac6421ed078647b4e230652201d7639c9af894678338444d158da4bd25baae843a043c437fecaf9881e5783e70bcc76a5f6b"
       },
       "env": {
         "client": "required",
         "server": "required"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/nmoqTijg/versions/IAisFkLf/sophisticatedcore-1.21.1-1.4.60.2057.jar"
+        "https://cdn.modrinth.com/data/nmoqTijg/versions/dODtaURi/sophisticatedcore-1.21.1-1.4.61.2066.jar"
       ],
-      "fileSize": 1649625
+      "fileSize": 1649623
     },
     {
       "path": "mods/waystones-neoforge-1.21.1-21.1.34.jar",

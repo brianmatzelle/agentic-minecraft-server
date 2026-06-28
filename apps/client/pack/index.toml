@@ -31,6 +31,11 @@ hash = "116cf6fc697132d270a93241c63d9216f99b41fa9efa43e0d990245b593fdafa"
 metafile = true
 
 [[files]]
+file = "mods/cobblemon-pokenav.pw.toml"
+hash = "6acdf2d4c8add01a15dba0097abe7e0e51bfc9ea608506622e5ee32f44775a9a"
+metafile = true
+
+[[files]]
 file = "mods/cobblepedia.pw.toml"
 hash = "a854fdb2d676d7e940448c6f5405dc0fa05d262669a7d34e0404732c307fde3b"
 metafile = true
@@ -72,7 +77,7 @@ metafile = true
 
 [[files]]
 file = "mods/kotlin-for-forge.pw.toml"
-hash = "464e92f88ee1ffe24cc59093ee5b45a3c43753e532d031d0f584447492e84480"
+hash = "bc627e54a411fb871e8498eae859b7a8f1d557c3a28aa668b2008d62fb9092d2"
 metafile = true
 
 [[files]]
@@ -107,7 +112,7 @@ metafile = true
 
 [[files]]
 file = "mods/sophisticated-core.pw.toml"
-hash = "c41d4e6e20ad74aaa0e865f43bb00f096b6d3745314879a2d8d2ae5d4f933a46"
+hash = "e4ad3589f779b973a3802c6dcacd43f6c52b0a7d91f3980203f3575e9d7fa287"
 metafile = true
 
 [[files]]

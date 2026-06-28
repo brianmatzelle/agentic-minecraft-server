@@ -39,6 +39,7 @@ noisium               # Noisium — faster worldgen. NeoForge 1.21.1, latest v2.
 simpletms-tms-and-trs-for-cobblemon:uaKfPMYS  # SimpleTMs — TMs & TRs to teach moves. PINNED 2.3.3 (id uaKfPMYS) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge, architectury-api.
 cobbledollars:QSl34Qen  # CobbleDollars — in-game Pokémon currency / shops. PINNED 2.0.0+Beta-5.1 (id QSl34Qen) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge.
 cobblepedia:dEMwrap5    # Cobblemon Poképedia (Cobblepedia) — in-game Pokédex. PINNED 0.7.1 (id dEMwrap5) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, patchouli.
+cobblemon-pokenav     # Cobblemon PokeNav — adds a PokéNav-style in-game device/UI for Cobblemon (trainer/navigation menus). NeoForge 1.21.1, latest 2.3.3. client_side: REQUIRED (UI mod — players install it too). deps: cobblemon. Requested via Discord 2026-06-28.
 # Cobblemon-addon dependencies:
 # REMOVED 2026-06-25 — rctmod (Radical Cobblemon Trainers) + rctapi (its API)
 #   removed by request. rctapi was only needed by rctmod, so both go together.
