@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-06-26",
+  "versionId": "2026-06-28",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -66,6 +66,21 @@
       "fileSize": 3126946
     },
     {
+      "path": "mods/cloth-config-15.0.140-neoforge.jar",
+      "hashes": {
+        "sha1": "c3e5733ba4503b102589a026000fd5ce0212f6f2",
+        "sha512": "aaf9b010955b8cd294e5a92f069985b18729fd5e2cf22d351f1dff9680f15488688803ec41e77e941cbde130ceb535014ca4c868047d80ab69c2d508e216654d"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/9s6osm5g/versions/izKINKFg/cloth-config-15.0.140-neoforge.jar"
+      ],
+      "fileSize": 1163890
+    },
+    {
       "path": "mods/CobbleDollars-neoforge-2.0.0+Beta-5.1+1.21.1.jar",
       "hashes": {
         "sha1": "caf03c43fca60906d176e1446ba35f2988b0c3e1",
@@ -109,6 +124,21 @@
         "https://cdn.modrinth.com/data/2obPz7jf/versions/dEMwrap5/Cobblepedia-NeoForge-0.7.1.jar"
       ],
       "fileSize": 8276599
+    },
+    {
+      "path": "mods/Cobbreeding-neoforge-2.2.1.jar",
+      "hashes": {
+        "sha1": "a0843ba354d627c1062332034e1f373884003b23",
+        "sha512": "aa6c6d77ba39c3408d76a31001752ce15c938adfdb6a5a86496f448c56d03e0012f23acfb3ff5e08eee67bc2715ae401d76f13cfb44488e9e7cf5809a939420c"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/ItmVb4zY/versions/xt8IiPEN/Cobbreeding-neoforge-2.2.1.jar"
+      ],
+      "fileSize": 467675
     },
     {
       "path": "mods/create-1.21.1-6.0.10.jar",

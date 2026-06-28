@@ -68,6 +68,10 @@ const CLIENT_MODS = [
   { slug: 'simpletms-tms-and-trs-for-cobblemon', client: 'required', server: 'required' },
   { slug: 'cobbledollars',                       client: 'required', server: 'required' },
   { slug: 'cobblepedia',                         client: 'required', server: 'required' },
+  // PINNED to 2.2.1: it targets Cobblemon 1.7 (our server is pinned to 1.7.1). Pin
+  // both sides so a future "latest" Cobbreeding can't drift onto a Cobblemon 1.8
+  // build and mismatch the pinned server. Matches modlist.txt cobbreeding:xt8IiPEN.
+  { slug: 'cobbreeding',                         client: 'required', server: 'required', pin: '2.2.1' },
   { slug: 'waystones',                           client: 'required', server: 'required' },
   { slug: 'balm',                                client: 'required', server: 'required' }, // waystones dep
   { slug: 'sophisticated-backpacks',             client: 'required', server: 'required' },
@@ -77,6 +81,7 @@ const CLIENT_MODS = [
   { slug: 'accessories',                         client: 'required', server: 'required' },
   { slug: 'owo-lib',                             client: 'required', server: 'required' },
   { slug: 'patchouli',                           client: 'required', server: 'required' },
+  { slug: 'cloth-config',                        client: 'required', server: 'required' }, // cobbreeding dep (config screens)
   // ── Create + addons (content mods — required client-side once on the server) ─
   { slug: 'create',                              client: 'required', server: 'required' }, // now required: Create: Aeronautics depends on it
   { slug: 'create-aeronautics',                  client: 'required', server: 'required' },

@@ -39,6 +39,7 @@ noisium               # Noisium — faster worldgen. NeoForge 1.21.1, latest v2.
 simpletms-tms-and-trs-for-cobblemon:uaKfPMYS  # SimpleTMs — TMs & TRs to teach moves. PINNED 2.3.3 (id uaKfPMYS) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge, architectury-api.
 cobbledollars:QSl34Qen  # CobbleDollars — in-game Pokémon currency / shops. PINNED 2.0.0+Beta-5.1 (id QSl34Qen) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge.
 cobblepedia:dEMwrap5    # Cobblemon Poképedia (Cobblepedia) — in-game Pokédex. PINNED 0.7.1 (id dEMwrap5) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, patchouli.
+cobbreeding:xt8IiPEN    # Cobbreeding — Pokémon breeding (egg moves, IV inheritance, daycare). PINNED 2.2.1 (id xt8IiPEN) to the exact build the client pack ships; it targets Cobblemon 1.7, matching our pinned 1.7.1. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge, architectury-api, cloth-config (latest 2.2.1's Modrinth metadata lists no deps, but it's a Cobblemon 1.7 addon — the standard stack is required; cloth-config added below).
 # Cobblemon-addon dependencies:
 # REMOVED 2026-06-25 — rctmod (Radical Cobblemon Trainers) + rctapi (its API)
 #   removed by request. rctapi was only needed by rctmod, so both go together.
@@ -77,3 +78,4 @@ architectury-api      # Architectury API — required by Mega Showdown, SimpleTM
 accessories           # Accessories — required by Cobblemon: Mega Showdown. NeoForge 1.21.1, latest 1.1.0-beta.53+1.21.1. client_side: REQUIRED. deps: owo-lib.
 owo-lib               # oωo (owo-lib) — required by Mega Showdown & Accessories. NeoForge 1.21.1, latest 0.12.15.5-beta.1+1.21. client_side: REQUIRED.
 patchouli             # Patchouli — in-game documentation lib, required by Cobblepedia. NeoForge 1.21.1, latest 1.21.1-93-neoforge. client_side: REQUIRED.
+cloth-config          # Cloth Config API — config-screen library, required by Cobbreeding. NeoForge 1.21.1, latest 15.0.140+neoforge. client_side: REQUIRED (Cobbreeding needs it), server_side: optional.
