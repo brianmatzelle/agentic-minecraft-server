@@ -50,6 +50,48 @@ export function parseChatLine(raw, trigger) {
   return { player, message };
 }
 
+// Parse the in-game classifier's reply (a single JSON object). Defensive about stray
+// prose / ```json fences, mirroring moderation.js's parseClassification. Returns one of
+// three intents plus, for a give, the raw extracted args (the item id / count / recipient
+// are RE-VALIDATED later by moderation.js resolveAction — this is pure extraction, no
+// validation):
+//
+//   {"intent":"give","give":{"item":"minecraft:stone","count":64,"player":"me"}}
+//     -> { intent:'give', give:{ player:'me', item:'minecraft:stone', count:'64' } }
+//   {"intent":"modreq"}  -> { intent:'modreq', give:null }
+//   anything else / unparseable / a give with no item  -> { intent:'qa', give:null }
+//
+// 'qa' is the safe default: a classifier hiccup can never silently spawn the maint agent
+// OR perform a give. Pure + testable: no I/O, no state.
+export function parseIngameClassification(text) {
+  const s = String(text ?? '');
+  const a = s.indexOf('{');
+  const b = s.lastIndexOf('}');
+  if (a === -1 || b <= a) return { intent: 'qa', give: null };
+  let obj;
+  try { obj = JSON.parse(s.slice(a, b + 1)); }
+  catch { return { intent: 'qa', give: null }; }
+  if (!obj || typeof obj !== 'object') return { intent: 'qa', give: null };
+  const intent = String(obj.intent ?? '').trim().toLowerCase();
+  if (intent === 'modreq') return { intent: 'modreq', give: null };
+  if (intent === 'give') {
+    // Tolerate either a nested {"give":{…}} or the fields placed flat on the object.
+    const g = obj.give && typeof obj.give === 'object' ? obj.give : obj;
+    const item = g.item == null ? '' : String(g.item).trim();
+    const player = g.player == null ? '' : String(g.player).trim();
+    const count = g.count == null || String(g.count).trim() === '' ? null : String(g.count).trim();
+    if (!item) return { intent: 'qa', give: null };   // a give with no item is meaningless → safe qa
+    return { intent: 'give', give: { player, item, count } };
+  }
+  return { intent: 'qa', give: null };
+}
+
+// Back-compat thin wrapper: the original API returned just the intent string for the
+// modreq-vs-qa split. Anything that isn't an explicit mod request reads as 'qa'.
+export function parseIngameIntent(text) {
+  return parseIngameClassification(text).intent === 'modreq' ? 'modreq' : 'qa';
+}
+
 // Split a reply into in-game chat lines. Each becomes ONE tellraw (one chat line),
 // so we honor Garvis's own newlines, then hard-wrap long lines and cap the total so
 // a runaway answer can't flood chat. The prompt already asks Garvis to be terse.

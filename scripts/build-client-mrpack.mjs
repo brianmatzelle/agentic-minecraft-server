@@ -116,9 +116,32 @@ const CLIENT_MODS = [
   // refuses to load with Embeddium ("incompatible: embeddium any") but supports
   // Sodium 0.6.9+. Sodium's NeoForge build is beta-tagged but is the only renderer
   // compatible with this pack. (Was embeddium 1.0.15 — crashed clients on launch.)
-  { slug: 'sodium',                              client: 'required', server: 'unsupported' }, // Veil-compatible renderer: the big FPS win
+  // PINNED to 0.8.12-beta.2: Iris (below) is sodium-version-sensitive — Iris 1.8.14
+  // targets "Sodium 0.8" and older Iris builds crashed on mismatched Sodium betas
+  // (IrisShaders/Iris#3136). Pin Sodium to the exact build the shader stack is tested
+  // against so a future "latest" Sodium can't drift in and break Iris on clients. The
+  // pinned value is today's newest, so this changes no bytes now — it's a drift-lock.
+  // Drop the pin (and the iris/iris-veil-compat block) together if shaders are removed.
+  { slug: 'sodium',                              client: 'required', server: 'unsupported', pin: 'mc1.21.1-0.8.12-beta.2-neoforge' }, // Veil-compatible renderer: the big FPS win + Iris's required dep
   { slug: 'entityculling',                       client: 'required', server: 'unsupported' }, // skips rendering hidden mobs/Cobblemon
   { slug: 'immediatelyfast',                     client: 'required', server: 'unsupported' }, // faster text/UI/JEI batching
+  // ── Shaders (client-only; server never renders → server: 'unsupported') ────────
+  // Iris is the shader engine (loads Complementary/BSL/etc. shaderpacks). It does NOT
+  // bundle Sodium on NeoForge — it REQUIRES the standalone Sodium above (verified by
+  // inspecting iris-neoforge-1.8.14-beta.1's jarjar: fabric shims + glsl-transformer
+  // only, no sodium). Installing Iris alone here is the shader engine; the shaderpack
+  // .zip is a separate artifact (NOT a mod) the player picks in Video Settings — see
+  // the follow-up to auto-ship a default pack. No stable 1.21.1 Iris build exists yet,
+  // so PINNED to the tested beta (don't let a regen pull a newer untested beta to
+  // friends). Shaders stay OFF until selected, so merely shipping these doesn't force
+  // an FPS hit — it just unlocks the capability.
+  { slug: 'iris',                                client: 'required', server: 'unsupported', pin: '1.8.14-beta.1+1.21.1-neoforge' },
+  // Without this, Create: Aeronautics / anything drawn through Veil (jar-in-jar'd by
+  // Sable) renders BROKEN once a shaderpack is active — Veil's draws bypass the
+  // shaderpack's gbuffer pipeline. Iris Veil Compat merges Veil's shader code into the
+  // active shaderpack at runtime so those visuals render correctly under shaders.
+  // Depends on Iris (project YL57xq9U). PINNED to the tested beta for the same reason.
+  { slug: 'iris-veil-compat',                    client: 'required', server: 'unsupported', pin: '1.21.1+0.3.0-beta' },
 ];
 
 // Server-only mods that must NEVER ship to a client: perf/diagnostic tools plus

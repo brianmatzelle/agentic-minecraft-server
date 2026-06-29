@@ -261,6 +261,36 @@
       "fileSize": 368598
     },
     {
+      "path": "mods/iris-neoforge-1.8.14-beta.1+mc1.21.1.jar",
+      "hashes": {
+        "sha1": "1bd129cf7bce65d6b1c0543045f0620c98a0f885",
+        "sha512": "33fddb430e16222902eac75b8b3d57c381b0f3cc729f3b56c4628df12ca108f23a0b11e2feb167923d6d14d1fc7e8ee1a977ec421b19d1951bdca74c4092b9c5"
+      },
+      "env": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/YL57xq9U/versions/KduFYu4t/iris-neoforge-1.8.14-beta.1%2Bmc1.21.1.jar"
+      ],
+      "fileSize": 2540723
+    },
+    {
+      "path": "mods/irisveil-0.3.0.jar",
+      "hashes": {
+        "sha1": "246f6c6dbd4fc9d3c1def54e0a090c7cbd1a83a7",
+        "sha512": "9d840887150c9ca4591d41d8cc770735dc9cbf2b91787a427e391f39cf036a27a8169e62f09de9c91d8fc1a43651cb9947bccd4bb77cde35a1995904ab6c0817"
+      },
+      "env": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/owQyCHo4/versions/5vFVK52d/irisveil-0.3.0.jar"
+      ],
+      "fileSize": 1985779
+    },
+    {
       "path": "mods/Jade-1.21.1-NeoForge-15.10.5.jar",
       "hashes": {
         "sha1": "d5bf134b3dbde9f5258666823900e21341dc0a50",
