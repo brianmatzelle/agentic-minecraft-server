@@ -44,8 +44,8 @@ services:
       #   (memory + chunk-gen + network), still a generous render range well above vanilla 10.
       VIEW_DISTANCE: "${MC_VIEW_DISTANCE:-16}"
       SIMULATION_DISTANCE: "${MC_SIMULATION_DISTANCE:-12}"
-      OPS: "${MC_OPS:-}"                        # server operators (admin) — set via MC_OPS in .env
-      OVERRIDE_OPS: "TRUE"                       # rewrite ops.json from MC_OPS each start (repo is source of truth; wipes any drift / console-granted op)
+      # Operators live in server-data/ops.json (persists across restarts). Op/de-op
+      # in-game, from the console, or via Garvis — changes stick. No env-driven rewrite.
       # --- Whitelist (only listed players may join) ---
       WHITELIST: "${MC_WHITELIST:-}"            # comma-separated usernames; setting this turns white-list on
       ENFORCE_WHITELIST: "TRUE"                 # kick players who get removed from the list, even mid-session

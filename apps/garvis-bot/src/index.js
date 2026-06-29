@@ -35,8 +35,9 @@ import { randomUUID } from 'node:crypto';
 import { Client, GatewayIntentBits, Events, MessageFlags } from 'discord.js';
 import { getSession, setSession, deleteSession, closeDb } from './db.js';
 import { validateUsername, addUsernameToWhitelistEnv, rconWhitelistAdd, classifyWhitelistOutput } from './whitelist.js';
-import { resolveAction, runAction, catalogMenu, parseClassification } from './moderation.js';
+import { resolveAction, runAction, catalogMenu, parseClassification, rconExec } from './moderation.js';
 import { buildModrinthEmbeds } from './embeds.js';
+import { startInGameBridge } from './ingame.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '../..');
@@ -74,6 +75,29 @@ const MOD_ACTION_COOLDOWN_MS = Number(process.env.GARVIS_MOD_ACTION_COOLDOWN_MS 
 // sent the message; we can't verify a human behind it (the G4 caveat in docs/security.md).
 const MOD_ROLE_ID = process.env.GARVIS_MOD_ROLE_ID || '';
 const OWNER_ID = process.env.GARVIS_OWNER_ID || '';
+
+// ── In-game chat bridge (ingame.js) ──────────────────────────────────────────
+// When ON, players can talk to Garvis IN MINECRAFT by typing `!g <message>` in
+// chat. The bot tails `docker logs <container>`, runs the SAME read-only Q&A brain
+// used for Discord @mentions, and replies in-game via `rcon-cli tellraw`. v1 is
+// Q&A/conversation only — no moderation verbs, no repo changes (the spawned agent
+// carries AGENT_DENY_TOOLS like every other path). Kill switch: GARVIS_INGAME=off.
+// A real `/g` slash command (custom NeoForge mod) is the documented Phase 2 —
+// see docs/in-game-garvis.md.
+const INGAME_ENABLED = (process.env.GARVIS_INGAME ?? 'on') !== 'off';
+const INGAME_TRIGGER = process.env.GARVIS_INGAME_TRIGGER || '!g';
+// Where replies land: "@a" (everyone — the question was already public in chat, and
+// a shared assistant is the better demo) or a single-player selector. Player-only
+// "thinking" acks always go to the asker regardless, to keep chat quiet.
+const INGAME_REPLY_TARGET = process.env.GARVIS_INGAME_REPLY_TARGET || '@a';
+// Spawning `claude` per message is expensive; a per-player cooldown bounds spam and
+// concurrent spawns. Longer than the Discord mod-action gate since each `!g` is a
+// full Q&A turn, not a cheap RCON verb.
+const INGAME_COOLDOWN_MS = Number(process.env.GARVIS_INGAME_COOLDOWN_MS ?? 15_000);
+// Tighter turn/time budget than Discord help: in-game answers should be quick and
+// short. A few turns still lets Garvis read the repo (e.g. modlist) to answer.
+const INGAME_TURNS = 6;
+const INGAME_TIMEOUT_MS = 90_000;
 
 function isOwner(userId) { return Boolean(OWNER_ID) && userId === OWNER_ID; }
 function hasModRole(member) {
@@ -350,6 +374,61 @@ function buildAskPrompt({ question, user, prior = '' }) {
     fencedData(question, 1000),
     `(asked by Discord user ${user})`,
   ].join('\n');
+}
+
+// In-game Q&A prompt. The player is talking through MINECRAFT CHAT, which is narrow
+// and renders no markdown/links — so the constraints are tighter than Discord: short,
+// plain text, no formatting. Same ground-truth facts; same fenced-data discipline.
+function buildInGamePrompt({ question, player }) {
+  return [
+    `You are Garvis, the in-game assistant for a specific modded Minecraft Java server. A player is talking to you THROUGH MINECRAFT CHAT (they typed "${INGAME_TRIGGER} <message>"). Answer their question directly and accurately.`,
+    ``,
+    `MINECRAFT CHAT CONSTRAINTS — follow strictly:`,
+    `- Keep it SHORT: 1–4 short lines. Chat is cramped; long answers get truncated.`,
+    `- PLAIN TEXT ONLY. No markdown, no **bold**, no bullet syntax, no code fences, and NO links/URLs (they do not render in chat — describe the mod or item by name instead).`,
+    `- Friendly and concrete. If you truly need one detail to answer, ask one short question.`,
+    ``,
+    `SERVER FACTS (ground truth — use these, don't invent):`,
+    `- Mod loader: ${SERVER.loader} for Minecraft ${SERVER.mc} (requires ${SERVER.java}).`,
+    `- The installed mods are listed in apps/agent/modlist.txt — read it if asked what mods are on the server or how a specific mod works.`,
+    ``,
+    `If asked to DO something that changes the server (op/ban/give/add a mod/etc.), explain you can only chat in-game for now and point them to Discord (@Garvis), where requests and moderation are handled.`,
+    ``,
+    `THE PLAYER'S MESSAGE:`,
+    fencedData(question, 800),
+    `(in-game player ${player})`,
+  ].join('\n');
+}
+
+// Answer one in-game message via the read-only Q&A brain, resuming this player's
+// own conversation if one exists. Sessions are keyed `mc:<player>` in the same
+// SQLite store the Discord threads use (thread ids and these keys never collide),
+// so follow-up `!g` messages keep context across turns and bot restarts.
+async function answerInGame({ player, question }) {
+  const key = `mc:${player}`;
+  const sess = getSession(key);
+  const resume = sess?.help ?? null;
+  const prompt = resume
+    ? `The player's next in-game chat message — answer in-game (short, plain text, no markdown/links):\n${fencedData(question, 800)}`
+    : buildInGamePrompt({ question, player });
+  const res = await runClaudeResilient(prompt, { resume, maxTurns: INGAME_TURNS, timeoutMs: INGAME_TIMEOUT_MS });
+  if (res.sessionId) setSession(key, { mode: 'help', sessionId: res.sessionId, ownerId: player });
+  return res.text;
+}
+
+// The handler the bridge calls for each `!g` message: cooldown, a quick private
+// "thinking" ack to the asker, then the answer to everyone (INGAME_REPLY_TARGET).
+async function onInGameMessage({ player, message, reply }) {
+  const q = (message || '').trim();
+  if (!q) { await reply(`Ask me something — e.g. "${INGAME_TRIGGER} how do waystones work?"`, { target: player }); return; }
+  const wait = onCooldown(`mc:${player}`, INGAME_COOLDOWN_MS, 'ingame');
+  if (wait > 0) { await reply(`Give me a sec — try again in ${wait}s.`, { target: player }); return; }
+  await reply('…thinking', { target: player });
+  let text;
+  try { text = await answerInGame({ player, question: q }); }
+  catch (e) { console.error(`[ingame] ${player}: ${e.message}`); text = "I hit a snag on that one — give it another go in a moment."; }
+  await reply(text || 'Hmm, I came up empty — try rephrasing?');
+  console.log(`[ingame] ${player}: ${q.slice(0, 80)}`);
 }
 
 // The capable maintenance prompt. Given an authorized member's natural-language
@@ -786,4 +865,19 @@ if (!process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_BOT_TOKEN.startsWith('
   console.error('Set a freshly rotated DISCORD_BOT_TOKEN in the environment first.');
   process.exit(1);
 }
+
+// In-game `!g` bridge. Independent of Discord (it tails docker logs + replies over
+// RCON), but lives in this process so it shares the Q&A brain, sessions, and cooldowns.
+if (INGAME_ENABLED) {
+  startInGameBridge({
+    container: MC_CONTAINER,
+    trigger: INGAME_TRIGGER,
+    replyTarget: INGAME_REPLY_TARGET,
+    rconExec,
+    onMessage: onInGameMessage,
+  });
+} else {
+  console.log('[ingame] disabled (GARVIS_INGAME=off)');
+}
+
 client.login(process.env.DISCORD_BOT_TOKEN);

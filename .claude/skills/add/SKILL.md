@@ -1,0 +1,40 @@
+---
+name: add
+description: Merge a vetted PR into the live NeoForge 1.21.1 MC server and redeploy, after verifying server and client mod/loader versions stay in sync. Owner-invoked as /add <PR>.
+argument-hint: "[PR number, e.g. 50]"
+disable-model-invocation: true
+allowed-tools: "Read, Grep, Bash(gh *), Bash(git *), Bash(node *), Bash(docker *), Bash(scripts/deploy.sh*)"
+---
+
+# add — version-check, merge PR #$ARGUMENTS, redeploy
+
+Live repo `~/projects/active/minecraft` stays on **main**. Target PR = **#$ARGUMENTS**.
+
+## 1. Review
+```bash
+gh pr view $ARGUMENTS && gh pr diff $ARGUMENTS
+```
+Any mod change must touch **both** sides: server `apps/agent/modlist.txt` *and* client `scripts/build-client-mrpack.mjs` + regenerated `apps/client/` artifacts.
+
+## 2. Version-match gate (server ⇄ client) — before merge
+```bash
+cd ~/projects/active/minecraft
+gh pr checkout $ARGUMENTS
+node scripts/build-client-mrpack.mjs && git diff --exit-code apps/client/   # clean = client jars match the pins
+```
+Also confirm **MC version equal**: `apps/server/.env` `MC_VERSION` == `apps/client/modrinth.index.json` `dependencies.minecraft` == `MC_VERSION` in `build-client-mrpack.mjs` (all `1.21.1`). Drift-prone mods (`cobblemon`, `kotlin-for-forge`, `sophisticated-core`, `cobbreeding`) are pinned on both sides — server `slug:<versionId>` (modlist.txt) and client `pin:<version_number>` (build-client-mrpack.mjs) must be the same Modrinth build. **Dirty diff → the PR forgot to regen the pack; stop and fix before merging.**
+
+## 3. Merge + follow main
+```bash
+git checkout main
+gh pr merge $ARGUMENTS --merge --delete-branch
+git pull --ff-only
+```
+
+## 4. Redeploy — **no** `--health-check` (false-timeout → bad rollback on this fast box)
+```bash
+scripts/deploy.sh                 # modlist.txt → MODRINTH_PROJECTS → docker compose up -d
+docker logs -f --since 2s mc-neoforge 2>&1 | sed -u 's/\x1b\[[0-9;]*m//g' \
+  | grep --line-buffered -iE 'Downloading|Done \([0-9.]+s\)|ERROR|Exception|No candidate|incompatible'
+```
+Wait for `Done (Ns)!`. Report mods added + boot status; leave repo clean on **main**. Never touch `apps/server/server-data/`.

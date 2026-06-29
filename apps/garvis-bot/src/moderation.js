@@ -19,9 +19,9 @@
 // re-validated here, and the worst an injected OPEN verb can do (set weather, give an
 // item, broadcast) is reversible, audited, and already available to any normal user.
 //
-// Persistence mirrors whitelist.js: actions the compose OVERRIDE_* rewrites would wipe
-// on restart (whitelist, ops) are written back to the repo .env source of truth. Bans
-// live in server-data/banned-*.json and survive restarts on their own.
+// Persistence mirrors whitelist.js: whitelist changes (which the compose OVERRIDE_WHITELIST
+// rewrite would wipe on restart) are written back to the repo .env source of truth. Ops
+// (ops.json) and bans (server-data/banned-*.json) survive restarts on their own.
 import { execFile } from 'node:child_process';
 import { validateUsername, upsertEnvListName } from './whitelist.js';
 
@@ -249,7 +249,6 @@ export const VERBS = {
     summary: 'grant operator (in-game admin) to a player', gated: true,
     params: [{ name: 'player', required: true, validate: vUsername, hint: 'Java username' }],
     build: (v) => ({ kind: 'rcon', argv: ['op', v.player] }),
-    persist: (envPath, v) => upsertEnvListName(envPath, 'MC_OPS', v.player),
     confirm: (v) => `⭐ \`${v.player}\` is now an operator.`,
     examples: ['op Steve', 'make Alex an admin'],
   },
@@ -257,7 +256,6 @@ export const VERBS = {
     summary: 'revoke operator from a player', gated: true,
     params: [{ name: 'player', required: true, validate: vUsername, hint: 'Java username' }],
     build: (v) => ({ kind: 'rcon', argv: ['deop', v.player] }),
-    persist: (envPath, v) => upsertEnvListName(envPath, 'MC_OPS', v.player, { remove: true }),
     confirm: (v) => `🔻 \`${v.player}\` is no longer an operator.`,
     examples: ['deop Steve', 'remove Alex as admin'],
   },
