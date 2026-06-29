@@ -1,0 +1,15 @@
+# Tells Grafana to load any dashboard JSON found in /var/lib/grafana/dashboards
+# (that directory is mounted from ./monitoring/grafana/dashboards in docker-compose.yml).
+apiVersion: 1
+
+providers:
+  - name: minecraft
+    orgId: 1
+    folder: Minecraft
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30     # re-read the JSON every 30s so edits to the file show up
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

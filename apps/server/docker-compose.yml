@@ -42,6 +42,11 @@ services:
       #   real bottleneck before tuning further (raise back toward 20 if TPS has headroom).
       # view-distance lowered 32 -> 16 at the same time: trims terrain chunks loaded/sent
       #   (memory + chunk-gen + network), still a generous render range well above vanilla 10.
+      # Briefly tried 24 (2026-06-29) for longer-range "cinematic" terrain, then reverted to
+      #   16 the same day: it's the cheaper distance knob (terrain sent/loaded, not ticked) but
+      #   still costs memory + chunk-gen + bandwidth per player, and we have NO server-perf
+      #   monitoring yet — can't make a potentially destructive change blind. Revisit raising
+      #   it once spark/metrics are in place to watch heap + chunk-gen under a full lobby.
       VIEW_DISTANCE: "${MC_VIEW_DISTANCE:-16}"
       SIMULATION_DISTANCE: "${MC_SIMULATION_DISTANCE:-12}"
       # Operators live in server-data/ops.json (persists across restarts). Op/de-op
@@ -91,6 +96,16 @@ services:
       # itzg defaults to release-only and would reject them, so accept alpha+ here.
       # itzg still selects the newest version COMPATIBLE with this MC + loader.
       MODRINTH_ALLOWED_VERSION_TYPE: "${MODRINTH_ALLOWED_VERSION_TYPE:-alpha}"
+      # --- Extra mods by direct URL (itzg downloads each into /data/mods at startup) ---
+      # Used for SERVER-ONLY mods that aren't on Modrinth. Currently: the cpburnz
+      # prometheus-exporter mod (CurseForge/GitHub only, server-side only — does NOT go in
+      # the client modpack and won't affect client parity, same as spark). It exposes a
+      # /metrics HTTP endpoint on port 19565 INSIDE this container (heap/GC + TPS/MSPT/
+      # chunks/entities/players). That port is deliberately NOT published in `ports:` below —
+      # only the Prometheus sidecar reaches it over the internal compose network, so metrics
+      # are never exposed off-box. To bump the version, swap the release URL for the matching
+      # MC+loader build at github.com/cpburnz/minecraft-prometheus-exporter/releases.
+      MODS: "${MODS:-https://github.com/cpburnz/minecraft-prometheus-exporter/releases/download/1.21.1-neoforge-1.2.1/Prometheus-Exporter-1.21.1-neoforge-1.2.1.jar}"
       # --- Optional CurseForge modpack ---
       # AUTO_CURSEFORGE: "true"
       # CF_API_KEY: "${CF_API_KEY:-}"
@@ -131,3 +146,55 @@ services:
     volumes:
       - ./server-data:/data:ro                   # read the live world, read-only — the sidecar never writes here
       - ./backups:/backups                       # archives written here on the host
+
+  # --- Metrics: Prometheus (time-series DB) ----------------------------------
+  # Scrapes the prometheus-exporter mod inside the minecraft container (port 19565,
+  # internal network only) every 15s and stores the history. Config + scrape labels
+  # live in ./monitoring/prometheus/prometheus.yml. Retention is capped so the box
+  # never fills up. No host port is published by default (Grafana queries it over the
+  # internal network); uncomment the 127.0.0.1 mapping to reach the Prometheus UI via
+  # an SSH tunnel when debugging scrape targets.
+  prometheus:
+    image: prom/prometheus:latest              # pin to a tested tag (e.g. v3.x) after first good boot
+    container_name: mc-prometheus
+    restart: unless-stopped
+    depends_on:
+      minecraft:
+        condition: service_healthy
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d       # keep 30 days of history (plenty for A/B'ing a config change)
+      - --storage.tsdb.retention.size=2GB       # ...and hard-cap disk use as a backstop
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    # ports:
+    #   - "127.0.0.1:9090:9090"                 # localhost-only; `ssh -L 9090:localhost:9090 box` to view
+
+  # --- Metrics: Grafana (dashboards) -----------------------------------------
+  # Auto-provisioned with the Prometheus datasource and the "Minecraft — Server
+  # Performance" dashboard (see ./monitoring/grafana). Bound to 127.0.0.1 ONLY — there
+  # is no auth story for off-box exposure yet, so reach it with an SSH tunnel:
+  #   ssh -L 3000:localhost:3000 <this-box>   then open http://localhost:3000
+  # Login admin / ${GRAFANA_ADMIN_PASSWORD} (set a real one in .env).
+  grafana:
+    image: grafana/grafana:latest              # pin to a tested tag after first good boot
+    container_name: mc-grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"                  # localhost-only by design (no public exposure)
+
+volumes:
+  prometheus-data:                              # Prometheus TSDB (survives restarts)
+  grafana-data:                                 # Grafana's own db: users, dashboard edits, prefs
