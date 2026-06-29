@@ -67,6 +67,21 @@ balm                  # Balm — required by Waystones (shared config/util lib).
 sophisticated-core:IAisFkLf  # Sophisticated Core — required by Sophisticated Backpacks. NeoForge 1.21.1. PINNED to 1.21.1-1.4.60.2057 (version id IAisFkLf) to match the exact build the client pack ships. DO NOT unpin: 1.4.61.x has since shipped, so an unpinned slug re-resolves to "latest" on each `up` and drifts ahead of the pinned client. To bump: update BOTH this id AND the client pack in the same PR. client_side: REQUIRED.
 sable                 # Sable — required by Create: Aeronautics (physics/aero library). NeoForge 1.21.1, latest 2.0.3+mc1.21.1. client_side: REQUIRED, server_side: REQUIRED. No required deps (create optional).
 
+# ── Tech, storage & villager QoL — requested via Discord 2026-06-28 ──────────
+# All are content mods (blocks/items/registry) → REQUIRED client-side, so they
+# also ship in the one-click client pack (CLIENT_MODS in scripts/build-client-mrpack.mjs).
+# Core mods listed before their addons; Extra Disks needs Refined Storage.
+mekanism              # Mekanism — large tech/automation suite (ore processing, power, factories, logistics). NeoForge 1.21.1, latest 10.7.19.85. client_side: REQUIRED. No required deps.
+mekanism-generators   # Mekanism: Generators — power generation addon (solar, gas-burning, wind, fission, fusion). NeoForge 1.21.1, latest 10.7.19.85. client_side: REQUIRED. deps: mekanism.
+mekanism-tools        # Mekanism: Tools — tools & armor from Mekanism alloys/materials. NeoForge 1.21.1, latest 10.7.19.85. client_side: REQUIRED. deps: mekanism.
+mekanism-additions    # Mekanism: Additions — extra content (Baby Skeletons, plastic blocks, balloons, etc.). NeoForge 1.21.1, latest 10.7.19.85. client_side: REQUIRED. deps: mekanism.
+refined-storage       # Refined Storage — networked digital item/fluid storage (RS 2.0 rewrite). NeoForge 1.21.1, latest 2.0.9. client_side: REQUIRED. No required deps.
+extra-disks           # Extra Disks — higher-capacity storage disks for Refined Storage. NeoForge 1.21.1, latest 1.21.1-4.0.15 (targets RS 2.0). client_side: REQUIRED. deps: refined-storage.
+pylons                # Pylons — area-effect pylons (harvest, growth, item pickup, mob/player effects). NeoForge 1.21.1, latest 5.4.2. client_side: REQUIRED. No deps.
+easy-villagers        # Easy Villagers — pick up/move villagers as items + auto-trader/converter/incubator blocks. NeoForge 1.21.1, latest neoforge-1.21.1-1.1.42. client_side: REQUIRED. No deps.
+easy-piglins          # Easy Piglins — pick up/move piglins + automatable gold bartering. NeoForge 1.21.1, latest neoforge-1.21.1-1.1.0. client_side: REQUIRED. No deps.
+trade-cycling         # Trade Cycling — re-roll/cycle a villager's trade offers. NeoForge 1.21.1, latest neoforge-1.21.1-1.0.18. client_side: REQUIRED. No deps.
+
 # ── Industrial Upgrade tech suite — REMOVED 2026-06-26 by request ─────────────
 # Removed the whole IU set: industrialupgrade + its three addons (power-utilities,
 # simply-quarries, quantum-generators). They mutually required each other and
