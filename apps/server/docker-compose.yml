@@ -163,8 +163,8 @@ services:
         condition: service_healthy
     command:
       - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.retention.time=30d       # keep 30 days of history (plenty for A/B'ing a config change)
-      - --storage.tsdb.retention.size=2GB       # ...and hard-cap disk use as a backstop
+      - --storage.tsdb.retention.time=30d       # keep 30 days of history (the BINDING cap — this metric set is tiny, ~tens of MB/30d)
+      - --storage.tsdb.retention.size=10GB      # generous disk headroom (box has plenty); raise retention.time above to actually use it
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
