@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# cc — run Lua inside the in-game CraftOS computer via the garvtunnel sidecar.
+#
+#   ./cc 'print(2+2) return os.version()'      # run a chunk
+#   ./cc -f script.lua                          # run a file
+#   ./cc -s                                     # list connected computers (/status)
+#
+# Reads TUNNEL_TOKEN from the environment, else from ../.env. Talks to the
+# host-only control plane on 127.0.0.1:8175. Requires: curl, jq.
+set -euo pipefail
+
+PORT="${TUNNEL_CTL_PORT:-8175}"
+BASE="http://127.0.0.1:${PORT}"
+
+TOKEN="${TUNNEL_TOKEN:-}"
+if [[ -z "$TOKEN" ]]; then
+  envfile="$(dirname "$0")/../.env"
+  [[ -f "$envfile" ]] && TOKEN="$(grep -E '^TUNNEL_TOKEN=' "$envfile" | tail -1 | cut -d= -f2-)"
+fi
+[[ -n "$TOKEN" ]] || { echo "cc: TUNNEL_TOKEN not set (env or ../.env)" >&2; exit 1; }
+
+if [[ "${1:-}" == "-s" ]]; then
+  curl -fsS "$BASE/status" -H "X-Tunnel-Token: $TOKEN" | jq .
+  exit 0
+fi
+
+if [[ "${1:-}" == "-f" ]]; then
+  [[ -n "${2:-}" && -f "$2" ]] || { echo "cc: -f needs a readable file" >&2; exit 1; }
+  CODE="$(cat "$2")"
+else
+  CODE="${1:-}"
+  [[ -n "$CODE" ]] || { echo "usage: cc 'lua code' | cc -f file.lua | cc -s" >&2; exit 1; }
+fi
+
+jq -Rs '{code: .}' <<<"$CODE" \
+  | curl -fsS -X POST "$BASE/exec" \
+      -H "X-Tunnel-Token: $TOKEN" \
+      -H 'content-type: application/json' \
+      --data-binary @- \
+  | jq .
