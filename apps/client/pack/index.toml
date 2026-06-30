@@ -56,6 +56,11 @@ hash = "eddfdf96b56f51bd37e4c78b95061d91a36ad4ba9eded561c7c3bac9aee85646"
 metafile = true
 
 [[files]]
+file = "mods/distanthorizons.pw.toml"
+hash = "f356566fbbbf374870beda365ae80710a5a6ba5d8e8a26de735b5891ba735895"
+metafile = true
+
+[[files]]
 file = "mods/easy-piglins.pw.toml"
 hash = "74499b14a31f358268a747f59fab174a1e25bee7ebe8859eb303fa998c8a8f71"
 metafile = true
