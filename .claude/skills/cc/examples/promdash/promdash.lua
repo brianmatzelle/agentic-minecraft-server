@@ -29,15 +29,15 @@ local W, H
 local function selectScreen()
   local mon = peripheral.find("monitor")    -- any side, or any monitor on a wired network
   if mon then
-    -- pick the text scale whose resulting width is closest to TARGET_COLS
-    local best, bestDiff = 1
-    for _, s in ipairs({ 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5 }) do
-      mon.setTextScale(s)
-      local w = mon.getSize()
-      local diff = math.abs(w - TARGET_COLS)
-      if not bestDiff or diff < bestDiff then best, bestDiff = s, diff end
-    end
-    mon.setTextScale(best)
+    -- Analytic scale pick: width(scale) is proportional to 1/scale, and width*scale
+    -- is invariant for a given board, so one measurement gives the ideal scale for
+    -- TARGET_COLS. Picking the nearest 0.5 step and only re-setting when it actually
+    -- changes keeps this stable (no flicker, no event cascade) and re-optimizes on
+    -- every monitor_resize — so growing/shrinking the wall re-scales automatically.
+    local s0   = mon.getTextScale()
+    local w0   = mon.getSize()
+    local s    = math.max(0.5, math.min(5, math.floor((w0 * s0) / TARGET_COLS / 0.5 + 0.5) * 0.5))
+    if math.abs(s - s0) > 0.01 then mon.setTextScale(s) end
   end
   term.redirect(mon or prev)
   W, H = term.getSize()
@@ -229,10 +229,10 @@ while true do
     break
   elseif ev[1] == "cc_stop" then
     break
-  elseif ev[1] == "peripheral" or ev[1] == "peripheral_detach" then
-    selectScreen(); tick()                                 -- monitor plugged in / pulled out
-  elseif ev[1] == "monitor_resize" or ev[1] == "term_resize" then
-    W, H = term.getSize(); tick()
+  elseif ev[1] == "peripheral" or ev[1] == "peripheral_detach"
+      or ev[1] == "monitor_resize" or ev[1] == "term_resize" then
+    selectScreen(); tick()                                 -- monitor added/removed/resized → re-scale + re-fit
+
   end
 end
 
