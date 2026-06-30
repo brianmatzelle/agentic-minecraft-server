@@ -53,6 +53,7 @@ const VERSION_ID = process.env.PACK_VERSION_ID || new Date().toISOString().slice
 const CLIENT_MODS = [
   // ── Required to connect (content/registry mods + the libs they need) ──────
   { slug: 'cc-tweaked',                          client: 'required', server: 'required' },
+  { slug: 'advancedperipherals',                 client: 'required', server: 'required' }, // CC: Tweaked add-on (extra peripherals); dep cc-tweaked already above
   // PINNED to 1.7.1: SimpleTMs 2.3.3 declares a *required* Modrinth dependency on
   // Cobblemon 1.7.1 exactly, so itzg resolves the SERVER down to 1.7.1 (not the
   // newer 1.7.3). The pack MUST match or clients fail the handshake ("Incompatible

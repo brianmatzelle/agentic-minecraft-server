@@ -21,6 +21,21 @@
       "fileSize": 1078697
     },
     {
+      "path": "mods/AdvancedPeripherals-1.21.1-0.7.62b.jar",
+      "hashes": {
+        "sha1": "fcbd66eb380e2712c0d00c1c7fb1c55bf0cdc470",
+        "sha512": "9323762933ec9d61f229677401019fb1f4ddb5a8bdd15a69a1746c9a7186333aa29b2025abd381736bdf89505b449697bb96db69d8a50c39b430d6ef1efe689b"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/SOw6jD6x/versions/G45Z1XQB/AdvancedPeripherals-1.21.1-0.7.62b.jar"
+      ],
+      "fileSize": 936602
+    },
+    {
       "path": "mods/architectury-13.0.8-neoforge.jar",
       "hashes": {
         "sha1": "6ca11d3cc136bf69bb8f4d56982481eb85b5100b",
