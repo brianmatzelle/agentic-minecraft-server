@@ -24,8 +24,25 @@ position by counting every move from a calibrated origin.
 - **`host.lua`** → deployed to `computer-2` as `/host.lua`. Reads the Player
   Detector, broadcasts the target's position on rednet protocol `follow`.
 - **`follow.lua`** → deployed to the turtle as `/follow.lua`. Loads `/follow.cfg`
-  (`{x,y,z,dir}`), receives broadcasts, faces + steps toward the player. Never digs;
+  (`{x,y,z,dir}`), receives broadcasts, faces + steps toward the player, and
+  **re-saves its `{x,y,z,dir}` to `/follow.cfg` after every move**. Never digs;
   climbs 1-block steps; stops within 2 blocks. `dir`: `0=N(-Z) 1=E(+X) 2=S(+Z) 3=W(-X)`.
+
+## Self-healing (survives leave/rejoin & server restart)
+
+A CC computer powers off when its chunk unloads and **reboots** (re-runs `startup.lua`)
+when it reloads — running programs don't resume, RAM is lost. Two things make the snail
+recover on its own (verified live 2026-06-30 by rebooting both devices):
+
+1. **Auto-launch:** each device's `startup.lua` opens the tunnel client **and** the snail
+   program in background tabs — `shell.openTab("/follow.lua")` on the turtle,
+   `shell.openTab("/host.lua")` on the host (both guarded by `fs.exists`).
+2. **Position persistence:** `follow.lua` writes `/follow.cfg` after every move. An unloaded
+   turtle never moves, so on reboot the last-saved block IS its true block → it resumes with
+   **no recalibration** (worst case ±1 block if killed mid-step, which it self-corrects).
+
+Pre-flight before deliberately rebooting a device: confirm `/startup.lua` (and the program it
+launches) compiles via `loadfile`, or a syntax error will strand it offline until an in-game reboot.
 
 ## Gotchas baked in here
 
@@ -34,7 +51,10 @@ position by counting every move from a calibrated origin.
 - Yaw → cardinal: `[315,45)=S`, `[45,135)=W`, `[135,225)=N`, `[225,315)=E`.
 - Both loops **yield forever → must run in background tabs** (`ccdeploy`), never inline.
 
-## Redeploy / restart (run from repo root)
+## First-time setup / recalibration (run from repo root)
+
+> Reboots, chunk reloads, and rejoins now **auto-recover** (see Self-healing). You only need
+> these steps to set it up from scratch, or to fix facing after bad drift.
 
 ```bash
 # confirm both devices are on the tunnel
@@ -44,7 +64,7 @@ apps/server/garvtunnel/cc -s
 CCDEPLOY_ID=2 CCDEPLOY_NOFOCUS=1 .claude/skills/cc/scripts/ccdeploy \
   .claude/skills/cc/examples/follow-turtle/host.lua /host.lua host
 
-# RECALIBRATE first (position resets on reboot / drifts if stuck): stand on the
+# RECALIBRATE (only when setting up fresh or after it drifted): stand on the
 # turtle facing its front, then write /follow.cfg to its TRUE current block:
 #   tx = playerX, ty = playerY-1, tz = playerZ, dir = (player yaw → cardinal)
 apps/server/garvtunnel/cc -i 1 'local f=fs.open("/follow.cfg","w"); f.write(textutils.serialize({x=TX,y=TY,z=TZ,dir=DIR})); f.close()'
@@ -65,7 +85,8 @@ apps/server/garvtunnel/cc -i 2 'os.queueEvent("cc_stop")'   # stop the host
 
 - **Fuel** ≈ a few hundred blocks of travel; drop coal/charcoal in its inventory to refuel.
 - **Dead-reckoning drift**: getting shoved/stuck desyncs its mental map → recalibrate.
-- **Reboot/chunk-unload** stops the chase and forgets position (files persist; relaunch + recalibrate).
+- **Reboot/chunk-unload** now **auto-recovers** (see Self-healing): the chase pauses while the
+  chunk is unloaded (a turtle can't run with no player nearby) and resumes by itself on reload.
 - Slow ground crawler — can't follow through portals, deep water, or big cliffs reliably.
 
 Robust upgrade path: a 4-computer **GPS constellation** so the turtle reads its own
