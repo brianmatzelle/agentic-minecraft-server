@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 # ── ./reset ───────────────────────────────────────────────────────────────────
 # One command to bring the world to a fresh, RUNNING state — does everything:
-#   • server DOWN → start it.
-#   • server UP   → flush the world to disk, tear the container down, bring it
-#                   back up (a clean restart). Ends UP either way.
+#   • server DOWN → start the whole stack (server + sidecars).
+#   • server UP   → flush the world to disk, then RECREATE JUST the minecraft
+#                   container (a clean restart). The sidecars — Postgres
+#                   (conversation log), Grafana/Prometheus, backups, garvtunnel —
+#                   are left running, so a world reset never bounces them. Ends UP.
 # For mod changes use scripts/deploy.sh instead — this is the plain "reset the
 # world" command (replaces the old ./run).
 #
 # Why the flush: `save-all flush` forces every loaded chunk — with its entities
 # (Pokémon, dropped items) and block edits — SYNCHRONOUSLY to disk before teardown,
-# so a restart can't lose recent activity. `docker compose down` also triggers
-# itzg's save-on-stop within stop_grace_period (120s); the explicit flush is
-# belt-and-suspenders for the case where that stop is slow or gets SIGKILLed.
+# so a restart can't lose recent activity. The recreate stops the old container
+# (SIGTERM, honoring stop_grace_period 120s), which also triggers itzg's
+# save-on-stop; the explicit flush is belt-and-suspenders for the case where that
+# stop is slow or gets SIGKILLed.
 #
 # Usage:
 #   ./reset          # reset the server; report what it did
@@ -41,13 +44,15 @@ if [ -n "$cid" ] && [ "$(docker inspect -f '{{.State.Running}}' "$cid" 2>/dev/nu
   else
     echo "⚠ couldn't flush via RCON (server busy/booting?) — continuing; the graceful stop still saves." >&2
   fi
-  echo "→ tearing the server down…"
-  docker compose down
-  echo "→ bringing it back up…"
-  docker compose up -d
+  echo "→ recreating just the minecraft container (sidecars stay up)…"
+  # Scope the recreate to minecraft only: --force-recreate gives the same clean
+  # "new container" restart the old `down`/`up` pair did, while --no-deps leaves
+  # every sidecar (Postgres conversation log, Grafana/Prometheus, backups,
+  # garvtunnel) untouched — a world reset shouldn't bounce the DB or drop metrics.
+  docker compose up -d --force-recreate --no-deps "$SERVICE"
   echo "✓ reset complete — the world was saved before the restart."
 else
-  echo "→ server is down — starting…"
+  echo "→ server is down — starting the full stack (server + sidecars)…"
   docker compose up -d
   echo "✓ started."
 fi

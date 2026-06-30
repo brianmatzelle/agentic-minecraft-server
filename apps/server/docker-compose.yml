@@ -97,15 +97,18 @@ services:
       # itzg still selects the newest version COMPATIBLE with this MC + loader.
       MODRINTH_ALLOWED_VERSION_TYPE: "${MODRINTH_ALLOWED_VERSION_TYPE:-alpha}"
       # --- Extra mods by direct URL (itzg downloads each into /data/mods at startup) ---
-      # Used for SERVER-ONLY mods that aren't on Modrinth. Currently: the cpburnz
-      # prometheus-exporter mod (CurseForge/GitHub only, server-side only — does NOT go in
-      # the client modpack and won't affect client parity, same as spark). It exposes a
-      # /metrics HTTP endpoint on port 19565 INSIDE this container (heap/GC + TPS/MSPT/
-      # chunks/entities/players). That port is deliberately NOT published in `ports:` below —
-      # only the Prometheus sidecar reaches it over the internal compose network, so metrics
-      # are never exposed off-box. To bump the version, swap the release URL for the matching
-      # MC+loader build at github.com/cpburnz/minecraft-prometheus-exporter/releases.
-      MODS: "${MODS:-https://github.com/cpburnz/minecraft-prometheus-exporter/releases/download/1.21.1-neoforge-1.2.1/Prometheus-Exporter-1.21.1-neoforge-1.2.1.jar}"
+      # Used for SERVER-ONLY mods that aren't on Modrinth. Currently: OUR FORK of the cpburnz
+      # prometheus-exporter mod (server-side only — does NOT go in the client modpack and
+      # won't affect client parity, same as spark). The fork adds a mc_player_ping_seconds
+      # gauge (per-player keep-alive round-trip latency) on top of the stock heap/GC + TPS/MSPT/
+      # chunks/entities/players. It exposes a /metrics HTTP endpoint on port 19565 INSIDE this
+      # container. That port is deliberately NOT published in `ports:` below — only the
+      # Prometheus sidecar reaches it over the internal compose network, so metrics are never
+      # exposed off-box.
+      #   Fork:     github.com/brianmatzelle/minecraft-prometheus-exporter (branch add-player-ping-metric)
+      #   Upstream: github.com/cpburnz/minecraft-prometheus-exporter
+      # To bump: rebuild the fork against the new MC+loader, cut a release, swap the URL below.
+      MODS: "${MODS:-https://github.com/brianmatzelle/minecraft-prometheus-exporter/releases/download/1.21.1-neoforge-1.2.1-ping1/Prometheus-Exporter-1.21.1-neoforge-1.2.1-ping1.jar}"
       # --- Optional CurseForge modpack ---
       # AUTO_CURSEFORGE: "true"
       # CF_API_KEY: "${CF_API_KEY:-}"
