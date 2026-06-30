@@ -195,6 +195,31 @@ services:
     ports:
       - "127.0.0.1:3000:3000"                  # localhost-only by design (no public exposure)
 
+  # --- CraftOS agent tunnel (garvtunnel) -------------------------------------
+  # SSH-style bridge that lets the maintainer's agent run Lua inside an in-game
+  # CC: Tweaked computer. The computer dials OUT to this sidecar over the internal
+  # compose network (ws://garvtunnel:8176/agent) — there is NO inbound port into
+  # the game. Two planes share one Node process (see garvtunnel/server.js):
+  #   * :8176  WS + GET /client.lua bootstrap — INTERNAL ONLY (not published).
+  #            The minecraft container reaches it by the `garvtunnel` service name.
+  #   * :8175  control plane (POST /exec, GET /status) — published to 127.0.0.1
+  #            ONLY, so only an on-box process (the agent via curl) can submit code.
+  # Both planes require the shared secret TUNNEL_TOKEN (set a strong one in .env).
+  #
+  # PREREQUISITE (one-time): CC: Tweaked's http rules deny "$private" by default,
+  # which blocks this internal address. Add an `allow` rule for host "garvtunnel"
+  # ABOVE the "$private" deny in server-data/config/computercraft-server.toml and
+  # restart the minecraft container. See docs/craftos-tunnel.md.
+  garvtunnel:
+    build: ./garvtunnel
+    container_name: mc-garvtunnel
+    restart: unless-stopped
+    environment:
+      TUNNEL_TOKEN: "${TUNNEL_TOKEN:?set TUNNEL_TOKEN in apps/server/.env}"
+      TUNNEL_EXEC_TIMEOUT_MS: "${TUNNEL_EXEC_TIMEOUT_MS:-15000}"
+    ports:
+      - "127.0.0.1:8175:8175"                  # control plane, host-only (WS port 8176 stays internal)
+
 volumes:
   prometheus-data:                              # Prometheus TSDB (survives restarts)
   grafana-data:                                 # Grafana's own db: users, dashboard edits, prefs
