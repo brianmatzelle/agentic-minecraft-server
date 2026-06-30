@@ -7,6 +7,7 @@
 #   ccdeploy game.lua /game.lua pong  # custom tab title
 #   CCDEPLOY_NOFOCUS=1 ccdeploy ...   # launch but don't steal the screen
 #   CCDEPLOY_NOLAUNCH=1 ccdeploy ...  # just write the file, don't run it
+#   CCDEPLOY_ID=1 ccdeploy ...        # target computer id 1 (default: first-connected; see cc -s)
 #
 # Source is base64'd over the control plane, so any bytes survive (quotes, ]==], \).
 set -euo pipefail
@@ -54,4 +55,9 @@ local src = dec(B64)
 local f = fs.open(REMOTE, \"w\"); f.write(src); f.close()
 $LAUNCH"
 
-"$CC" "$CHUNK"
+# CCDEPLOY_ID picks a specific computer; without it, the first-connected one (cc default).
+if [[ -n "${CCDEPLOY_ID:-}" ]]; then
+  "$CC" -i "$CCDEPLOY_ID" "$CHUNK"
+else
+  "$CC" "$CHUNK"
+fi

@@ -11,6 +11,42 @@ Full reference for the `/cc` skill. Architecture & one-time setup: `docs/craftos
   `paintutils`, `turtle`, ...). `print`/`write` output comes back in `output`; Lua return values come
   back serialized in `returns`.
 
+## Connecting a NEW computer or turtle (manual bootstrap)
+A fresh device isn't on the tunnel yet — chicken-and-egg: no tunnel means you can't push to it,
+so the **first** connect is typed by the user **in-game** at that device's own terminal. Identical
+for computers and turtles (CraftOS is the same); advanced/gold devices add multishell.
+
+1. *(optional)* name it so `cc -s` reads nicely instead of `computer-<id>`: `label set guard`
+2. **connect** — the bridge bakes the token into the served client, so nothing secret is typed:
+   ```
+   wget run http://garvtunnel:8176/
+   ```
+   Prints `garvtunnel: connecting … as <label>` then `garvtunnel: connected`. It now answers
+   `cc -s` and `/exec`. (server.js serves the token-baked client at **both** `/` and `/client.lua`.)
+3. **make it persist** so step 2 never repeats — do this remotely once it's connected (`cc -i <id> -f`):
+   have the device fetch the baked client and write a startup wrapper that runs it in a background
+   tab (multishell devices) or foreground (plain ones):
+   ```lua
+   local h = http.get("http://garvtunnel:8176/client.lua"); local d = h.readAll(); h.close()
+   local f = fs.open("/garvtunnel.lua","w"); f.write(d); f.close()      -- token already baked in
+   local s = fs.open("/startup.lua","w")
+   s.write('if multishell then shell.openTab("/garvtunnel.lua") else shell.run("/garvtunnel.lua") end\n')
+   s.close()
+   ```
+   Takes effect on the next reboot/chunk-reload; no reboot needed now. Verify the baked client is
+   real (not the placeholder): it should contain a 48-char `BAKED_TOKEN`, no `TUNNEL_TOKEN_PLACEHOLDER`.
+   *(Pure in-game alternative, no agent: `wget http://garvtunnel:8176/client.lua startup.lua` saves
+   the baked client directly as the startup file — simpler, but occupies the device's foreground shell.)*
+
+## Multiple devices: target by id
+With >1 device connected (e.g. a desktop **and** a turtle), bare `cc 'code'` / `cc -f` / `ccdeploy`
+always hit the **first-connected** device — the bridge defaults to `[...computers.values()][0]` when
+no id is sent. Name the one you mean:
+- `cc -i <id> 'code'` / `cc -i <id> -f file.lua` — run on a specific computer
+- `CCDEPLOY_ID=<id> ccdeploy file.lua` — deploy/launch on a specific computer
+- `cc -s` lists every connected id + label. Turtles report `turtle ~= nil`; check with
+  `cc -i <id> 'return turtle~=nil'`.
+
 ## Probe first
 Always check the box before building (term size differs per computer; peripherals/turtle vary):
 ```

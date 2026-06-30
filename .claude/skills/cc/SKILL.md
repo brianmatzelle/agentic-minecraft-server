@@ -16,9 +16,15 @@ and recovery all live there.
 - `apps/server/garvtunnel/cc 'lua'` — run a chunk → JSON `{ok,output,returns,error}`.
 - `apps/server/garvtunnel/cc -f f.lua` — run a local file's contents as a chunk (does **not** install it).
 - `apps/server/garvtunnel/cc -s` — list connected computers.
+- `apps/server/garvtunnel/cc -i <id> …` — target a **specific** device (see `-s` for ids). With >1
+  device connected, bare `cc`/`ccdeploy` hit only the first-connected one, so name the one you mean.
 - `.claude/skills/cc/scripts/ccdeploy <file.lua> [remote] [title]` — **install** a local file onto the
   computer + launch it in a focused multishell tab (base64, survives any bytes).
-  `CCDEPLOY_NOFOCUS=1` launches without stealing the screen; `CCDEPLOY_NOLAUNCH=1` just writes the file.
+  `CCDEPLOY_NOFOCUS=1` launches without stealing the screen; `CCDEPLOY_NOLAUNCH=1` just writes the file;
+  `CCDEPLOY_ID=<id>` targets a specific device.
+
+**Connecting a new computer/turtle** (manual first-time bootstrap) and **multi-device targeting** are
+documented in `references/dev-guide.md` — read it when a device isn't on the tunnel yet.
 
 ## Three hard rules
 1. **<15s per chunk** — the control plane times out at 15s.
