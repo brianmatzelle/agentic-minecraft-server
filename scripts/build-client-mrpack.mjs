@@ -77,7 +77,7 @@ const CLIENT_MODS = [
   { slug: 'cobbreeding',                         client: 'required', server: 'required', pin: '2.2.1' },
   { slug: 'waystones',                           client: 'required', server: 'required' },
   { slug: 'balm',                                client: 'required', server: 'required' }, // waystones dep
-  { slug: 'sophisticated-backpacks',             client: 'required', server: 'required' },
+  { slug: 'sophisticated-backpacks',             client: 'required', server: 'required', pin: '1.21.1-3.25.65.1955' }, // PINNED — was unpinned & drifted ahead of the client on 2026-06-30; pin both sides. Matches modlist.txt sophisticated-backpacks:y2W0V4fw
   // PINNED to 1.4.60.2057: 1.4.61.x has shipped; pin both sides so the pack can't
   // drift off the server. Matches modlist.txt sophisticated-core:IAisFkLf.
   { slug: 'sophisticated-core',                  client: 'required', server: 'required', pin: '1.21.1-1.4.60.2057' }, // backpacks dep
