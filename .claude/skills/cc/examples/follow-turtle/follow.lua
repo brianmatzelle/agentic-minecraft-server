@@ -61,11 +61,25 @@ term.clear(); term.setCursorPos(1, 1)
 print("follow: chasing the player. q / cc_stop to stop.")
 print(("start @ %d,%d,%d  dir=%d  fuel=%s"):format(pos.x, pos.y, pos.z, dir, tostring(turtle.getFuelLevel())))
 
+-- top up fuel from any inventory slot when we run low. turtle.refuel() with no
+-- arg burns the whole stack in the selected slot (coal/charcoal/lava bucket all
+-- work; a lava bucket leaves an empty bucket behind). Fuel is just a number, so
+-- burning early wastes nothing. Returns true if we have any fuel to move on.
+local FUEL_MIN = 20
+local function ensureFuel()
+  local lvl = turtle.getFuelLevel()
+  if lvl == "unlimited" or lvl >= FUEL_MIN then return true end
+  local keep = turtle.getSelectedSlot()
+  for s = 1, 16 do turtle.select(s); turtle.refuel() end
+  turtle.select(keep)
+  return turtle.getFuelLevel() > 0
+end
+
 local target = nil   -- last position heard from the host
 
 local function stepToward()
   if not target then status("waiting for a position...") return end
-  if turtle.getFuelLevel() == 0 then status("OUT OF FUEL — give me coal/charcoal") return end
+  if not ensureFuel() then status("OUT OF FUEL — give me coal/charcoal or a lava bucket") return end
 
   local dx, dz = target.x - pos.x, target.z - pos.z
   local dist = math.abs(dx) + math.abs(dz)
