@@ -109,6 +109,10 @@ const CLIENT_MODS = [
   // ── Quality-of-life — optional on the client (deselectable on import) ─────
   { slug: 'jei',                                 client: 'optional', server: 'optional' },
   { slug: 'jade',                                client: 'optional', server: 'optional' },
+  // Cobblemon: Extra Structures — server generates the structures; client mod is
+  // optional (Modrinth client_side: optional) but shipped so players see custom
+  // structure content. Discord req 2026-06-28.
+  { slug: 'cobblemonextrastructures',            client: 'optional', server: 'required' },
   // ── Client-side FPS mods (server never runs them → server: 'unsupported') ──
   // Pure rendering/culling optimizations: the server's view-distance=16 forces
   // each client to render ~1k chunks of heavy modded terrain, and the pack ships

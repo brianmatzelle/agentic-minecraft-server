@@ -126,6 +126,21 @@
       "fileSize": 123744060
     },
     {
+      "path": "mods/cobblemonextrastructures-1.21.1-1.3.0-neoforge.jar",
+      "hashes": {
+        "sha1": "c32f83f5405d11482a453aba7210f6a58e64526c",
+        "sha512": "5ee3ce5972124e09dd64149562fd548d7c7398b7b2333393e54fd9ccd876687485d876db1b04e8596c23ecac9b0c57693d985daad5cbee5f7d5a98deecb8b7f6"
+      },
+      "env": {
+        "client": "optional",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/IkJ2gbjT/versions/WRVQHxL5/cobblemonextrastructures-1.21.1-1.3.0-neoforge.jar"
+      ],
+      "fileSize": 1297184
+    },
+    {
       "path": "mods/Cobblepedia-NeoForge-0.7.1.jar",
       "hashes": {
         "sha1": "c5f15ee58c16c7c54c505ec8f005449f3f145f7d",

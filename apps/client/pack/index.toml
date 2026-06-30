@@ -41,6 +41,11 @@ hash = "116cf6fc697132d270a93241c63d9216f99b41fa9efa43e0d990245b593fdafa"
 metafile = true
 
 [[files]]
+file = "mods/cobblemonextrastructures.pw.toml"
+hash = "6fd159914772a59c81926ea3cfa06a1e347bcccc73bab097e543f1b135e6b67d"
+metafile = true
+
+[[files]]
 file = "mods/cobblepedia.pw.toml"
 hash = "a854fdb2d676d7e940448c6f5405dc0fa05d262669a7d34e0404732c307fde3b"
 metafile = true
