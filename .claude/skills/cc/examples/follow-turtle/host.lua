@@ -10,9 +10,15 @@ local PERIOD = 0.4               -- seconds between position broadcasts
 local det = peripheral.find("player_detector")
 if not det then error("no player_detector attached", 0) end
 
+-- prefer a WIRELESS modem: a wired one can't reach the roaming turtle. computer-2
+-- has both (a wired modem on the network + a wireless one), and grabbing the first
+-- modem found silently opened the wired one → broadcasts never reached the snail.
 local modem
 for _, n in ipairs(peripheral.getNames()) do
-  if peripheral.getType(n) == "modem" then modem = n break end
+  if peripheral.getType(n) == "modem" then
+    if peripheral.call(n, "isWireless") then modem = n break end
+    modem = modem or n   -- remember a wired modem only as a last resort
+  end
 end
 if not modem then error("no modem attached", 0) end
 rednet.open(modem)

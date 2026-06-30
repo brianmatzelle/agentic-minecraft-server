@@ -47,9 +47,13 @@ local function face(want)               -- rotate to cardinal `want` with minima
 end
 
 -- ---- modem / rednet -----------------------------------------------------
+-- prefer a WIRELESS modem (a wired one can't talk to the stationary host).
 local modem
 for _, n in ipairs(peripheral.getNames()) do
-  if peripheral.getType(n) == "modem" then modem = n break end
+  if peripheral.getType(n) == "modem" then
+    if peripheral.call(n, "isWireless") then modem = n break end
+    modem = modem or n   -- remember a wired modem only as a last resort
+  end
 end
 if not modem then error("no modem equipped on the turtle", 0) end
 rednet.open(modem)
