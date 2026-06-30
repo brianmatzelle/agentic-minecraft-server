@@ -6,6 +6,11 @@ hash = "a07542dec20841408e127d49e6cfb59946cc08bb95156aaf327b94ddfc9c178d"
 metafile = true
 
 [[files]]
+file = "mods/advancedperipherals.pw.toml"
+hash = "334d448d03392b110ac27f5cedd88617c83339295474815b005e584c9c245b88"
+metafile = true
+
+[[files]]
 file = "mods/architectury-api.pw.toml"
 hash = "6dab8d2507eeacddfad622e58416aae44ed7425de6cae35f8e5694f88ac270f7"
 metafile = true
