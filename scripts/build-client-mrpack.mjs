@@ -142,6 +142,15 @@ const CLIENT_MODS = [
   // active shaderpack at runtime so those visuals render correctly under shaders.
   // Depends on Iris (project YL57xq9U). PINNED to the tested beta for the same reason.
   { slug: 'iris-veil-compat',                    client: 'required', server: 'unsupported', pin: '1.21.1+0.3.0-beta' },
+  // ── Render distance (client-only; server never renders → server: 'unsupported') ─
+  // Distant Horizons — LOD terrain renderer: "see farther without turning your game
+  // into a slideshow." Pure client-side rendering. Modrinth lists server_side: optional
+  // (a 3.x feature to share LODs in multiplayer), but we DON'T run it server-side — it's
+  // a visual enhancement, not server logic, so it stays out of modlist.txt like the FPS
+  // mods. client: 'optional' so weaker PCs can deselect it on import — it's GPU/CPU heavy
+  // and not needed to connect. NeoForge 1.21.1, latest 3.1.2-b-1.21.1 (beta). No deps.
+  // Requested via Discord 2026-06-30.
+  { slug: 'distanthorizons',                     client: 'optional', server: 'unsupported' },
 ];
 
 // Server-only mods that must NEVER ship to a client: perf/diagnostic tools plus

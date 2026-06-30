@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-06-29",
+  "versionId": "2026-06-30",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -169,6 +169,21 @@
         "https://cdn.modrinth.com/data/oWaK0Q19/versions/w7zlLnea/create-aeronautics-bundled-1.21.1-1.3.0.jar"
       ],
       "fileSize": 33120013
+    },
+    {
+      "path": "mods/DistantHorizons-3.1.2-b-1.21.1-fabric-neoforge.jar",
+      "hashes": {
+        "sha1": "7508bb82597db391ce9657054e6fee62d4d0ea80",
+        "sha512": "e184723c273aba04b2658f20196755f445860d4dfe929575a1aff006bf53c0d45004acdeaa455d3516b88f7c21f564e0e640315627e3a4080478fe0986a46732"
+      },
+      "env": {
+        "client": "optional",
+        "server": "unsupported"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/uCdwusMi/versions/g68FsgfE/DistantHorizons-3.1.2-b-1.21.1-fabric-neoforge.jar"
+      ],
+      "fileSize": 30140037
     },
     {
       "path": "mods/easy-piglins-neoforge-1.21.1-1.1.0.jar",
