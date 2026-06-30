@@ -34,6 +34,7 @@ import { dirname, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Client, GatewayIntentBits, Events, MessageFlags } from 'discord.js';
 import { getSession, setSession, deleteSession, closeDb } from './db.js';
+import { initConvLog, logTurn, closeConvLog } from './convlog.js';
 import { validateUsername, addUsernameToWhitelistEnv, rconWhitelistAdd, classifyWhitelistOutput } from './whitelist.js';
 import { resolveAction, runAction, catalogMenu, parseClassification, rconExec } from './moderation.js';
 import { buildModrinthEmbeds } from './embeds.js';
@@ -307,7 +308,7 @@ function runClaude(prompt, { resume = null, timeoutMs = HELP_TIMEOUT_MS, maxTurn
       timedOut = true;
       try { child.kill('SIGKILL'); } catch {}
       console.error(`[claude] TIMEOUT after ${timeoutMs}ms (maxTurns=${maxTurns}). stderr head: ${err.slice(0, 300) || '(none)'}`);
-      done({ ok: false, timedOut: true, text: "That one's taking longer than I'd like — give me another go in a moment.", sessionId: resume });
+      done({ ok: false, timedOut: true, text: "That one's taking longer than I'd like — give me another go in a moment.", sessionId: resume, durationMs: timeoutMs });
     }, timeoutMs);
     child.stdout.on('data', (d) => { out += d.toString(); });
     child.stderr.on('data', (d) => { err += d.toString(); });
@@ -315,16 +316,20 @@ function runClaude(prompt, { resume = null, timeoutMs = HELP_TIMEOUT_MS, maxTurn
     child.on('close', (code) => {
       clearTimeout(timer);
       if (timedOut) return; // already resolved
-      const dt = ((Date.now() - t0) / 1000).toFixed(1);
+      const durationMs = Date.now() - t0;
+      const dt = (durationMs / 1000).toFixed(1);
       try {
         const j = JSON.parse(out);
         const text = (j.result ?? '').toString().trim();
+        // Surface cost/turns/latency so callers (e.g. convlog) can record them; the
+        // Q&A + Discord paths simply ignore these extra fields.
+        const meta = { costUsd: j.total_cost_usd ?? null, numTurns: j.num_turns ?? null, durationMs };
         if (j.is_error || !text) {
           console.error(`[claude] soft-fail in ${dt}s (exit=${code}, is_error=${j.is_error}, turns=${j.num_turns}). stderr: ${err.slice(0, 300) || '(none)'}`);
-          done({ ok: false, text: text || `Hmm, I came up empty on that one${err ? ` (${err.slice(0, 150)})` : ''}. Could you rephrase, or try again?`, sessionId: j.session_id ?? resume });
+          done({ ok: false, text: text || `Hmm, I came up empty on that one${err ? ` (${err.slice(0, 150)})` : ''}. Could you rephrase, or try again?`, sessionId: j.session_id ?? resume, ...meta });
         } else {
           console.log(`[claude] ok in ${dt}s (turns=${j.num_turns}, cost=$${j.total_cost_usd ?? '?'})`);
-          done({ ok: true, text, sessionId: j.session_id ?? resume });
+          done({ ok: true, text, sessionId: j.session_id ?? resume, ...meta });
         }
       } catch {
         console.error(`[claude] parse-fail in ${dt}s (exit=${code}). stderr: ${err.slice(0, 300) || '(none)'} | stdout head: ${out.slice(0, 300)}`);
@@ -545,7 +550,7 @@ async function answerInGame({ player, question }) {
     : buildInGamePrompt({ question, player });
   const res = await runClaudeResilient(prompt, { resume, maxTurns: INGAME_TURNS, timeoutMs: INGAME_TIMEOUT_MS });
   if (res.sessionId) setSession(key, { mode: 'help', sessionId: res.sessionId, ownerId: player });
-  return res.text;
+  return { ...res, resumed: Boolean(resume) };   // full result (text + sessionId + cost/latency) so the caller can log the turn
 }
 
 // Handle an in-game MOD REQUEST through the SAME maintenance agent the Discord
@@ -562,7 +567,7 @@ async function requestModInGame({ player, request }) {
   const author = { id: player, name: player, email: `${player}@players.minecraft.local`, origin: 'ingame' };
   const res = await runMaintSerial({ request, user: player, author, resume, ingame: true });
   if (res.sessionId) setSession(key, { mode: 'maint', sessionId: res.sessionId, ownerId: player });
-  return res.text;
+  return { ...res, resumed: Boolean(resume) };   // full result so the caller can log the turn
 }
 
 // Perform a GATED in-game `give`. The op gate (isServerOp) is checked by the CALLER —
@@ -591,6 +596,11 @@ async function onInGameMessage({ player, message, reply }) {
   const wait = onCooldown(`mc:${player}`, INGAME_COOLDOWN_MS, 'ingame');
   if (wait > 0) { await reply(`Give me a sec — try again in ${wait}s.`, { target: player }); return; }
 
+  // Common fields for the conversation log; each branch fills in intent/response/metadata.
+  // logTurn is best-effort + fire-and-forget (see convlog.js) — called AFTER the reply so
+  // it never delays the player and a down Postgres can't break the `!g` path.
+  const base = { source: 'minecraft', server: MC_CONTAINER, trigger: INGAME_TRIGGER, player, request: q };
+
   // A `give` (live rcon action, like Discord moderation → independent of dispatch mode)
   // or a mod request (drives the maint agent → needs CAN_ACT)? One classifier call drives
   // both. Skip it entirely (treat as Q&A) when neither is enabled/actionable. The
@@ -604,8 +614,10 @@ async function onInGameMessage({ player, message, reply }) {
     // GIVE — gated on server-op status (the in-game stand-in for Discord's role gate).
     if (giveOn && intent.intent === 'give') {
       if (!(await isServerOp(player))) {
-        await reply(`Sorry ${player}, handing out items in-game is operator-only. Ask an op, or request it on Discord (@Garvis).`, { target: player });
+        const denyMsg = `Sorry ${player}, handing out items in-game is operator-only. Ask an op, or request it on Discord (@Garvis).`;
+        await reply(denyMsg, { target: player });
         console.log(`[ingame] give DENIED ${player} (not op): ${q.slice(0, 80)}`);
+        logTurn({ ...base, intent: 'give', response: denyMsg, success: false, error: 'not_op', metadata: { denied: 'not_op', give: intent.give } });
         return;
       }
       await reply('🎁 one sec…', { target: player });
@@ -614,6 +626,7 @@ async function onInGameMessage({ player, message, reply }) {
       catch (e) { console.error(`[ingame] give ${player}: ${e.message}`); out = { ok: false, text: 'I hit a snag giving that — give it another go in a moment.' }; }
       await reply(out.text, out.ok ? {} : { target: player });   // result public (@a); errors private
       console.log(`[ingame] give ${out.ok ? 'OK' : 'FAIL'} ${player}: ${JSON.stringify(intent.give)}`);
+      logTurn({ ...base, intent: 'give', response: out.text, success: out.ok, metadata: { give: intent.give } });
       return;
     }
 
@@ -622,20 +635,22 @@ async function onInGameMessage({ player, message, reply }) {
       const mwait = onCooldown(`mc:${player}`, INGAME_MAINT_COOLDOWN_MS, 'ingame-maint');
       if (mwait > 0) { await reply(`That's a bigger ask (I research it + open a PR) — give me a moment and try again in ${mwait}s.`, { target: player }); return; }
       await reply("🔧 On it — researching that mod; if it checks out I'll open a PR and post the link here. Give me a few minutes…", { target: player });
-      let text;
-      try { text = await requestModInGame({ player, request: q }); }
-      catch (e) { console.error(`[ingame] modreq ${player}: ${e.message}`); text = "I hit a snag researching that one — give it another go in a bit, or ask on Discord."; }
-      await reply(text || 'Hmm, I came up empty on that one — try rephrasing, or ask on Discord?');
+      let res;
+      try { res = await requestModInGame({ player, request: q }); }
+      catch (e) { console.error(`[ingame] modreq ${player}: ${e.message}`); res = { text: "I hit a snag researching that one — give it another go in a bit, or ask on Discord.", ok: false, error: e.message }; }
+      await reply(res.text || 'Hmm, I came up empty on that one — try rephrasing, or ask on Discord?');
       console.log(`[ingame] modreq ${player}: ${q.slice(0, 80)}`);
+      logTurn({ ...base, intent: 'modreq', response: res.text, sessionId: res.sessionId, success: res.ok, timedOut: res.timedOut, latencyMs: res.durationMs, costUsd: res.costUsd, numTurns: res.numTurns, error: res.error ?? null, metadata: { resumed: res.resumed ?? null } });
       return;
     }
   }
 
   await reply('…thinking', { target: player });
-  let text;
-  try { text = await answerInGame({ player, question: q }); }
-  catch (e) { console.error(`[ingame] ${player}: ${e.message}`); text = "I hit a snag on that one — give it another go in a moment."; }
-  await reply(text || 'Hmm, I came up empty — try rephrasing?');
+  let res;
+  try { res = await answerInGame({ player, question: q }); }
+  catch (e) { console.error(`[ingame] ${player}: ${e.message}`); res = { text: "I hit a snag on that one — give it another go in a moment.", ok: false, error: e.message }; }
+  await reply(res.text || 'Hmm, I came up empty — try rephrasing?');
+  logTurn({ ...base, intent: 'qa', response: res.text, sessionId: res.sessionId, success: res.ok, timedOut: res.timedOut, latencyMs: res.durationMs, costUsd: res.costUsd, numTurns: res.numTurns, error: res.error ?? null, metadata: { resumed: res.resumed ?? null } });
   console.log(`[ingame] ${player}: ${q.slice(0, 80)}`);
 }
 
@@ -1084,7 +1099,7 @@ client.on(Events.ThreadDelete, (thread) => { try { deleteSession(thread.id); } c
 client.on('error', (err) => console.error('[client error]', err?.stack ?? err));
 client.on('shardError', (err) => console.error('[shard error]', err?.stack ?? err));
 process.on('unhandledRejection', (err) => console.error('unhandledRejection:', err));
-for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { closeDb(); process.exit(0); });
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, async () => { closeDb(); await closeConvLog(); process.exit(0); });
 
 if (!process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_BOT_TOKEN.startsWith('REPLACE_ME')) {
   console.error('Set a freshly rotated DISCORD_BOT_TOKEN in the environment first.');
@@ -1104,5 +1119,9 @@ if (INGAME_ENABLED) {
 } else {
   console.log('[ingame] disabled (GARVIS_INGAME=off)');
 }
+
+// Connect the conversation log before going live (best-effort: a failure just disables
+// logging and the bot still serves). Top-level await is fine — this is an ESM module.
+await initConvLog();
 
 client.login(process.env.DISCORD_BOT_TOKEN);

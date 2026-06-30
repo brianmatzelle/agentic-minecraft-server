@@ -195,6 +195,34 @@ services:
     ports:
       - "127.0.0.1:3000:3000"                  # localhost-only by design (no public exposure)
 
+  # --- Conversation log: Postgres --------------------------------------------
+  # Durable, queryable store for Garvis conversations — starting with in-game `!g`
+  # turns (player message, intent, Garvis's reply, claude session id, success,
+  # latency, cost). The garvis-bot HOST process (a systemd service — NOT part of this
+  # compose) connects over the localhost-published port, which is why 5432 is bound to
+  # 127.0.0.1 only and never reachable off-box. Discord turns can be backfilled later
+  # (Discord already retains its own chat history), so the schema is source-tagged.
+  # The schema itself is created idempotently by the bot at startup
+  # (apps/garvis-bot/src/convlog.js), so this service only provides an empty database.
+  postgres:
+    image: postgres:17
+    container_name: mc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-garvis}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-garvis}"   # set a strong value in .env (port is localhost-only, but still)
+      POSTGRES_DB: "${POSTGRES_DB:-garvis}"
+      TZ: "${TZ:-UTC}"
+    ports:
+      - "127.0.0.1:5432:5432"                  # localhost-only; the bot runs on the host, not in this compose
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-garvis} -d ${POSTGRES_DB:-garvis}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
   # --- CraftOS agent tunnel (garvtunnel) -------------------------------------
   # SSH-style bridge that lets the maintainer's agent run Lua inside an in-game
   # CC: Tweaked computer. The computer dials OUT to this sidecar over the internal
@@ -223,3 +251,4 @@ services:
 volumes:
   prometheus-data:                              # Prometheus TSDB (survives restarts)
   grafana-data:                                 # Grafana's own db: users, dashboard edits, prefs
+  postgres-data:                                # Garvis conversation log (survives restarts)
