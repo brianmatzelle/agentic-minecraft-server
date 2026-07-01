@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-06-30",
+  "versionId": "2026-07-01",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -291,6 +291,21 @@
       "fileSize": 3163042
     },
     {
+      "path": "mods/gravestone-neoforge-1.21.1-1.0.37.jar",
+      "hashes": {
+        "sha1": "b2cc8077ff7184e3791af3edd4b5b894e62b127f",
+        "sha512": "07e1a08d8e1a8c3f7d0a59a3c5a7b03e32862fadbb018067795704683aa8298823cb6d66e739577b7591bef2dfa2bcbe49eafe14cb73920feebb79cd7a539141"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/RYtXKJPr/versions/Y29z3Y9Y/gravestone-neoforge-1.21.1-1.0.37.jar"
+      ],
+      "fileSize": 321955
+    },
+    {
       "path": "mods/ImmediatelyFast-NeoForge-1.6.10+1.21.1.jar",
       "hashes": {
         "sha1": "f1f5cccd7cb59d875f44566b2e557ccecc8c33fb",
@@ -351,19 +366,19 @@
       "fileSize": 725742
     },
     {
-      "path": "mods/jei-1.21.1-neoforge-19.27.0.343.jar",
+      "path": "mods/jei-1.21.1-neoforge-19.27.0.344.jar",
       "hashes": {
-        "sha1": "de304e36e94ff54997d62ee881c904a4892fd6dc",
-        "sha512": "65c05aaaf4a2696f8298ce402470288ef88c21390d5e89101f5e511aa36ee23d2463f0975653bf949c4ee079f557a698ee70de1fa89ef64b81fd41e1edc4fdb8"
+        "sha1": "cbd9721ee714b00ff35e541c03ea700e83757866",
+        "sha512": "7209d7b39d2867bd7bd2b90c4c1f085a327d9fe625ba25147f488de2516738d4b5d3abcccbb321476080c39b5b244e97d4de8bb456703afa7df3f59321a909b0"
       },
       "env": {
         "client": "optional",
         "server": "optional"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/iiCpE7cU/jei-1.21.1-neoforge-19.27.0.343.jar"
+        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/BTB3Mx37/jei-1.21.1-neoforge-19.27.0.344.jar"
       ],
-      "fileSize": 1529892
+      "fileSize": 1536942
     },
     {
       "path": "mods/kotlinforforge-5.11.0-all.jar",
