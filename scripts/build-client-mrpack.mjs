@@ -83,6 +83,7 @@ const CLIENT_MODS = [
   // drift off the server. Matches modlist.txt sophisticated-core:IAisFkLf.
   { slug: 'sophisticated-core',                  client: 'required', server: 'required', pin: '1.21.1-1.4.60.2057' }, // backpacks dep
   { slug: 'farmers-delight',                     client: 'required', server: 'required' },
+  { slug: 'gravestone-mod',                      client: 'required', server: 'required' }, // GraveStone Mod — recover items from a grave on death (Modrinth client_side: required)
   { slug: 'architectury-api',                    client: 'required', server: 'required' },
   { slug: 'accessories',                         client: 'required', server: 'required' },
   { slug: 'owo-lib',                             client: 'required', server: 'required' },

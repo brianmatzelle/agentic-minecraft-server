@@ -96,6 +96,11 @@ hash = "b7f5ee4986d5f58638b6b6879eb4f6909a3765ae3657dbb7f9667b7eaf9348b7"
 metafile = true
 
 [[files]]
+file = "mods/gravestone-mod.pw.toml"
+hash = "4da926bee4759b5449a2a9e4cc32ac2d855d12e8f7e867313dac2cd2ed4a7a9a"
+metafile = true
+
+[[files]]
 file = "mods/immediatelyfast.pw.toml"
 hash = "a33ca4f92283e7545bc2e336c1142f8087c1e4ad5b8f5acc869ea34823e9ad5d"
 metafile = true
@@ -117,7 +122,7 @@ metafile = true
 
 [[files]]
 file = "mods/jei.pw.toml"
-hash = "44ba7c6e06a1891f16f21bbc48c70f618cd2e6b03f9e98adf3509193135ee3e7"
+hash = "d5bfe8765eae93cd4cd3657b942ed6a0c13d4087a8eadca448fd5c6e351e5ad0"
 metafile = true
 
 [[files]]
