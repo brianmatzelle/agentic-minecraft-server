@@ -129,7 +129,13 @@ const CLIENT_MODS = [
   // Drop the pin (and the iris/iris-veil-compat block) together if shaders are removed.
   { slug: 'sodium',                              client: 'required', server: 'unsupported', pin: 'mc1.21.1-0.8.12-beta.2-neoforge' }, // Veil-compatible renderer: the big FPS win + Iris's required dep
   { slug: 'entityculling',                       client: 'required', server: 'unsupported' }, // skips rendering hidden mobs/Cobblemon
-  { slug: 'immediatelyfast',                     client: 'required', server: 'unsupported' }, // faster text/UI/JEI batching
+  // PINNED to 1.6.10: this is the build the live pack ships and every player has. A
+  // newer stable 1.6.11 released 2026-06-30, and unpinned this mod re-resolves to
+  // "latest" on every regen — a naive regen silently swaps it in, dirtying the /add
+  // version-gate and pushing an unneeded client update for a client-only perf mod.
+  // Freeze it to the shipped build (drift-lock, changes no bytes now). Bump both this
+  // pin and re-ship the pack together if you ever want 1.6.11+.
+  { slug: 'immediatelyfast',                     client: 'required', server: 'unsupported', pin: '1.6.10+1.21.1-neoforge' }, // faster text/UI/JEI batching
   // ── Shaders (client-only; server never renders → server: 'unsupported') ────────
   // Iris is the shader engine (loads Complementary/BSL/etc. shaderpacks). It does NOT
   // bundle Sodium on NeoForge — it REQUIRES the standalone Sodium above (verified by
