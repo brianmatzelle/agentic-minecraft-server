@@ -172,7 +172,7 @@ const CLIENT_MODS = [
 // Server-only mods that must NEVER ship to a client: perf/diagnostic tools plus
 // server-side-only content (e.g. worldgen whose structures use vanilla blocks, so
 // the client needs nothing extra to see them).
-const SERVER_ONLY = ['lithium', 'ferrite-core', 'modernfix', 'spark', 'chunky', 'noisium', 'when-dungeons-arise', 'warputils'];
+const SERVER_ONLY = ['lithium', 'ferrite-core', 'modernfix', 'spark', 'chunky', 'noisium', 'when-dungeons-arise', 'warputils', 'cobblemon-challenge'];
 
 function modlistSlugs() {
   return readFileSync(MODLIST, 'utf8')
