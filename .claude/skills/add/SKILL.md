@@ -24,12 +24,14 @@ node scripts/build-client-mrpack.mjs && git diff --exit-code apps/client/   # cl
 ```
 Also confirm **MC version equal**: `apps/server/.env` `MC_VERSION` == `apps/client/modrinth.index.json` `dependencies.minecraft` == `MC_VERSION` in `build-client-mrpack.mjs` (all `1.21.1`). Drift-prone mods (`cobblemon`, `kotlin-for-forge`, `sophisticated-core`, `cobbreeding`) are pinned on both sides — server `slug:<versionId>` (modlist.txt) and client `pin:<version_number>` (build-client-mrpack.mjs) must be the same Modrinth build. **Dirty diff → the PR forgot to regen the pack; stop and fix before merging.**
 
-## 3. Merge + follow main
+## 3. Merge + follow main + stamp the auto-deploy state — IMMEDIATELY, before deploying
 ```bash
 git checkout main
 gh pr merge $ARGUMENTS --merge --delete-branch
 git pull --ff-only
+printf 'last_deployed_sha=%s\nlast_result=ok\n' "$(git rev-parse HEAD)" > apps/server/.auto-deploy-state
 ```
+The stamp is NOT optional: the `garvis-auto-deploy.timer` watcher fires every 3 min, and a mod-PR merge is allowlist-eligible — without the stamp it re-deploys the same SHA with `--health-check`, which can **never** succeed on an already-booted server (it tails live logs for a `Done` that already printed) → false 420s timeout → **rolls the live server back to the old mod set** (near-miss 2026-07-02, PR #48; killed with 20s to spare). If a watcher run is already in-flight (`pgrep -af deploy.sh`), kill it before its timeout — killing is safe, rollback only happens on the failure path.
 
 ## 4. Redeploy — **no** `--health-check` (false-timeout → bad rollback on this fast box)
 ```bash
