@@ -72,6 +72,10 @@ const CLIENT_MODS = [
   { slug: 'simpletms-tms-and-trs-for-cobblemon', client: 'required', server: 'required' },
   { slug: 'cobbledollars',                       client: 'required', server: 'required' },
   { slug: 'cobblepedia',                         client: 'required', server: 'required' },
+  // PINNED to 2.3.3: its neoforge.mods.toml requires Cobblemon [1.7.0,) — fine for our
+  // pinned 1.7.1 — but a future Cobblenav may target Cobblemon 1.8. Pin both sides so
+  // neither drifts off the pinned server. Matches modlist.txt cobblemon-pokenav:yCSofpNb.
+  { slug: 'cobblemon-pokenav',                   client: 'required', server: 'required', pin: '2.3.3' }, // PokéNav UI for Cobblemon (Discord req 2026-06-28, re-requested 2026-07-02)
   // PINNED to 2.2.1: it targets Cobblemon 1.7 (our server is pinned to 1.7.1). Pin
   // both sides so a future "latest" Cobbreeding can't drift onto a Cobblemon 1.8
   // build and mismatch the pinned server. Matches modlist.txt cobbreeding:xt8IiPEN.

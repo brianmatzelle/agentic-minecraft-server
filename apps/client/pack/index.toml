@@ -41,6 +41,11 @@ hash = "116cf6fc697132d270a93241c63d9216f99b41fa9efa43e0d990245b593fdafa"
 metafile = true
 
 [[files]]
+file = "mods/cobblemon-pokenav.pw.toml"
+hash = "6acdf2d4c8add01a15dba0097abe7e0e51bfc9ea608506622e5ee32f44775a9a"
+metafile = true
+
+[[files]]
 file = "mods/cobblemonextrastructures.pw.toml"
 hash = "6fd159914772a59c81926ea3cfa06a1e347bcccc73bab097e543f1b135e6b67d"
 metafile = true
@@ -122,7 +127,7 @@ metafile = true
 
 [[files]]
 file = "mods/jei.pw.toml"
-hash = "d5bfe8765eae93cd4cd3657b942ed6a0c13d4087a8eadca448fd5c6e351e5ad0"
+hash = "6959771fe0f14ca0f84d54dd1c23523672b5727759badfcc8c132ed0a5cd3ce1"
 metafile = true
 
 [[files]]
