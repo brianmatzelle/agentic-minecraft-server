@@ -53,13 +53,17 @@ const VERSION_ID = process.env.PACK_VERSION_ID || new Date().toISOString().slice
 const CLIENT_MODS = [
   // ── Required to connect (content/registry mods + the libs they need) ──────
   { slug: 'cc-tweaked',                          client: 'required', server: 'required' },
+  { slug: 'advancedperipherals',                 client: 'required', server: 'required' }, // CC: Tweaked add-on (extra peripherals); dep cc-tweaked already above
   // PINNED to 1.7.1: SimpleTMs 2.3.3 declares a *required* Modrinth dependency on
   // Cobblemon 1.7.1 exactly, so itzg resolves the SERVER down to 1.7.1 (not the
   // newer 1.7.3). The pack MUST match or clients fail the handshake ("Incompatible
   // client! Please use NeoForge ..."). Drop the pin when SimpleTMs supports a newer
   // Cobblemon and the server re-resolves upward. See apps/agent/modlist.txt.
   { slug: 'cobblemon',                           client: 'required', server: 'required', pin: '1.7.1' },
-  { slug: 'kotlin-for-forge',                    client: 'required', server: 'required' }, // Cobblemon runtime
+  // PINNED to 5.11.0: 5.12.0 has shipped, so leaving this unpinned lets the server
+  // (and a regen of this pack) drift onto it independently → client/server mismatch.
+  // Pin both sides to the build the server runs. Matches modlist.txt kotlin-for-forge:NrSebcsG.
+  { slug: 'kotlin-for-forge',                    client: 'required', server: 'required', pin: '5.11.0' }, // Cobblemon runtime
   // rctmod (Radical Cobblemon Trainers) + rctapi removed 2026-06-25 by request.
   // cobblemon-mega-showdown DISABLED 2026-06-24: mega_showdown 1.8.4 fatally NPEs on
   // server datapack load (HeldItems.reload → receiveHeldItemDataFn null) vs Cobblemon
@@ -68,26 +72,52 @@ const CLIENT_MODS = [
   { slug: 'simpletms-tms-and-trs-for-cobblemon', client: 'required', server: 'required' },
   { slug: 'cobbledollars',                       client: 'required', server: 'required' },
   { slug: 'cobblepedia',                         client: 'required', server: 'required' },
-  { slug: 'cobblemon-pokenav',                   client: 'required', server: 'required' }, // PokéNav UI for Cobblemon (Discord req 2026-06-28)
+  // PINNED to 2.3.3: its neoforge.mods.toml requires Cobblemon [1.7.0,) — fine for our
+  // pinned 1.7.1 — but a future Cobblenav may target Cobblemon 1.8. Pin both sides so
+  // neither drifts off the pinned server. Matches modlist.txt cobblemon-pokenav:yCSofpNb.
+  { slug: 'cobblemon-pokenav',                   client: 'required', server: 'required', pin: '2.3.3' }, // PokéNav UI for Cobblemon (Discord req 2026-06-28, re-requested 2026-07-02)
+  // PINNED to 2.2.1: it targets Cobblemon 1.7 (our server is pinned to 1.7.1). Pin
+  // both sides so a future "latest" Cobbreeding can't drift onto a Cobblemon 1.8
+  // build and mismatch the pinned server. Matches modlist.txt cobbreeding:xt8IiPEN.
+  { slug: 'cobbreeding',                         client: 'required', server: 'required', pin: '2.2.1' },
   { slug: 'waystones',                           client: 'required', server: 'required' },
   { slug: 'balm',                                client: 'required', server: 'required' }, // waystones dep
-  { slug: 'sophisticated-backpacks',             client: 'required', server: 'required' },
-  { slug: 'sophisticated-core',                  client: 'required', server: 'required' }, // backpacks dep
+  { slug: 'sophisticated-backpacks',             client: 'required', server: 'required', pin: '1.21.1-3.25.65.1955' }, // PINNED — was unpinned & drifted ahead of the client on 2026-06-30; pin both sides. Matches modlist.txt sophisticated-backpacks:y2W0V4fw
+  // PINNED to 1.4.60.2057: 1.4.61.x has shipped; pin both sides so the pack can't
+  // drift off the server. Matches modlist.txt sophisticated-core:IAisFkLf.
+  { slug: 'sophisticated-core',                  client: 'required', server: 'required', pin: '1.21.1-1.4.60.2057' }, // backpacks dep
   { slug: 'farmers-delight',                     client: 'required', server: 'required' },
+  { slug: 'gravestone-mod',                      client: 'required', server: 'required' }, // GraveStone Mod — recover items from a grave on death (Modrinth client_side: required)
   { slug: 'architectury-api',                    client: 'required', server: 'required' },
   { slug: 'accessories',                         client: 'required', server: 'required' },
   { slug: 'owo-lib',                             client: 'required', server: 'required' },
   { slug: 'patchouli',                           client: 'required', server: 'required' },
+  { slug: 'cloth-config',                        client: 'required', server: 'required' }, // cobbreeding dep (config screens)
   // ── Create + addons (content mods — required client-side once on the server) ─
   { slug: 'create',                              client: 'required', server: 'required' }, // now required: Create: Aeronautics depends on it
   { slug: 'create-aeronautics',                  client: 'required', server: 'required' },
   { slug: 'sable',                               client: 'required', server: 'required' }, // create-aeronautics dep
+  // ── Tech, storage & villager QoL (Discord req 2026-06-28) — content mods, required client-side ─
+  { slug: 'mekanism',                            client: 'required', server: 'required' },
+  { slug: 'mekanism-generators',                 client: 'required', server: 'required' }, // mekanism addon
+  { slug: 'mekanism-tools',                      client: 'required', server: 'required' }, // mekanism addon
+  { slug: 'mekanism-additions',                  client: 'required', server: 'required' }, // mekanism addon
+  { slug: 'refined-storage',                     client: 'required', server: 'required' },
+  { slug: 'extra-disks',                         client: 'required', server: 'required' }, // refined-storage addon
+  { slug: 'pylons',                              client: 'required', server: 'required' },
+  { slug: 'easy-villagers',                      client: 'required', server: 'required' },
+  { slug: 'easy-piglins',                        client: 'required', server: 'required' },
+  { slug: 'trade-cycling',                       client: 'required', server: 'required' },
   // Industrial Upgrade tech suite (industrialupgrade + power-utilities +
   // simply-quarries + quantum-generators) REMOVED 2026-06-26 by request — taken
   // out of modlist.txt and this pack together; see modlist.txt for the note.
   // ── Quality-of-life — optional on the client (deselectable on import) ─────
   { slug: 'jei',                                 client: 'optional', server: 'optional' },
   { slug: 'jade',                                client: 'optional', server: 'optional' },
+  // Cobblemon: Extra Structures — server generates the structures; client mod is
+  // optional (Modrinth client_side: optional) but shipped so players see custom
+  // structure content. Discord req 2026-06-28.
+  { slug: 'cobblemonextrastructures',            client: 'optional', server: 'required' },
   // ── Client-side FPS mods (server never runs them → server: 'unsupported') ──
   // Pure rendering/culling optimizations: the server's view-distance=16 forces
   // each client to render ~1k chunks of heavy modded terrain, and the pack ships
@@ -96,15 +126,53 @@ const CLIENT_MODS = [
   // refuses to load with Embeddium ("incompatible: embeddium any") but supports
   // Sodium 0.6.9+. Sodium's NeoForge build is beta-tagged but is the only renderer
   // compatible with this pack. (Was embeddium 1.0.15 — crashed clients on launch.)
-  { slug: 'sodium',                              client: 'required', server: 'unsupported' }, // Veil-compatible renderer: the big FPS win
+  // PINNED to 0.8.12-beta.2: Iris (below) is sodium-version-sensitive — Iris 1.8.14
+  // targets "Sodium 0.8" and older Iris builds crashed on mismatched Sodium betas
+  // (IrisShaders/Iris#3136). Pin Sodium to the exact build the shader stack is tested
+  // against so a future "latest" Sodium can't drift in and break Iris on clients. The
+  // pinned value is today's newest, so this changes no bytes now — it's a drift-lock.
+  // Drop the pin (and the iris/iris-veil-compat block) together if shaders are removed.
+  { slug: 'sodium',                              client: 'required', server: 'unsupported', pin: 'mc1.21.1-0.8.12-beta.2-neoforge' }, // Veil-compatible renderer: the big FPS win + Iris's required dep
   { slug: 'entityculling',                       client: 'required', server: 'unsupported' }, // skips rendering hidden mobs/Cobblemon
-  { slug: 'immediatelyfast',                     client: 'required', server: 'unsupported' }, // faster text/UI/JEI batching
+  // PINNED to 1.6.10: this is the build the live pack ships and every player has. A
+  // newer stable 1.6.11 released 2026-06-30, and unpinned this mod re-resolves to
+  // "latest" on every regen — a naive regen silently swaps it in, dirtying the /add
+  // version-gate and pushing an unneeded client update for a client-only perf mod.
+  // Freeze it to the shipped build (drift-lock, changes no bytes now). Bump both this
+  // pin and re-ship the pack together if you ever want 1.6.11+.
+  { slug: 'immediatelyfast',                     client: 'required', server: 'unsupported', pin: '1.6.10+1.21.1-neoforge' }, // faster text/UI/JEI batching
+  // ── Shaders (client-only; server never renders → server: 'unsupported') ────────
+  // Iris is the shader engine (loads Complementary/BSL/etc. shaderpacks). It does NOT
+  // bundle Sodium on NeoForge — it REQUIRES the standalone Sodium above (verified by
+  // inspecting iris-neoforge-1.8.14-beta.1's jarjar: fabric shims + glsl-transformer
+  // only, no sodium). Installing Iris alone here is the shader engine; the shaderpack
+  // .zip is a separate artifact (NOT a mod) the player picks in Video Settings — see
+  // the follow-up to auto-ship a default pack. No stable 1.21.1 Iris build exists yet,
+  // so PINNED to the tested beta (don't let a regen pull a newer untested beta to
+  // friends). Shaders stay OFF until selected, so merely shipping these doesn't force
+  // an FPS hit — it just unlocks the capability.
+  { slug: 'iris',                                client: 'required', server: 'unsupported', pin: '1.8.14-beta.1+1.21.1-neoforge' },
+  // Without this, Create: Aeronautics / anything drawn through Veil (jar-in-jar'd by
+  // Sable) renders BROKEN once a shaderpack is active — Veil's draws bypass the
+  // shaderpack's gbuffer pipeline. Iris Veil Compat merges Veil's shader code into the
+  // active shaderpack at runtime so those visuals render correctly under shaders.
+  // Depends on Iris (project YL57xq9U). PINNED to the tested beta for the same reason.
+  { slug: 'iris-veil-compat',                    client: 'required', server: 'unsupported', pin: '1.21.1+0.3.0-beta' },
+  // ── Render distance (client-only; server never renders → server: 'unsupported') ─
+  // Distant Horizons — LOD terrain renderer: "see farther without turning your game
+  // into a slideshow." Pure client-side rendering. Modrinth lists server_side: optional
+  // (a 3.x feature to share LODs in multiplayer), but we DON'T run it server-side — it's
+  // a visual enhancement, not server logic, so it stays out of modlist.txt like the FPS
+  // mods. client: 'optional' so weaker PCs can deselect it on import — it's GPU/CPU heavy
+  // and not needed to connect. NeoForge 1.21.1, latest 3.1.2-b-1.21.1 (beta). No deps.
+  // Requested via Discord 2026-06-30.
+  { slug: 'distanthorizons',                     client: 'optional', server: 'unsupported' },
 ];
 
 // Server-only mods that must NEVER ship to a client: perf/diagnostic tools plus
 // server-side-only content (e.g. worldgen whose structures use vanilla blocks, so
 // the client needs nothing extra to see them).
-const SERVER_ONLY = ['lithium', 'ferrite-core', 'modernfix', 'spark', 'chunky', 'noisium', 'when-dungeons-arise'];
+const SERVER_ONLY = ['lithium', 'ferrite-core', 'modernfix', 'spark', 'chunky', 'noisium', 'when-dungeons-arise', 'warputils'];
 
 function modlistSlugs() {
   return readFileSync(MODLIST, 'utf8')

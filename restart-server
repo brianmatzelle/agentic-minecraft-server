@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# ── ./reset ───────────────────────────────────────────────────────────────────
+# One command to bring the world to a fresh, RUNNING state — does everything:
+#   • server DOWN → start the whole stack (server + sidecars).
+#   • server UP   → flush the world to disk, then RECREATE JUST the minecraft
+#                   container (a clean restart). The sidecars — Postgres
+#                   (conversation log), Grafana/Prometheus, backups, garvtunnel —
+#                   are left running, so a world reset never bounces them. Ends UP.
+# For mod changes use scripts/deploy.sh instead — this is the plain "reset the
+# world" command (replaces the old ./run).
+#
+# Why the flush: `save-all flush` forces every loaded chunk — with its entities
+# (Pokémon, dropped items) and block edits — SYNCHRONOUSLY to disk before teardown,
+# so a restart can't lose recent activity. The recreate stops the old container
+# (SIGTERM, honoring stop_grace_period 120s), which also triggers itzg's
+# save-on-stop; the explicit flush is belt-and-suspenders for the case where that
+# stop is slow or gets SIGKILLed.
+#
+# Usage:
+#   ./reset          # reset the server; report what it did
+#   ./reset --logs   # ... then tail the logs (Ctrl-C to stop following)
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SERVER_DIR="$REPO_ROOT/apps/server"
+SERVICE="minecraft"
+
+FOLLOW=0
+case "${1:-}" in
+  --logs|-f) FOLLOW=1 ;;
+  "")        ;;
+  *) echo "Unknown arg: ${1}" >&2; exit 2 ;;
+esac
+
+cd "$SERVER_DIR"
+
+cid="$(docker compose ps -q "$SERVICE" 2>/dev/null || true)"
+if [ -n "$cid" ] && [ "$(docker inspect -f '{{.State.Running}}' "$cid" 2>/dev/null)" = "true" ]; then
+  echo "→ server is up — flushing the world before teardown…"
+  # Best-effort: a slow/booting server may not answer RCON. The graceful `down`
+  # below still saves on stop, so a missed flush warns but doesn't block the reset.
+  if docker compose exec -T "$SERVICE" rcon-cli save-all flush >/dev/null 2>&1; then
+    echo "✓ world flushed to disk (save-all flush)"
+  else
+    echo "⚠ couldn't flush via RCON (server busy/booting?) — continuing; the graceful stop still saves." >&2
+  fi
+  echo "→ recreating just the minecraft container (sidecars stay up)…"
+  # Scope the recreate to minecraft only: --force-recreate gives the same clean
+  # "new container" restart the old `down`/`up` pair did, while --no-deps leaves
+  # every sidecar (Postgres conversation log, Grafana/Prometheus, backups,
+  # garvtunnel) untouched — a world reset shouldn't bounce the DB or drop metrics.
+  docker compose up -d --force-recreate --no-deps "$SERVICE"
+  echo "✓ reset complete — the world was saved before the restart."
+else
+  echo "→ server is down — starting the full stack (server + sidecars)…"
+  docker compose up -d
+  echo "✓ started."
+fi
+echo "  First boot after a mod change re-downloads mods; give it a few minutes."
+echo "  Watch for \"Done (…)! For help, type help\" in the logs."
+
+if [ "$FOLLOW" = "1" ]; then
+  echo "── tailing logs (Ctrl-C to stop) ──"
+  exec docker compose logs -f "$SERVICE"
+fi

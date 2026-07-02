@@ -42,14 +42,43 @@ services:
       #   real bottleneck before tuning further (raise back toward 20 if TPS has headroom).
       # view-distance lowered 32 -> 16 at the same time: trims terrain chunks loaded/sent
       #   (memory + chunk-gen + network), still a generous render range well above vanilla 10.
+      # Briefly tried 24 (2026-06-29) for longer-range "cinematic" terrain, then reverted to
+      #   16 the same day: it's the cheaper distance knob (terrain sent/loaded, not ticked) but
+      #   still costs memory + chunk-gen + bandwidth per player, and we have NO server-perf
+      #   monitoring yet — can't make a potentially destructive change blind. Revisit raising
+      #   it once spark/metrics are in place to watch heap + chunk-gen under a full lobby.
       VIEW_DISTANCE: "${MC_VIEW_DISTANCE:-16}"
       SIMULATION_DISTANCE: "${MC_SIMULATION_DISTANCE:-12}"
-      OPS: "${MC_OPS:-}"                        # server operators (admin) — set via MC_OPS in .env
-      OVERRIDE_OPS: "TRUE"                       # rewrite ops.json from MC_OPS each start (repo is source of truth; wipes any drift / console-granted op)
+      # Operators live in server-data/ops.json (persists across restarts). Op/de-op
+      # in-game, from the console, or via Garvis — changes stick. No env-driven rewrite.
       # --- Whitelist (only listed players may join) ---
       WHITELIST: "${MC_WHITELIST:-}"            # comma-separated usernames; setting this turns white-list on
       ENFORCE_WHITELIST: "TRUE"                 # kick players who get removed from the list, even mid-session
       OVERRIDE_WHITELIST: "TRUE"                # rewrite whitelist.json from MC_WHITELIST each start (repo is source of truth)
+      # --- Server resource pack (Faithful 32x) — pushed to EVERY client on join ---
+      # itzg writes these to server.properties (resource-pack / -sha1 / -prompt /
+      # require-resource-pack). The vanilla client auto-downloads the .zip straight
+      # from Modrinth's CDN and applies it, so every friend gets the same crisp
+      # HD-vanilla textures with ZERO client setup — no mod, no client-pack regen,
+      # works alongside the modded textures. This is purely a server.properties push;
+      # OVERRIDE_SERVER_PROPERTIES=true re-applies it on restart.
+      #
+      # To change the look: point MC_RESOURCE_PACK at another pack's Modrinth file URL
+      # and MC_RESOURCE_PACK_SHA1 at that file's sha1 — the sha1 MUST match the bytes
+      # at the URL or clients reject the download. (Resolve both from the Modrinth API
+      # the same way scripts/build-client-mrpack.mjs resolves mod files.)
+      # ENFORCE=true makes the pack apply on join (declining disconnects you) so the
+      # whole server looks uniform; set MC_RESOURCE_PACK_ENFORCE=false for a softer,
+      # non-blocking "recommended" prompt instead. Blank MC_RESOURCE_PACK to disable.
+      RESOURCE_PACK: "${MC_RESOURCE_PACK:-https://cdn.modrinth.com/data/w0TnApzs/versions/ruZOIEZE/Faithful%2032x%20-%201.21.1.zip}"
+      RESOURCE_PACK_SHA1: "${MC_RESOURCE_PACK_SHA1:-cf90d965473549d3d642b835071c6472d60bcf7b}"
+      RESOURCE_PACK_ENFORCE: "${MC_RESOURCE_PACK_ENFORCE:-true}"
+      # NOTE: vanilla parses resource-pack-prompt as a JSON text component, NOT plain
+      # text — a bare string logs "Failed to parse resource pack prompt" at boot and
+      # falls back to the generic prompt (the pack still downloads/applies either way).
+      # So this is hardcoded JSON, ASCII-only (server.properties is ISO-8859-1, so an
+      # em-dash would mangle). Edit the inner "text" to change the message.
+      RESOURCE_PACK_PROMPT: '{"text":"mc.starting.cc recommends Faithful 32x - crisp HD-vanilla textures"}'
       # --- Mods from Modrinth (auto-downloaded at startup) ---
       MODRINTH_PROJECTS: "${MODRINTH_PROJECTS:-}"
       # MUST stay "none". With "required", itzg re-resolves every listed mod's
@@ -67,6 +96,19 @@ services:
       # itzg defaults to release-only and would reject them, so accept alpha+ here.
       # itzg still selects the newest version COMPATIBLE with this MC + loader.
       MODRINTH_ALLOWED_VERSION_TYPE: "${MODRINTH_ALLOWED_VERSION_TYPE:-alpha}"
+      # --- Extra mods by direct URL (itzg downloads each into /data/mods at startup) ---
+      # Used for SERVER-ONLY mods that aren't on Modrinth. Currently: OUR FORK of the cpburnz
+      # prometheus-exporter mod (server-side only — does NOT go in the client modpack and
+      # won't affect client parity, same as spark). The fork adds a mc_player_ping_seconds
+      # gauge (per-player keep-alive round-trip latency) on top of the stock heap/GC + TPS/MSPT/
+      # chunks/entities/players. It exposes a /metrics HTTP endpoint on port 19565 INSIDE this
+      # container. That port is deliberately NOT published in `ports:` below — only the
+      # Prometheus sidecar reaches it over the internal compose network, so metrics are never
+      # exposed off-box.
+      #   Fork:     github.com/brianmatzelle/minecraft-prometheus-exporter (branch add-player-ping-metric)
+      #   Upstream: github.com/cpburnz/minecraft-prometheus-exporter
+      # To bump: rebuild the fork against the new MC+loader, cut a release, swap the URL below.
+      MODS: "${MODS:-https://github.com/brianmatzelle/minecraft-prometheus-exporter/releases/download/1.21.1-neoforge-1.2.1-ping1/Prometheus-Exporter-1.21.1-neoforge-1.2.1-ping1.jar}"
       # --- Optional CurseForge modpack ---
       # AUTO_CURSEFORGE: "true"
       # CF_API_KEY: "${CF_API_KEY:-}"
@@ -107,3 +149,109 @@ services:
     volumes:
       - ./server-data:/data:ro                   # read the live world, read-only — the sidecar never writes here
       - ./backups:/backups                       # archives written here on the host
+
+  # --- Metrics: Prometheus (time-series DB) ----------------------------------
+  # Scrapes the prometheus-exporter mod inside the minecraft container (port 19565,
+  # internal network only) every 15s and stores the history. Config + scrape labels
+  # live in ./monitoring/prometheus/prometheus.yml. Retention is capped so the box
+  # never fills up. No host port is published by default (Grafana queries it over the
+  # internal network); uncomment the 127.0.0.1 mapping to reach the Prometheus UI via
+  # an SSH tunnel when debugging scrape targets.
+  prometheus:
+    image: prom/prometheus:latest              # pin to a tested tag (e.g. v3.x) after first good boot
+    container_name: mc-prometheus
+    restart: unless-stopped
+    depends_on:
+      minecraft:
+        condition: service_healthy
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=1y        # keep a full year of history (box has the disk; this metric set is only ~hundreds of MB/yr)
+      - --storage.tsdb.retention.size=10GB      # disk backstop; at this data rate the 1y time cap is the binding limit, not size
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    # ports:
+    #   - "127.0.0.1:9090:9090"                 # localhost-only; `ssh -L 9090:localhost:9090 box` to view
+
+  # --- Metrics: Grafana (dashboards) -----------------------------------------
+  # Auto-provisioned with the Prometheus datasource and the "Minecraft — Server
+  # Performance" dashboard (see ./monitoring/grafana). Bound to 127.0.0.1 ONLY — there
+  # is no auth story for off-box exposure yet, so reach it with an SSH tunnel:
+  #   ssh -L 3000:localhost:3000 <this-box>   then open http://localhost:3000
+  # Login admin / ${GRAFANA_ADMIN_PASSWORD} (set a real one in .env).
+  grafana:
+    image: grafana/grafana:latest              # pin to a tested tag after first good boot
+    container_name: mc-grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"                  # localhost-only by design (no public exposure)
+
+  # --- Conversation log: Postgres --------------------------------------------
+  # Durable, queryable store for Garvis conversations — starting with in-game `!g`
+  # turns (player message, intent, Garvis's reply, claude session id, success,
+  # latency, cost). The garvis-bot HOST process (a systemd service — NOT part of this
+  # compose) connects over the localhost-published port, which is why 5432 is bound to
+  # 127.0.0.1 only and never reachable off-box. Discord turns can be backfilled later
+  # (Discord already retains its own chat history), so the schema is source-tagged.
+  # The schema itself is created idempotently by the bot at startup
+  # (apps/garvis-bot/src/convlog.js), so this service only provides an empty database.
+  postgres:
+    image: postgres:17
+    container_name: mc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-garvis}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-garvis}"   # set a strong value in .env (port is localhost-only, but still)
+      POSTGRES_DB: "${POSTGRES_DB:-garvis}"
+      TZ: "${TZ:-UTC}"
+    ports:
+      - "127.0.0.1:5432:5432"                  # localhost-only; the bot runs on the host, not in this compose
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-garvis} -d ${POSTGRES_DB:-garvis}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # --- CraftOS agent tunnel (garvtunnel) -------------------------------------
+  # SSH-style bridge that lets the maintainer's agent run Lua inside an in-game
+  # CC: Tweaked computer. The computer dials OUT to this sidecar over the internal
+  # compose network (ws://garvtunnel:8176/agent) — there is NO inbound port into
+  # the game. Two planes share one Node process (see garvtunnel/server.js):
+  #   * :8176  WS + GET /client.lua bootstrap — INTERNAL ONLY (not published).
+  #            The minecraft container reaches it by the `garvtunnel` service name.
+  #   * :8175  control plane (POST /exec, GET /status) — published to 127.0.0.1
+  #            ONLY, so only an on-box process (the agent via curl) can submit code.
+  # Both planes require the shared secret TUNNEL_TOKEN (set a strong one in .env).
+  #
+  # PREREQUISITE (one-time): CC: Tweaked's http rules deny "$private" by default,
+  # which blocks this internal address. Add an `allow` rule for host "garvtunnel"
+  # ABOVE the "$private" deny in server-data/config/computercraft-server.toml and
+  # restart the minecraft container. See docs/craftos-tunnel.md.
+  garvtunnel:
+    build: ./garvtunnel
+    container_name: mc-garvtunnel
+    restart: unless-stopped
+    environment:
+      TUNNEL_TOKEN: "${TUNNEL_TOKEN:?set TUNNEL_TOKEN in apps/server/.env}"
+      TUNNEL_EXEC_TIMEOUT_MS: "${TUNNEL_EXEC_TIMEOUT_MS:-15000}"
+    ports:
+      - "127.0.0.1:8175:8175"                  # control plane, host-only (WS port 8176 stays internal)
+
+volumes:
+  prometheus-data:                              # Prometheus TSDB (survives restarts)
+  grafana-data:                                 # Grafana's own db: users, dashboard edits, prefs
+  postgres-data:                                # Garvis conversation log (survives restarts)

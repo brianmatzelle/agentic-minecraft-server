@@ -66,10 +66,26 @@ hard(er) stops. Full trace + analysis: the `harden/op-guardrails` PR.
   ⚠️ **Soft control:** pattern-based Bash denial is bypassable (full paths, a helper
   script that shells out, etc.). It raises the bar; it is not a wall. The wall is S1
   (don't run with bypassPermissions) + the OpenShell sandbox (no docker socket / no
-  host shell) — still the priority follow-up.
-- **G2 — Ops are repo-source-of-truth.** `OVERRIDE_OPS: "TRUE"` (compose) rewrites
-  `ops.json` from `MC_OPS` (in `.env`) on every boot, so any drift or console-granted
-  op is wiped on restart. Mirrors the existing `OVERRIDE_WHITELIST` pattern.
+  host shell) — still the priority follow-up. As of 2026-06-29 the deny list also
+  blocks `Read` of `.env` files (`apps/server/.env`, `apps/garvis-bot/.env`,
+  `**/.env`) — same soft caveat (an absolute path can evade a relative glob).
+- **G1b — Agent secret-scrub (HARD control, added 2026-06-29).** Every spawned
+  agent's environment is built from a copy of the bot's with `AGENT_SCRUB_ENV`
+  (`DISCORD_BOT_TOKEN`, `RCON_PASSWORD`) deleted (`runClaude` in
+  `apps/garvis-bot/src/index.js`). Unlike the pattern-based G1 denies this is a hard
+  control: the child literally never receives those vars, so no
+  `printenv`/`process.env`/full-path trick can surface them. `GH_TOKEN`/git identity
+  and `claude`'s own credentials are preserved, so the agent still pushes branches +
+  opens PRs. Applies to ALL spawns (Q&A, intent classifier, maintenance; in-game +
+  Discord) since they share `runClaude`. The bot's own moderation/whitelist paths run
+  in-process (not the agent), so scrubbing the agent env doesn't affect them.
+- **G2 — Ops persist in `ops.json` (no boot-time rewrite).** Operators live in
+  `server-data/ops.json` (world volume) and survive restarts; an in-game/console
+  `/op`–`/deop` (or Garvis `op`/`deop`) sticks instead of being reset each boot. The old
+  `OVERRIDE_OPS: "TRUE"` repo-source-of-truth rewrite was removed — it wiped live ops on
+  every restart. Trade-off: drift/console-granted ops are no longer auto-reverted, but the
+  G3 tripwire still alarms on every op/de-op, so an escalation is never silent. The
+  `OVERRIDE_WHITELIST` source-of-truth pattern is unchanged for the whitelist.
 - **G3 — Audit tripwire.** `scripts/ops-tripwire.sh` (systemd unit in
   `infra/systemd/ops-tripwire.service`) follows the server log and alarms on any
   op/de-op/ban/whitelist/RCON action, plus (best-effort) writes to the live ops/
@@ -215,10 +231,10 @@ different walls.
 bot process (it holds the token, runs on the host) — NOT the sandboxed maintenance agent,
 which is still denied docker/rcon by `AGENT_DENY_TOOLS`. The split is unchanged.
 
-**Persistence.** Verbs whose effect the compose `OVERRIDE_*` rewrite would wipe on
-restart are written back to the repo `.env` source of truth: `op`/`deop` → `MC_OPS`,
-`whitelist_add`/`whitelist_remove` → `MC_WHITELIST` (`OVERRIDE_OPS`/`OVERRIDE_WHITELIST`
-are `TRUE`). Bans live in `server-data/banned-*.json` and survive restarts on their own.
+**Persistence.** Whitelist changes — which the compose `OVERRIDE_WHITELIST` rewrite would
+wipe on restart — are written back to the repo `.env` source of truth:
+`whitelist_add`/`whitelist_remove` → `MC_WHITELIST`. Ops (`op`/`deop` → `ops.json`) and
+bans (`server-data/banned-*.json`) survive restarts on their own.
 
 **Audit.** Every action logs `[mod-action] <user> -> <verb> <args>` and trips the G3
 ops-tripwire (expected, like `/whitelist`). Anti-spam: a short per-user `modaction`

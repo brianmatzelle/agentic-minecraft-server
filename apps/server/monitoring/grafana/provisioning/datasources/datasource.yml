@@ -1,0 +1,13 @@
+# Auto-provisioned Prometheus datasource (Grafana reads this on startup, no clicking).
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus              # referenced by the provisioned dashboard's panels
+    access: proxy
+    url: http://prometheus:9090  # reach Prometheus by its compose service name
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: "15s"        # match prometheus.yml scrape_interval for correct rate() steps

@@ -1,0 +1,13 @@
+{
+  "name": "garvtunnel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agent-drivable WebSocket tunnel into an in-game CraftOS 1.9 (CC: Tweaked) computer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

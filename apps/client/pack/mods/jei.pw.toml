@@ -1,11 +1,11 @@
 name = "jei"
-filename = "jei-1.21.1-neoforge-19.27.0.343.jar"
+filename = "jei-1.21.1-neoforge-19.27.0.346.jar"
 side = "both"
 
 [download]
-url = "https://cdn.modrinth.com/data/u6dRKJwZ/versions/iiCpE7cU/jei-1.21.1-neoforge-19.27.0.343.jar"
+url = "https://cdn.modrinth.com/data/u6dRKJwZ/versions/eBag7ypX/jei-1.21.1-neoforge-19.27.0.346.jar"
 hash-format = "sha512"
-hash = "65c05aaaf4a2696f8298ce402470288ef88c21390d5e89101f5e511aa36ee23d2463f0975653bf949c4ee079f557a698ee70de1fa89ef64b81fd41e1edc4fdb8"
+hash = "d1eaf27c9b8d2e8c99db7808b27f0286297cbc444dcb2d9f9924f2f7c7bf79038aa38673f5c52ba5656a18dd1d0299a4c965a1fc3536ea6d63c1a3048c24fd05"
 
 [option]
 optional = true
@@ -15,4 +15,4 @@ description = "Quality-of-life — deselect to skip."
 [update]
 [update.modrinth]
 mod-id = "u6dRKJwZ"
-version = "iiCpE7cU"
+version = "eBag7ypX"

@@ -40,7 +40,7 @@ function serializeEnv(fn) {
 }
 
 // Idempotently add (or, with {remove:true}, drop) `name` in a comma-separated env LIST
-// — MC_WHITELIST, MC_OPS, … — preserving every other line, the key's spacing, and any
+// — e.g. MC_WHITELIST — preserving every other line, the key's spacing, and any
 // inline `# comment`. Dedupe/match is case-insensitive (Minecraft matches names that
 // way) but the caller's casing is kept on add. Atomic write (temp + rename) so a crash
 // can't truncate the live .env, and the file's original mode (likely 0600) is preserved.

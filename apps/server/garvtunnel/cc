@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# cc — run Lua inside the in-game CraftOS computer via the garvtunnel sidecar.
+#
+#   ./cc 'print(2+2) return os.version()'      # run a chunk (first-connected computer)
+#   ./cc -f script.lua                          # run a file
+#   ./cc -s                                     # list connected computers (/status)
+#   ./cc -i 1 'return os.getComputerID()'       # target a specific computer by id (see -s)
+#
+# Reads TUNNEL_TOKEN from the environment, else from ../.env. Talks to the
+# host-only control plane on 127.0.0.1:8175. Requires: curl, jq.
+set -euo pipefail
+
+PORT="${TUNNEL_CTL_PORT:-8175}"
+BASE="http://127.0.0.1:${PORT}"
+
+TOKEN="${TUNNEL_TOKEN:-}"
+if [[ -z "$TOKEN" ]]; then
+  envfile="$(dirname "$0")/../.env"
+  [[ -f "$envfile" ]] && TOKEN="$(grep -E '^TUNNEL_TOKEN=' "$envfile" | tail -1 | cut -d= -f2-)"
+fi
+[[ -n "$TOKEN" ]] || { echo "cc: TUNNEL_TOKEN not set (env or ../.env)" >&2; exit 1; }
+
+# Optional `-i <id>` targets a specific computer (default: first-connected). The
+# bridge picks the first connected computer when no id is sent, so with >1 device
+# (e.g. a desktop + a turtle) you must name the one you mean. `cc -s` lists ids.
+ID=""
+if [[ "${1:-}" == "-i" ]]; then
+  ID="${2:-}"
+  [[ -n "$ID" ]] || { echo "cc: -i needs a computer id (see cc -s)" >&2; exit 1; }
+  shift 2
+fi
+
+if [[ "${1:-}" == "-s" ]]; then
+  curl -fsS "$BASE/status" -H "X-Tunnel-Token: $TOKEN" | jq .
+  exit 0
+fi
+
+if [[ "${1:-}" == "-f" ]]; then
+  [[ -n "${2:-}" && -f "$2" ]] || { echo "cc: -f needs a readable file" >&2; exit 1; }
+  CODE="$(cat "$2")"
+else
+  CODE="${1:-}"
+  [[ -n "$CODE" ]] || { echo "usage: cc [-i id] 'lua code' | cc [-i id] -f file.lua | cc -s" >&2; exit 1; }
+fi
+
+if [[ -n "$ID" ]]; then
+  BODY="$(jq -Rs --arg id "$ID" '{code: ., id: $id}' <<<"$CODE")"
+else
+  BODY="$(jq -Rs '{code: .}' <<<"$CODE")"
+fi
+curl -fsS -X POST "$BASE/exec" \
+    -H "X-Tunnel-Token: $TOKEN" \
+    -H 'content-type: application/json' \
+    --data-binary "$BODY" \
+  | jq .

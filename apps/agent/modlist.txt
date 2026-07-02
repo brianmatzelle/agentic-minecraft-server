@@ -15,8 +15,9 @@
 
 # ── mods ───────────────────────────────────────────────────────────────────
 cc-tweaked            # CC: Tweaked — programmable in-game computers/turtles (ComputerCraft, maintained fork). NeoForge 1.21.1, latest v1.120.0. No required deps. client_side: REQUIRED — players must install it too.
+advancedperipherals   # Advanced Peripherals — CC: Tweaked add-on: extra peripherals/blocks (Player Detector, Environment Detector, Chat Box, Energy/Block/Inventory readers, ME/RS bridges, etc.). NeoForge 1.21.1, latest 1.21.1-0.7.62b. client_side: REQUIRED. deps: cc-tweaked (already listed above). Requested via Discord 2026-06-30.
 cobblemon:Uz1QF4Md    # Cobblemon — catch & battle Pokémon. NeoForge 1.21.1. PINNED to 1.7.1 (version id Uz1QF4Md) to match the exact build the client modpack ships (apps/client/modrinth.index.json). DO NOT unpin: an unpinned slug resolves to Modrinth "latest" and silently drifts ahead of the pinned client → join rejections (the recurring "wrong Cobblemon version" bug). To bump: update BOTH this version id AND the client pack in the same PR. client_side: REQUIRED — players must install it too. deps: kotlin-for-forge.
-kotlin-for-forge      # Kotlin for Forge — required dependency of Cobblemon (Kotlin runtime). NeoForge 1.21.1, latest v5.11.0. client_side/server_side: optional (pulled in for Cobblemon).
+kotlin-for-forge:NrSebcsG  # Kotlin for Forge — required dependency of Cobblemon (Kotlin runtime). NeoForge 1.21.1. PINNED to 5.11.0 (version id NrSebcsG) to match the exact build the client pack ships. DO NOT unpin: 5.12.0 has since shipped, so an unpinned slug re-resolves to "latest" on each `up` and drifts ahead of the pinned client → handshake/join rejections. To bump: update BOTH this id AND the client pack in the same PR. client_side/server_side: optional (pulled in for Cobblemon).
 
 # ── performance / diagnostics ────────────────────────────────────────────────
 lithium               # Lithium — general game-logic optimizations. NeoForge 1.21.1, latest mc1.21.1-0.15.3-neoforge. No deps. client/server: optional — server-side only here.
@@ -39,7 +40,9 @@ noisium               # Noisium — faster worldgen. NeoForge 1.21.1, latest v2.
 simpletms-tms-and-trs-for-cobblemon:uaKfPMYS  # SimpleTMs — TMs & TRs to teach moves. PINNED 2.3.3 (id uaKfPMYS) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge, architectury-api.
 cobbledollars:QSl34Qen  # CobbleDollars — in-game Pokémon currency / shops. PINNED 2.0.0+Beta-5.1 (id QSl34Qen) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge.
 cobblepedia:dEMwrap5    # Cobblemon Poképedia (Cobblepedia) — in-game Pokédex. PINNED 0.7.1 (id dEMwrap5) to the exact build the client pack ships. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, patchouli.
-cobblemon-pokenav     # Cobblemon PokeNav — adds a PokéNav-style in-game device/UI for Cobblemon (trainer/navigation menus). NeoForge 1.21.1, latest 2.3.3. client_side: REQUIRED (UI mod — players install it too). deps: cobblemon. Requested via Discord 2026-06-28.
+cobbreeding:xt8IiPEN    # Cobbreeding — Pokémon breeding (egg moves, IV inheritance, daycare). PINNED 2.2.1 (id xt8IiPEN) to the exact build the client pack ships; it targets Cobblemon 1.7, matching our pinned 1.7.1. NeoForge 1.21.1. client_side: REQUIRED. deps: cobblemon, kotlin-for-forge, architectury-api, cloth-config (latest 2.2.1's Modrinth metadata lists no deps, but it's a Cobblemon 1.7 addon — the standard stack is required; cloth-config added below).
+cobblemon-pokenav:yCSofpNb  # Cobblemon PokeNav (Cobblenav) — PokéNav-style device/UI: location screen with nearby-Pokémon tracking, PokéFinder, spawn info. PINNED 2.3.3 (id yCSofpNb) to the exact build the client pack ships; its neoforge.mods.toml requires Cobblemon [1.7.0,), satisfied by our pinned 1.7.1 — DO NOT unpin (future builds may target Cobblemon 1.8; same drift trap as the addons above). NeoForge 1.21.1. client_side: REQUIRED — ships in the client pack. deps: cobblemon. Requested via Discord 2026-06-28, re-requested 2026-07-02.
+cobblemon-challenge:1feQg7wz  # Cobblemon Challenge — /challenge <player> [level <1-100>] for flat-level competitive PvP battles (default lvl 50, VGC-style): every pokemon is temporarily set to that level for the battle only — non-permanent, no EXP/EVs gained and held items aren't really consumed. Also /challenge3v3, /challenge1v1, /challengedouble, plus a team-preview/lead-select GUI. PINNED 2.4.0 (id 1feQg7wz) — this build is explicitly "For Cobblemon 1.7", matching our pinned 1.7.1; DO NOT unpin: newer builds may target Cobblemon 1.8 and crash during battles (same version-drift trap noted for the addons above). NeoForge 1.21.1. server_side: REQUIRED, client_side: unsupported — fully server-side, vanilla Cobblemon clients need no extra download (NOT in the client pack). No deps (Cobblemon already listed above). Requested via Discord 2026-06-30.
 # Cobblemon-addon dependencies:
 # REMOVED 2026-06-25 — rctmod (Radical Cobblemon Trainers) + rctapi (its API)
 #   removed by request. rctapi was only needed by rctmod, so both go together.
@@ -57,14 +60,32 @@ create                # Create — mechanical contraptions & automation. NeoForg
 jade                  # Jade — "what am I looking at" tooltip overlay. NeoForge 1.21.1, latest 15.10.5+neoforge. client/server: optional. No deps.
 jei                   # Just Enough Items (JEI) — in-game recipe viewer. NeoForge 1.21.1, latest 19.27.0.343. client/server: optional. No deps.
 waystones             # Waystones — fast-travel network. NeoForge 1.21.1, latest 21.1.34+neoforge-1.21.1. client_side: REQUIRED. deps: balm.
-sophisticated-backpacks  # Sophisticated Backpacks — upgradable backpacks. NeoForge 1.21.1, latest 1.21.1-3.25.64.1919. client_side: REQUIRED. deps: sophisticated-core.
+sophisticated-backpacks:y2W0V4fw  # Sophisticated Backpacks — upgradable backpacks. NeoForge 1.21.1. PINNED to 1.21.1-3.25.65.1955 (version id y2W0V4fw) to match the build the client pack ships. DO NOT unpin: an unpinned slug re-resolves to "latest" on each up/restart and drifts ahead of the pinned client — it did exactly that on 2026-06-30 (3.25.64 -> 3.25.65 on a routine restart). To bump: update BOTH this id AND the client pack pin in the same change. client_side: REQUIRED. deps: sophisticated-core.
 farmers-delight       # Farmer's Delight — cooking & farming expansion. NeoForge 1.21.1, latest 1.21.1-1.3.2. client_side: REQUIRED. No deps.
+gravestone-mod        # GraveStone Mod (henkelmax) — drops a gravestone holding your inventory when you die, so you can recover items. NeoForge 1.21.1, latest neoforge-1.21.1-1.0.37. client_side: REQUIRED. No required deps (Jade is an optional integration, already listed). Requested via Discord 2026-07-01.
 create-aeronautics    # Create: Aeronautics — flyable physics-driven aircraft for Create. NeoForge 1.21.1, latest 1.3.0+mc1.21.1. client_side: REQUIRED, server_side: REQUIRED. deps: create, sable.
 when-dungeons-arise   # When Dungeons Arise — large hand-built dungeon/structure worldgen. NeoForge 1.21.1, latest 2.1.68. server_side: REQUIRED, client_side: not needed (vanilla-block structures generated server-side). No deps. Requested via Discord 2026-06-24.
+warputils             # WarpUtils — server-side teleport commands: /sethome+/home, /tpa, /warp, /back (configurable cooldowns/warmups). NeoForge 1.21.1, latest 0.5.3. server_side: REQUIRED, client_side: unsupported — fully server-side, vanilla clients need no extra download (NOT in the client pack). No deps. Requested via Discord 2026-06-28.
+cobblemonextrastructures  # Cobblemon: Extra Structures — adds Cobblemon-themed structures + Pokémon spawners (more places to find & catch Pokémon). NeoForge 1.21.1, latest 1.21.1-1.3.0 (changelog states Cobblemon 1.7 compatibility). server_side: REQUIRED, client_side: optional (custom structure content — ships in the client pack as a deselectable optional mod). deps: cobblemon. Requested via Discord 2026-06-28.
 # QoL dependencies:
 balm                  # Balm — required by Waystones (shared config/util lib). NeoForge 1.21.1, latest 21.0.59+neoforge-1.21.1. client/server: optional.
-sophisticated-core    # Sophisticated Core — required by Sophisticated Backpacks. NeoForge 1.21.1, latest 1.21.1-1.4.60.2044. client_side: REQUIRED.
+sophisticated-core:IAisFkLf  # Sophisticated Core — required by Sophisticated Backpacks. NeoForge 1.21.1. PINNED to 1.21.1-1.4.60.2057 (version id IAisFkLf) to match the exact build the client pack ships. DO NOT unpin: 1.4.61.x has since shipped, so an unpinned slug re-resolves to "latest" on each `up` and drifts ahead of the pinned client. To bump: update BOTH this id AND the client pack in the same PR. client_side: REQUIRED.
 sable                 # Sable — required by Create: Aeronautics (physics/aero library). NeoForge 1.21.1, latest 2.0.3+mc1.21.1. client_side: REQUIRED, server_side: REQUIRED. No required deps (create optional).
+
+# ── Tech, storage & villager QoL — requested via Discord 2026-06-28 ──────────
+# All are content mods (blocks/items/registry) → REQUIRED client-side, so they
+# also ship in the one-click client pack (CLIENT_MODS in scripts/build-client-mrpack.mjs).
+# Core mods listed before their addons; Extra Disks needs Refined Storage.
+mekanism              # Mekanism — large tech/automation suite (ore processing, power, factories, logistics). NeoForge 1.21.1, latest 10.7.19.85. client_side: REQUIRED. No required deps.
+mekanism-generators   # Mekanism: Generators — power generation addon (solar, gas-burning, wind, fission, fusion). NeoForge 1.21.1, latest 10.7.19.85. client_side: REQUIRED. deps: mekanism.
+mekanism-tools        # Mekanism: Tools — tools & armor from Mekanism alloys/materials. NeoForge 1.21.1, latest 10.7.19.85. client_side: REQUIRED. deps: mekanism.
+mekanism-additions    # Mekanism: Additions — extra content (Baby Skeletons, plastic blocks, balloons, etc.). NeoForge 1.21.1, latest 10.7.19.85. client_side: REQUIRED. deps: mekanism.
+refined-storage       # Refined Storage — networked digital item/fluid storage (RS 2.0 rewrite). NeoForge 1.21.1, latest 2.0.9. client_side: REQUIRED. No required deps.
+extra-disks           # Extra Disks — higher-capacity storage disks for Refined Storage. NeoForge 1.21.1, latest 1.21.1-4.0.15 (targets RS 2.0). client_side: REQUIRED. deps: refined-storage.
+pylons                # Pylons — area-effect pylons (harvest, growth, item pickup, mob/player effects). NeoForge 1.21.1, latest 5.4.2. client_side: REQUIRED. No deps.
+easy-villagers        # Easy Villagers — pick up/move villagers as items + auto-trader/converter/incubator blocks. NeoForge 1.21.1, latest neoforge-1.21.1-1.1.42. client_side: REQUIRED. No deps.
+easy-piglins          # Easy Piglins — pick up/move piglins + automatable gold bartering. NeoForge 1.21.1, latest neoforge-1.21.1-1.1.0. client_side: REQUIRED. No deps.
+trade-cycling         # Trade Cycling — re-roll/cycle a villager's trade offers. NeoForge 1.21.1, latest neoforge-1.21.1-1.0.18. client_side: REQUIRED. No deps.
 
 # ── Industrial Upgrade tech suite — REMOVED 2026-06-26 by request ─────────────
 # Removed the whole IU set: industrialupgrade + its three addons (power-utilities,
@@ -78,3 +99,4 @@ architectury-api      # Architectury API — required by Mega Showdown, SimpleTM
 accessories           # Accessories — required by Cobblemon: Mega Showdown. NeoForge 1.21.1, latest 1.1.0-beta.53+1.21.1. client_side: REQUIRED. deps: owo-lib.
 owo-lib               # oωo (owo-lib) — required by Mega Showdown & Accessories. NeoForge 1.21.1, latest 0.12.15.5-beta.1+1.21. client_side: REQUIRED.
 patchouli             # Patchouli — in-game documentation lib, required by Cobblepedia. NeoForge 1.21.1, latest 1.21.1-93-neoforge. client_side: REQUIRED.
+cloth-config          # Cloth Config API — config-screen library, required by Cobbreeding. NeoForge 1.21.1, latest 15.0.140+neoforge. client_side: REQUIRED (Cobbreeding needs it), server_side: optional.

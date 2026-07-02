@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# ccdeploy — push a local Lua file onto the in-game CraftOS computer (via garvtunnel)
+# and launch it in a focused multishell tab, so the tunnel client keeps running.
+#
+#   ccdeploy game.lua                 # write /game.lua, launch in focused tab
+#   ccdeploy game.lua /apps/game.lua  # custom remote path
+#   ccdeploy game.lua /game.lua pong  # custom tab title
+#   CCDEPLOY_NOFOCUS=1 ccdeploy ...   # launch but don't steal the screen
+#   CCDEPLOY_NOLAUNCH=1 ccdeploy ...  # just write the file, don't run it
+#   CCDEPLOY_ID=1 ccdeploy ...        # target computer id 1 (default: first-connected; see cc -s)
+#
+# Source is base64'd over the control plane, so any bytes survive (quotes, ]==], \).
+set -euo pipefail
+
+SELF="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(git -C "$SELF" rev-parse --show-toplevel)"
+CC="$ROOT/apps/server/garvtunnel/cc"
+
+FILE="${1:?usage: ccdeploy <file.lua> [remote-path] [tab-title]}"
+[[ -f "$FILE" ]] || { echo "ccdeploy: no such file: $FILE" >&2; exit 1; }
+REMOTE="${2:-/$(basename "$FILE")}"
+NAME="${3:-$(basename "${REMOTE%.lua}")}"
+B64="$(base64 -w0 "$FILE")"
+
+if [[ "${CCDEPLOY_NOLAUNCH:-}" == 1 ]]; then
+  LAUNCH='return "wrote "..#src.." bytes to "..REMOTE'
+else
+  FOCUS=""
+  [[ "${CCDEPLOY_NOFOCUS:-}" == 1 ]] || FOCUS="multishell.setFocus(id)"
+  LAUNCH="local id = shell.openTab(REMOTE)
+if multishell and id then multishell.setTitle(id, NAME); $FOCUS end
+return \"launched \"..REMOTE..\" tab=\"..tostring(id)"
+fi
+
+# Lua chunk: decode base64 -> write file -> (launch). Single quotes are literal
+# inside this bash double-quoted string; only \" and \$ need escaping.
+CHUNK="local B64 = \"$B64\"
+local REMOTE, NAME = \"$REMOTE\", \"$NAME\"
+local function dec(data)
+  local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  data = data:gsub('[^'..b..'=]', '')
+  return (data:gsub('.', function(x)
+    if x == '=' then return '' end
+    local r, f = '', (b:find(x) - 1)
+    for i = 6, 1, -1 do r = r .. (f % 2^i - f % 2^(i - 1) > 0 and '1' or '0') end
+    return r
+  end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+    if #x ~= 8 then return '' end
+    local c = 0
+    for i = 1, 8 do c = c + (x:sub(i, i) == '1' and 2^(8 - i) or 0) end
+    return string.char(c)
+  end))
+end
+local src = dec(B64)
+local f = fs.open(REMOTE, \"w\"); f.write(src); f.close()
+$LAUNCH"
+
+# CCDEPLOY_ID picks a specific computer; without it, the first-connected one (cc default).
+if [[ -n "${CCDEPLOY_ID:-}" ]]; then
+  "$CC" -i "$CCDEPLOY_ID" "$CHUNK"
+else
+  "$CC" "$CHUNK"
+fi

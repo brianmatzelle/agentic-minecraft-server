@@ -1,0 +1,34 @@
+# Prometheus scrape config for the Minecraft server.
+# Prometheus runs as a sidecar (see docker-compose.yml) on the internal compose
+# network and scrapes the cpburnz prometheus-exporter mod running INSIDE the
+# minecraft container on port 19565. That port is NOT published to the host — it
+# is only reachable service-to-service on the compose network, so the metrics
+# endpoint is never exposed off-box.
+#
+# The `view_distance` / `simulation_distance` labels below stamp the ACTIVE server
+# config onto every scraped sample. This is the "metrics against config" idea: when
+# you change VIEW_DISTANCE/SIMULATION_DISTANCE in docker-compose.yml, bump these to
+# match and restart Prometheus — your graphs then carry the config that was live at
+# each point in time, so a before/after comparison is a label filter, not guesswork.
+# (For the exact instant of a change, also drop a Grafana annotation.)
+
+global:
+  scrape_interval: 15s          # one sample every 15s is plenty for TPS/heap trends
+  evaluation_interval: 15s
+  external_labels:
+    monitor: minecraft
+
+scrape_configs:
+  # The Minecraft server's in-process exporter (JVM heap/GC + MC TPS/MSPT/chunks/entities/players).
+  - job_name: minecraft
+    static_configs:
+      - targets: ['minecraft:19565']
+        labels:
+          instance: mc-neoforge
+          view_distance: "16"          # <-- keep in sync with VIEW_DISTANCE in docker-compose.yml
+          simulation_distance: "12"    # <-- keep in sync with SIMULATION_DISTANCE
+
+  # Prometheus scraping itself (cheap; handy for "is the monitoring stack healthy").
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
