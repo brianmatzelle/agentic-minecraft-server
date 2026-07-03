@@ -31,9 +31,9 @@ gh pr merge $ARGUMENTS --merge --delete-branch
 git pull --ff-only
 printf 'last_deployed_sha=%s\nlast_result=ok\n' "$(git rev-parse HEAD)" > apps/server/.auto-deploy-state
 ```
-The stamp is NOT optional: the `garvis-auto-deploy.timer` watcher fires every 3 min, and a mod-PR merge is allowlist-eligible — without the stamp it re-deploys the same SHA with `--health-check`, which can **never** succeed on an already-booted server (it tails live logs for a `Done` that already printed) → false 420s timeout → **rolls the live server back to the old mod set** (near-miss 2026-07-02, PR #48; killed with 20s to spare). If a watcher run is already in-flight (`pgrep -af deploy.sh`), kill it before its timeout — killing is safe, rollback only happens on the failure path.
+The stamp is NOT optional: the `garvis-auto-deploy.timer` watcher fires every 3 min, and a mod-PR merge is allowlist-eligible — without the stamp it pointlessly re-deploys the same SHA. Historically that was catastrophic: the old `--health-check` tailed live logs for a `Done` that had already printed → false 420s timeout → **rolled the live server back to the old mod set** (near-miss 2026-07-02, PR #48; killed with 20s to spare). `wait_for_ready` now polls the container healthcheck, so an already-booted server passes instantly — but keep stamping: it keeps the watcher state truthful and skips a wasted deploy cycle. If a watcher run is already in-flight (`pgrep -af deploy.sh`), killing it is safe — rollback only happens on the failure path.
 
-## 4. Redeploy — **no** `--health-check` (false-timeout → bad rollback on this fast box)
+## 4. Redeploy — plain, **no** `--health-check` (watch the boot logs yourself; the flag is safe again post-rewrite but adds nothing to a watched manual deploy)
 ```bash
 scripts/deploy.sh                 # modlist.txt → MODRINTH_PROJECTS → docker compose up -d
 docker logs -f --since 2s mc-neoforge 2>&1 | sed -u 's/\x1b\[[0-9;]*m//g' \

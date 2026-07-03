@@ -8,8 +8,8 @@
 #   1. Reads apps/agent/modlist.txt  (one Modrinth slug per line, # comments ok)
 #   2. Writes MODRINTH_PROJECTS=<slugs> into apps/server/.env
 #   3. docker compose up -d           (itzg downloads mods at startup)
-#   4. (--health-check) waits for the server to report "Done", and AUTO-ROLLS-BACK
-#      to the previous mod set if it doesn't boot — see "Why --health-check" below.
+#   4. (--health-check) waits for the container's own healthcheck to report healthy,
+#      and AUTO-ROLLS-BACK to the previous mod set if it doesn't boot — see below.
 #
 # Usage:
 #   scripts/deploy.sh                      # sync modlist -> .env, recreate the container
@@ -71,21 +71,68 @@ set_modrinth_projects() {
 
 compose_up() { ( cd "$SERVER_DIR" && docker compose up -d ); }
 
-# Wait until the server logs itzg's "Done (Ns)!" readiness marker, or a clearly-fatal
-# mod-loading signature appears, or we time out. Returns 0 = ready, 1 = not ready.
-# grep -m1 closes the pipe on the first match (SIGPIPE ends the follow); `timeout`
-# bounds a silent hang. We only fast-fail on NeoForge's explicit "I give up" lines so a
-# healthy boot (which logs plenty of benign warnings) is never mistaken for a crash.
+# Wait until the minecraft container's own healthcheck (itzg's mc-health — the same
+# signal the backup/metrics sidecars gate on via `service_healthy`) reports healthy,
+# or the container dies, or NeoForge logs an explicit fatal signature, or we time out.
+# Returns 0 = ready, 1 = not ready.
+#
+# Deliberately NOT a live-log tail. The old `docker compose logs -f --since 2s |
+# grep "Done"` was racy: a server whose Done line already printed (e.g. the
+# auto-deploy watcher re-checking an already-deployed SHA) could NEVER match, so a
+# healthy server "timed out" and got rolled back (near-miss 2026-07-02). The raw log
+# stream is also full of ANSI color + CR control bytes that can break the grep even
+# on a genuine fresh boot. Health polling has neither problem: an already-healthy
+# container passes immediately, and a fresh boot passes as soon as mc-health does.
+# We only fast-fail on the container dying or NeoForge's explicit "I give up" lines,
+# so a healthy boot (which logs plenty of benign warnings) is never mistaken for a
+# crash.
 wait_for_ready() {
-  local timeout_s="$1" line=""
-  echo "⏳ Waiting up to ${timeout_s}s for the server to report ready…"
-  line="$(timeout "${timeout_s}" bash -c "cd '$SERVER_DIR' && docker compose logs -f --no-color --since 2s 2>&1 | grep -m1 -E ']: Done \\([0-9.]+s\\)!|Failed to load datapacks, can|A potential solution has been determined|Failed to start the minecraft server'" || true)"
-  if printf '%s' "$line" | grep -qE ']: Done \([0-9.]+s\)!'; then
-    echo "✅ Ready: ${line##*]: }"
-    return 0
-  fi
-  [ -n "$line" ] && echo "❌ Boot looks broken: ${line}" || echo "❌ Timed out with no readiness marker after ${timeout_s}s."
-  return 1
+  local timeout_s="$1" waited=0 interval=5
+  local cid="" state="" health="" started="" matched=""
+  echo "⏳ Waiting up to ${timeout_s}s for the container healthcheck to report healthy…"
+  while :; do
+    cid="$( (cd "$SERVER_DIR" && docker compose ps -aq minecraft) 2>/dev/null | head -1 || true)"
+    state=""; health=""
+    if [ -n "$cid" ]; then
+      state="$(docker inspect --format '{{.State.Status}}' "$cid" 2>/dev/null || true)"
+      health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cid" 2>/dev/null || true)"
+      started="$(docker inspect --format '{{.State.StartedAt}}' "$cid" 2>/dev/null || true)"
+      if [ "$state" = "running" ] && [ "$health" = "healthy" ]; then
+        echo "✅ Ready: container healthcheck is healthy (after ${waited}s)."
+        return 0
+      fi
+      if [ "$state" = "exited" ] || [ "$state" = "dead" ]; then
+        echo "❌ Boot looks broken: container is ${state}."
+        return 1
+      fi
+      # No healthcheck on the image (shouldn't happen with itzg) — fall back to this
+      # boot's persisted Done marker, ANSI/CR-stripped. -a: the stream has control
+      # bytes that make grep treat it as binary otherwise.
+      if [ "$state" = "running" ] && [ "$health" = "none" ]; then
+        matched="$(docker logs --since "${started:-5m}" "$cid" 2>&1 | sed 's/\x1b\[[0-9;]*[mK]//g' | tr -d '\r' | grep -m1 -aE ']: Done \([0-9.]+s\)!' || true)"
+        if [ -n "$matched" ]; then
+          echo "✅ Ready: ${matched##*]: } (no container healthcheck; matched boot log)"
+          return 0
+        fi
+      fi
+      # NeoForge's explicit "I give up" lines → fail fast instead of waiting out the
+      # clock. Scoped to the current boot's logs via --since StartedAt.
+      matched="$(docker logs --since "${started:-5m}" "$cid" 2>&1 | sed 's/\x1b\[[0-9;]*[mK]//g' | tr -d '\r' | grep -m1 -aE 'Failed to load datapacks, can|A potential solution has been determined|Failed to start the minecraft server' || true)"
+      if [ -n "$matched" ]; then
+        echo "❌ Boot looks broken: ${matched}"
+        return 1
+      fi
+    fi
+    if [ "$waited" -ge "$timeout_s" ]; then
+      echo "❌ Timed out after ${timeout_s}s (container: ${state:-not found}, health: ${health:-n/a})."
+      return 1
+    fi
+    sleep "$interval"
+    waited=$((waited + interval))
+    if [ $((waited % 30)) -eq 0 ]; then
+      echo "   …${waited}s (container: ${state:-not found}, health: ${health:-n/a})"
+    fi
+  done
 }
 
 echo "Canonical mods -> ${slugs:-(none)}"
