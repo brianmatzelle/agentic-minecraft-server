@@ -107,11 +107,13 @@ export function toChatLines(text, { maxLineLen = 230, maxLines = 8 } = {}) {
   for (const rawLine of String(text ?? '').split('\n')) {
     const line = rawLine.replace(/\s+$/, '');
     if (!line) continue;
-    // A ChatImage [[CICode,url=…]] tag only renders if it reaches the client in one
-    // piece — hard-wrapping would sever it mid-URL and every player would see raw
-    // tag fragments instead of the image. A line carrying one skips the wrap (RCON
-    // takes the length fine; the tag renders as an image, not text, so "width" is moot).
-    if (line.includes('[[CICode')) { out.push(line); continue; }
+    // ChatImage renders a line as an inline image only if the URL (or a legacy
+    // [[CICode,url=…]] tag) reaches the client intact — its checkImageUri
+    // auto-detection (default-on) scans every chat-HUD line, tellraw included.
+    // Hard-wrapping would sever the URL and players would see broken fragments
+    // instead of the image. A line carrying either skips the wrap (RCON takes
+    // the length fine; it renders as an image, not text, so "width" is moot).
+    if (line.includes('[[CICode') || /https?:\/\//.test(line)) { out.push(line); continue; }
     for (let i = 0; i < line.length; i += maxLineLen) out.push(line.slice(i, i + maxLineLen));
   }
   if (!out.length) return ['(no answer)'];
