@@ -196,6 +196,10 @@ Everything below is a **design sketch to build later**, not shipped.
 
 - A true `/g` is **private by default** (command args aren't broadcast to chat),
   **tab-completes**, and can't be confused with normal chat.
+- It **closes the `!gw` privacy gap**: today only the *reply* is private — the
+  typed `!gw …` line is still public chat, because the log-tail transport can't
+  intercept chat. With a real command the *input* never enters public chat, so a
+  whisper is finally private end-to-end.
 - The server hands the mod a **structured, trustworthy payload** (player UUID, not
   just a name; dimension; coords), instead of us scraping a log line.
 - It's the "real product" — `!g` is the validate-the-idea version.
@@ -213,6 +217,13 @@ commands sync to vanilla-on-NeoForge clients):
   → Garvis endpoint runs the SAME brain as `!g`/Discord and returns reply text
   → mod shows the reply to the player via command source feedback (private)
 ```
+
+**Whispers carry over.** A `/gw <message>` (or `/g whisper <message>`) variant
+maps straight onto the existing whisper path: warmer register, reply to the
+asker alone, separate `mc-whisper:<uuid>` session so whispered context never
+surfaces in the public thread. The payload just carries a `whisper: true` flag
+to the same endpoint. Since command input isn't broadcast, this retires the
+Phase 1.5 caveat that the typed `!gw` line is public.
 
 ### What it would entail (the real cost — why it's deferred)
 
