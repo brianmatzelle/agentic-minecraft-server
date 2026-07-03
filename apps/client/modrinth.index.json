@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-07-02",
+  "versionId": "2026-07-03",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -79,6 +79,21 @@
         "https://cdn.modrinth.com/data/gu7yAYhd/versions/8XEJbAee/cc-tweaked-1.21.1-forge-1.120.0.jar"
       ],
       "fileSize": 3126946
+    },
+    {
+      "path": "mods/ChatImage-1.4.7+1.21.0+neoforge.jar",
+      "hashes": {
+        "sha1": "5050acc4d27e8118eede0c67c3c0a86e41f3ec1a",
+        "sha512": "e835bcf7a27ff04c713359fe9d64277a929de5e6271da9b86702cff62d9e9b980853fa1a4cc54e0b9e7e39bdf4dcf44ccbdf51b5444e717e71a8ab1fd14e4c64"
+      },
+      "env": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/zhVN1dvW/versions/hqAoNNVF/ChatImage-1.4.7%2B1.21.0%2Bneoforge.jar"
+      ],
+      "fileSize": 702438
     },
     {
       "path": "mods/cloth-config-15.0.140-neoforge.jar",
