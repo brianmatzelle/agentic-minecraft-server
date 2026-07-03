@@ -80,6 +80,9 @@ export function parseIngameClassification(text) {
   if (!obj || typeof obj !== 'object') return { intent: 'qa', give: null };
   const intent = String(obj.intent ?? '').trim().toLowerCase();
   if (intent === 'modreq') return { intent: 'modreq', give: null };
+  // 'tv' just routes to the TV handler (which runs its own web-capable director to
+  // decide text-vs-image and find a real image URL) — no args to extract here.
+  if (intent === 'tv') return { intent: 'tv', give: null };
   if (intent === 'give') {
     // Tolerate either a nested {"give":{…}} or the fields placed flat on the object.
     const g = obj.give && typeof obj.give === 'object' ? obj.give : obj;
