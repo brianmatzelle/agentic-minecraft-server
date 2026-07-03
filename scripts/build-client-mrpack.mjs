@@ -118,6 +118,16 @@ const CLIENT_MODS = [
   // optional (Modrinth client_side: optional) but shipped so players see custom
   // structure content. Discord req 2026-06-28.
   { slug: 'cobblemonextrastructures',            client: 'optional', server: 'required' },
+  // ── Chat image embeds (client-only; server never runs it → server: 'unsupported') ─
+  // ChatImage (kitUIN) renders an inline image in chat wherever a message carries a
+  // [[CICode,url=…]] tag — including tellraw JSON, which is how in-game Garvis speaks
+  // (apps/garvis-bot/src/ingame.js). Modrinth lists server_side: optional, but the
+  // server half only relays LOCAL-file sharing between clients; web-URL rendering is
+  // pure client-side, so like distanthorizons it stays out of modlist.txt (no server
+  // boot risk, no deploy coupling). client: 'required' so every player sees Garvis's
+  // images instead of the raw CICode text. PINNED to the tested build (drift-lock,
+  // same policy as the other pins). No deps.
+  { slug: 'chatimage',                           client: 'required', server: 'unsupported', pin: '1.4.7+1.21.0+neoforge' },
   // ── Client-side FPS mods (server never runs them → server: 'unsupported') ──
   // Pure rendering/culling optimizations: the server's view-distance=16 forces
   // each client to render ~1k chunks of heavy modded terrain, and the pack ships
