@@ -118,9 +118,19 @@ const INGAME_TRIGGER = process.env.GARVIS_INGAME_TRIGGER || '!g';
 // a shared assistant is the better demo) or a single-player selector. Player-only
 // "thinking" acks always go to the asker regardless, to keep chat quiet.
 const INGAME_REPLY_TARGET = process.env.GARVIS_INGAME_REPLY_TARGET || '@a';
+// WHISPER variant: `!gw <message>` is a private line to Garvis — the reply is
+// tellraw'd to the asker ALONE (never @a), rendered whisper-gray, in a warmer, more
+// personal register, with its own per-player session so whispered context can never
+// surface in the public `!g` thread (or vice versa). Q&A only — give/modreq stay on
+// the public trigger. The TYPED `!gw …` line is still public chat (the log-tail
+// transport can't intercept chat; true private input is the Phase 2 `/g` mod) —
+// only the reply is private. Kill switch: GARVIS_INGAME_WHISPER=off.
+const INGAME_WHISPER = (process.env.GARVIS_INGAME_WHISPER ?? 'on') !== 'off';
+const INGAME_WHISPER_TRIGGER = process.env.GARVIS_INGAME_WHISPER_TRIGGER || '!gw';
 // Spawning `claude` per message is expensive; a per-player cooldown bounds spam and
 // concurrent spawns. Longer than the Discord mod-action gate since each `!g` is a
-// full Q&A turn, not a cheap RCON verb.
+// full Q&A turn, not a cheap RCON verb. Whispers share the same per-player bucket,
+// so the private trigger doesn't double anyone's spawn budget.
 const INGAME_COOLDOWN_MS = Number(process.env.GARVIS_INGAME_COOLDOWN_MS ?? 15_000);
 // Tighter turn/time budget than Discord help: in-game answers should be quick and
 // short. A few turns still lets Garvis read the repo (e.g. modlist) to answer.
@@ -553,6 +563,51 @@ async function answerInGame({ player, question }) {
   return { ...res, resumed: Boolean(resume) };   // full result (text + sessionId + cost/latency) so the caller can log the turn
 }
 
+// Whisper (`!gw`) Q&A prompt. Same chat constraints and ground truth as the public
+// prompt, but the reply goes to the asker alone, so the register shifts: warmer,
+// more personal, a bit more in the player's favor — a confidant, not an announcer.
+// Tone leans toward them; facts don't.
+function buildWhisperPrompt({ question, player }) {
+  return [
+    `You are Garvis, the in-game assistant for a specific modded Minecraft Java server. ${player} is whispering to you through Minecraft chat (they typed "${INGAME_WHISPER_TRIGGER} <message>") and your reply is PRIVATE — only they will see it.`,
+    ``,
+    `MINECRAFT CHAT CONSTRAINTS — follow strictly:`,
+    `- Keep it SHORT: 1–4 short lines. Chat is cramped; long answers get truncated.`,
+    `- PLAIN TEXT ONLY. No markdown, no **bold**, no bullet syntax, no code fences, and NO links/URLs (they do not render in chat — describe the mod or item by name instead).`,
+    ``,
+    `WHISPER REGISTER — this is a private line, so:`,
+    `- Be warm and personal; use their name. You're their confidant here, not the public announcer.`,
+    `- Lean a little in their favor: encourage their plans, root for them in friendly rivalries, share the kind of tip you'd save for a friend. Stay honest on facts — favor them in tone, not in truth.`,
+    `- If you truly need one detail to answer, ask one short question.`,
+    ``,
+    `SERVER FACTS (ground truth — use these, don't invent):`,
+    `- Mod loader: ${SERVER.loader} for Minecraft ${SERVER.mc} (requires ${SERVER.java}).`,
+    `- The installed mods are listed in apps/agent/modlist.txt — read it if asked what mods are on the server or how a specific mod works.`,
+    ``,
+    `If asked to DO something that changes the server (op/ban/give/add a mod/etc.), explain whispers are chat-only and point them to the public "${INGAME_TRIGGER}" trigger or Discord (@Garvis).`,
+    ``,
+    `THE PLAYER'S MESSAGE:`,
+    fencedData(question, 800),
+    `(whispered by in-game player ${player})`,
+  ].join('\n');
+}
+
+// Answer one whispered message. Same read-only Q&A brain as answerInGame, but a
+// SEPARATE session per player (`mc-whisper:<player>` vs the public `mc:<player>`),
+// so the private thread and the public thread can never cross-contaminate — a later
+// public "!g what did I just tell you?" broadcast can't surface whispered context,
+// by construction. Keys can't collide: Discord thread ids are numeric snowflakes.
+async function answerWhisper({ player, question }) {
+  const key = `mc-whisper:${player}`;
+  const resume = getSession(key)?.help ?? null;
+  const prompt = resume
+    ? `The player's next whispered message — reply privately (short, plain text, no markdown/links):\n${fencedData(question, 800)}`
+    : buildWhisperPrompt({ question, player });
+  const res = await runClaudeResilient(prompt, { resume, maxTurns: INGAME_TURNS, timeoutMs: INGAME_TIMEOUT_MS });
+  if (res.sessionId) setSession(key, { mode: 'help', sessionId: res.sessionId, ownerId: player });
+  return { ...res, resumed: Boolean(resume) };
+}
+
 // Handle an in-game MOD REQUEST through the SAME maintenance agent the Discord
 // @mention path uses (runMaintSerial -> the isolated clone -> a PR). The agent is
 // told (ingame:true) to reply in terse chat-friendly text with the raw PR URL. The
@@ -588,10 +643,30 @@ async function giveInGame({ player, give }) {
   return { ok: true, text: `🎁 Gave ${v.player} ${v.count || 1}× ${v.item}.` };
 }
 
-// The handler the bridge calls for each `!g` message: cooldown, a quick private
-// "thinking" ack to the asker, then the answer to everyone (INGAME_REPLY_TARGET).
-async function onInGameMessage({ player, message, reply }) {
+// The handler the bridge calls for each `!g` / `!gw` message: cooldown, a quick
+// private "thinking" ack to the asker, then the answer — to everyone
+// (INGAME_REPLY_TARGET) for the public trigger, to the asker alone for a whisper.
+async function onInGameMessage({ player, message, reply, trigger }) {
   const q = (message || '').trim();
+
+  // WHISPER — private Q&A only: every reply targets the asker, whisper-styled, and
+  // the classifier never runs (give/modreq are public-trigger business; the prompt
+  // redirects action asks). Shares the public cooldown bucket on purpose.
+  if (trigger === INGAME_WHISPER_TRIGGER) {
+    const w = { target: player, style: 'whisper' };
+    if (!q) { await reply(`Whisper me something — e.g. "${INGAME_WHISPER_TRIGGER} what should I build next?" Only you see my replies.`, w); return; }
+    const wwait = onCooldown(`mc:${player}`, INGAME_COOLDOWN_MS, 'ingame');
+    if (wwait > 0) { await reply(`Give me a sec — try again in ${wwait}s.`, w); return; }
+    await reply('…thinking', w);
+    let wres;
+    try { wres = await answerWhisper({ player, question: q }); }
+    catch (e) { console.error(`[ingame] whisper ${player}: ${e.message}`); wres = { text: "I hit a snag on that one — give it another go in a moment.", ok: false, error: e.message }; }
+    await reply(wres.text || 'Hmm, I came up empty — try rephrasing?', w);
+    logTurn({ source: 'minecraft', server: MC_CONTAINER, trigger: INGAME_WHISPER_TRIGGER, player, request: q, intent: 'qa', response: wres.text, sessionId: wres.sessionId, success: wres.ok, timedOut: wres.timedOut, latencyMs: wres.durationMs, costUsd: wres.costUsd, numTurns: wres.numTurns, error: wres.error ?? null, metadata: { whisper: true, resumed: wres.resumed ?? null } });
+    console.log(`[ingame] whisper ${player}: ${q.slice(0, 80)}`);
+    return;
+  }
+
   if (!q) { await reply(`Ask me something — e.g. "${INGAME_TRIGGER} how do waystones work?"`, { target: player }); return; }
   const wait = onCooldown(`mc:${player}`, INGAME_COOLDOWN_MS, 'ingame');
   if (wait > 0) { await reply(`Give me a sec — try again in ${wait}s.`, { target: player }); return; }
@@ -1106,12 +1181,12 @@ if (!process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_BOT_TOKEN.startsWith('
   process.exit(1);
 }
 
-// In-game `!g` bridge. Independent of Discord (it tails docker logs + replies over
-// RCON), but lives in this process so it shares the Q&A brain, sessions, and cooldowns.
+// In-game `!g` / `!gw` bridge. Independent of Discord (it tails docker logs + replies
+// over RCON), but lives in this process so it shares the Q&A brain, sessions, and cooldowns.
 if (INGAME_ENABLED) {
   startInGameBridge({
     container: MC_CONTAINER,
-    trigger: INGAME_TRIGGER,
+    triggers: [INGAME_TRIGGER, ...(INGAME_WHISPER ? [INGAME_WHISPER_TRIGGER] : [])],
     replyTarget: INGAME_REPLY_TARGET,
     rconExec,
     onMessage: onInGameMessage,

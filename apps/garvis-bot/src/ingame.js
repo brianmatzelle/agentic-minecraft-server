@@ -1,4 +1,4 @@
-// In-game Garvis bridge (Layer 3, in-game side) — the `!g` chat trigger.
+// In-game Garvis bridge (Layer 3, in-game side) — the `!g` / `!gw` chat triggers.
 //
 // This is the no-custom-mod path to "talk to Garvis in Minecraft": instead of a
 // NeoForge mod registering a real `/g` slash command (a documented Phase 2 — see
@@ -9,6 +9,12 @@
 //     -> we tail `docker logs -f <container>`, parse the chat line
 //     -> hand the message to Garvis's existing Q&A brain (index.js wiring)
 //     -> push the reply back in-game via `rcon-cli tellraw` (moderation.js rconExec)
+//
+// The bridge can watch several trigger tokens on one log stream (`!g` public, `!gw`
+// whisper); the matched token is passed to onMessage so the wiring can route. NOTE
+// the transport asymmetry: the TYPED line is public chat either way (we only read
+// the log — chat can't be intercepted); only the REPLY target differs. True private
+// input is the Phase 2 mod's job.
 //
 // SECURITY: this module never builds a shell command and never executes anything the
 // player says. The only live-server write it performs is a FIXED `tellraw` whose
@@ -110,19 +116,24 @@ function toChatLines(text, { maxLineLen = 230, maxLines = 8 } = {}) {
 // Build the argv for one `tellraw <target> <json>`. First line carries the bold
 // aqua [Garvis] tag; continuation lines are plain. JSON.stringify does all the
 // escaping, so the player-facing text can contain any characters safely.
-function tellrawArgv(target, line, withTag) {
-  const component = withTag
-    ? ['', { text: '[Garvis] ', color: 'aqua', bold: true }, { text: line, color: 'white' }]
-    : { text: line, color: 'white' };
+// style 'whisper' renders gray italic (vanilla /msg styling) so a private reply
+// is visually distinct from the public voice.
+function tellrawArgv(target, line, withTag, style) {
+  const whisper = style === 'whisper';
+  const body = whisper ? { text: line, color: 'gray', italic: true } : { text: line, color: 'white' };
+  const tag = whisper
+    ? { text: '[Garvis whispers] ', color: 'aqua', bold: true, italic: true }
+    : { text: '[Garvis] ', color: 'aqua', bold: true };
+  const component = withTag ? ['', tag, body] : body;
   return ['tellraw', target, JSON.stringify(component)];
 }
 
 // Send a (possibly multi-line) reply in-game via rcon tellraw. Best-effort: a
 // failed line is logged and skipped, never thrown.
-async function sendReply({ rconExec, container, target, text, log }) {
+async function sendReply({ rconExec, container, target, text, style, log }) {
   const lines = toChatLines(text);
   for (let i = 0; i < lines.length; i++) {
-    const res = await rconExec(container, tellrawArgv(target, lines[i], i === 0));
+    const res = await rconExec(container, tellrawArgv(target, lines[i], i === 0, style));
     if (!res.ran) { log(`tellraw failed: ${(res.output || '').slice(0, 120)}`); break; }
   }
 }
@@ -143,15 +154,20 @@ function readLines(stream, onLine) {
   });
 }
 
-// Start the in-game bridge: follow the server log, and for each `!g` chat message
-// call onMessage({ player, message, reply }). `reply(text, { target, prefix })`
-// pushes a tellraw back in-game (default target = replyTarget, e.g. "@a").
+// Start the in-game bridge: follow the server log, and for each trigger chat message
+// call onMessage({ player, message, trigger, reply }) — `trigger` is the token that
+// matched. `reply(text, { target, style })` pushes a tellraw back in-game (default
+// target = replyTarget, e.g. "@a"; style 'whisper' = gray italic).
+//
+// Pass `triggers: ['!g', '!gw']` to watch several tokens on the one log stream;
+// the single `trigger` option remains for back-compat.
 //
 // The docker-logs follower is reattached if the stream ends (a server restart must
 // not blind the bridge — same pattern as ops-tripwire.sh). Returns { stop }.
 export function startInGameBridge({
   container,
   trigger = '!g',
+  triggers = null,
   replyTarget = '@a',
   rconExec,
   onMessage,
@@ -161,22 +177,33 @@ export function startInGameBridge({
   let stopped = false;
   let child = null;
 
+  // Longest token first, so a prefix trigger ("!g") can never shadow a longer
+  // sibling ("!gw") whatever order they were configured in. (With the defaults the
+  // whole-token rule in parseChatLine already disambiguates; this covers exotic
+  // configs like a trigger that IS another trigger plus a space.)
+  const trigList = [...new Set(triggers?.length ? triggers : [trigger])]
+    .sort((a, b) => b.length - a.length);
+
   const makeReply = (player) => (text, opts = {}) =>
     sendReply({
       rconExec,
       container,
       target: opts.target ?? replyTarget,
       text,
+      style: opts.style,
       log,
     });
 
   const handleLine = (line) => {
-    const hit = parseChatLine(line, trigger);
-    if (!hit) return;
-    // Fire-and-forget so the slow model call never blocks log reading; the wiring
-    // applies its own per-player cooldown to bound spam + concurrent spawns.
-    Promise.resolve(onMessage({ player: hit.player, message: hit.message, reply: makeReply(hit.player) }))
-      .catch((e) => log(`onMessage failed for ${hit.player}: ${e.message}`));
+    for (const t of trigList) {
+      const hit = parseChatLine(line, t);
+      if (!hit) continue;
+      // Fire-and-forget so the slow model call never blocks log reading; the wiring
+      // applies its own per-player cooldown to bound spam + concurrent spawns.
+      Promise.resolve(onMessage({ player: hit.player, message: hit.message, trigger: t, reply: makeReply(hit.player) }))
+        .catch((e) => log(`onMessage failed for ${hit.player}: ${e.message}`));
+      return;
+    }
   };
 
   const attach = () => {
@@ -194,7 +221,7 @@ export function startInGameBridge({
   };
 
   attach();
-  log(`watching container=${container} trigger="${trigger}" replyTarget="${replyTarget}"`);
+  log(`watching container=${container} triggers=${trigList.map((t) => `"${t}"`).join(',')} replyTarget="${replyTarget}"`);
   return {
     stop() { stopped = true; try { child?.kill('SIGTERM'); } catch { /* ignore */ } },
   };

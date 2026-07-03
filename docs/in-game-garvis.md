@@ -42,18 +42,34 @@ A player types in normal chat:
   Non-ops are told it's op-only and pointed to an op or Discord. Off by default
   (`GARVIS_INGAME_GIVE`). Other moderation (op/ban/kick/teleport/gamemode) is still
   **not** done in-game — the classifier routes those to Q&A, which points to Discord.
+- **Whispers (`!gw`).** A private line to Garvis: the reply is sent to the asker
+  **alone** (never `@a`), rendered in whisper-gray italics with a
+  `[Garvis whispers]` tag, and Garvis answers in a warmer, more personal register
+  — a confidant, not the public announcer (favorable in tone, still honest on
+  facts). Whispers get their **own per-player session** (`mc-whisper:<player>`),
+  so whispered context can never surface in the public `!g` thread — a later
+  public "!g what did I just tell you?" broadcast can't leak it, by construction.
+  Q&A only: give/modreq stay on the public trigger (the prompt redirects action
+  asks there). **Caveat:** the *typed* `!gw …` line is still public chat — the
+  log-tail transport can't intercept chat, so only the **reply** is private.
+  True private input is the Phase 2 `/g` mod's job.
 - Works on a **vanilla NeoForge client** — no client mod, no install. Anyone
   already whitelisted onto the server can use it.
 
 ### How it works (no custom mod)
 
 ```
-player types `!g …` in chat
+player types `!g …` (or `!gw …`) in chat
   → itzg server logs the line:  <Steve> !g how do waystones work?
   → bot tails `docker logs -f --since 1s <MC_CONTAINER>`   (ingame.js)
   → parseChatLine() extracts { player, message } for trigger-matching lines
-  → onInGameMessage() (index.js): per-player cooldown
-  → if give and/or mod requests are enabled: classifyIngame() (one cheap, read-only call)
+    (both triggers are matched on the ONE log stream, longest token first;
+     the matched trigger is passed to the handler for routing)
+  → onInGameMessage() (index.js): per-player cooldown (one shared bucket for both triggers)
+  → `!gw` (whisper) → "…thinking" ack → answerWhisper() (read-only Q&A brain,
+  │                    warmer prompt, session mc-whisper:<player>)
+  │                    reply tellraw'd to the ASKER only, whisper-gray italic
+  → `!g` + give and/or mod requests enabled: classifyIngame() (one cheap, read-only call)
       ├─ "give"   → op-gate (isServerOp via ops.json) → resolveAction('give') → runAction()
       │             (the SAME validated catalog verb as Discord; non-ops are denied)
       ├─ "modreq" → "🔧 on it" ack → requestModInGame() → runMaintSerial()
@@ -82,9 +98,9 @@ sender name is server-stamped (see "No name spoofing" below), it can't be forged
 | File | Role |
 |---|---|
 | `apps/garvis-bot/src/ingame.js` | The bridge: tail the log, `parseChatLine()`, chunk + send `tellraw`, reattach on server restart. Pure MC transport — no model, no sessions. |
-| `apps/garvis-bot/src/index.js` | Wiring: `buildInGamePrompt()`/`answerInGame()` (Q&A), `classifyIngameIntent()` (modreq-vs-qa router), `requestModInGame()` (→ `runMaintSerial`, the shared maint agent), `onInGameMessage()` (cooldowns + ack + routing), and `startInGameBridge({…})` at boot. The maint prompt (`buildMaintPrompt`) takes an `ingame` flag for terse, plain-text, raw-PR-URL replies. |
+| `apps/garvis-bot/src/index.js` | Wiring: `buildInGamePrompt()`/`answerInGame()` (public Q&A), `buildWhisperPrompt()`/`answerWhisper()` (private `!gw` Q&A), `classifyIngameIntent()` (modreq-vs-qa router), `requestModInGame()` (→ `runMaintSerial`, the shared maint agent), `onInGameMessage()` (cooldowns + ack + trigger routing), and `startInGameBridge({…})` at boot. The maint prompt (`buildMaintPrompt`) takes an `ingame` flag for terse, plain-text, raw-PR-URL replies. |
 | `apps/garvis-bot/src/moderation.js` | `rconExec()` (already exported) — reused to send `tellraw`. |
-| `apps/garvis-bot/src/db.js` | Session store, reused with the key `mc:<player>` (collides with nothing — thread ids are numeric snowflakes). |
+| `apps/garvis-bot/src/db.js` | Session store, reused with the keys `mc:<player>` (public) and `mc-whisper:<player>` (whispers — separate on purpose, see above) (collide with nothing — thread ids are numeric snowflakes). |
 
 ### Config (`apps/garvis-bot/.env`)
 
@@ -92,8 +108,10 @@ sender name is server-stamped (see "No name spoofing" below), it can't be forged
 |---|---|---|
 | `GARVIS_INGAME` | `on` | Kill switch (`on` \| `off`). |
 | `GARVIS_INGAME_TRIGGER` | `!g` | Chat prefix that summons Garvis (must be a whole leading token). |
-| `GARVIS_INGAME_REPLY_TARGET` | `@a` | Who sees replies: `@a` (everyone) or a player selector. "…thinking" acks always go privately to the asker. |
-| `GARVIS_INGAME_COOLDOWN_MS` | `15000` | Per-player cooldown for any `!g` (each is a full `claude` turn). |
+| `GARVIS_INGAME_REPLY_TARGET` | `@a` | Who sees replies: `@a` (everyone) or a player selector. "…thinking" acks always go privately to the asker. Whisper replies ignore this — always the asker. |
+| `GARVIS_INGAME_WHISPER` | `on` | Allow `!gw` **whispers** (`on` \| `off`) — private replies, warmer register, own session. |
+| `GARVIS_INGAME_WHISPER_TRIGGER` | `!gw` | Chat prefix for a whisper (whole leading token, like the public trigger). |
+| `GARVIS_INGAME_COOLDOWN_MS` | `15000` | Per-player cooldown for any `!g`/`!gw` (each is a full `claude` turn; one shared bucket so whispers don't double the budget). |
 | `GARVIS_INGAME_MODREQ` | `on` | Allow `!g` **mod requests** (PRs) (`on` \| `off`). Only acts when `GARVIS_DISPATCH_MODE` ≠ `dry-run`; `off` keeps `!g` Q&A-only (and skips the classifier spawn entirely). |
 | `GARVIS_INGAME_MAINT_COOLDOWN_MS` | `180000` | Heavier per-player cooldown for `!g` mod requests (a full research + PR run, separate bucket from the Q&A cooldown). |
 | `GARVIS_INGAME_GIVE` | `off` | Allow `!g give …` (`on` \| `off`). **Operator-gated** (see below). Independent of `GARVIS_DISPATCH_MODE` — it's a live `rcon-cli give`, not the maint agent. `off` => give requests fall back to Q&A. |
@@ -110,7 +128,7 @@ systemctl --user restart garvis-bot.service     # apply code changes
 journalctl --user -u garvis-bot.service -f      # watch for: [ingame] watching container=…
 ```
 
-Then in-game: `!g hello`.
+Then in-game: `!g hello` — or `!gw hello` for a private reply.
 
 ### Security notes
 
