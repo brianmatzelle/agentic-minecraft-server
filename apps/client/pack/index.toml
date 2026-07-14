@@ -17,7 +17,7 @@ metafile = true
 
 [[files]]
 file = "mods/balm.pw.toml"
-hash = "b9cbf9bb7d7c8a62739c30d7681dcee33bb2b56dd0c6ab70a9da23acb62a89f2"
+hash = "6f45abb9ea3a42133391f83a0f050d82891f5297529020b951587a8d9481eaaf"
 metafile = true
 
 [[files]]
@@ -77,7 +77,7 @@ metafile = true
 
 [[files]]
 file = "mods/distanthorizons.pw.toml"
-hash = "f356566fbbbf374870beda365ae80710a5a6ba5d8e8a26de735b5891ba735895"
+hash = "e6a792eef5fdf3a380a8668b55e3db4be0faec648d66e82e5b18ca59c50551fd"
 metafile = true
 
 [[files]]
@@ -132,7 +132,7 @@ metafile = true
 
 [[files]]
 file = "mods/jei.pw.toml"
-hash = "6959771fe0f14ca0f84d54dd1c23523672b5727759badfcc8c132ed0a5cd3ce1"
+hash = "67ba4285662344580237f84c79c668adea75f2059f973a1d8bf935a53af9369e"
 metafile = true
 
 [[files]]
@@ -181,6 +181,11 @@ hash = "d192606862a63fe21003919be2c32271a0e867c27d91b56e01d8f0fd079e6ad8"
 metafile = true
 
 [[files]]
+file = "mods/refined-storage-jei-integration.pw.toml"
+hash = "6e60ad2315e9b73b9d533942376fdb15c51a66927b063f7c59b15a55050baea1"
+metafile = true
+
+[[files]]
 file = "mods/sable.pw.toml"
 hash = "9d2bfd56b708f836600a9b37fa5923a2189cdecaed87643f1a8f9ef65732c500"
 metafile = true
@@ -212,5 +217,5 @@ metafile = true
 
 [[files]]
 file = "mods/waystones.pw.toml"
-hash = "6cf6ab0cab0184b6de0bfded28d2a1ba1a669b42461adad0837a856c7209a42a"
+hash = "bdda545343fc93a67a12f2d24b099a9f08c417b07afa1e118ae912256020b034"
 metafile = true
