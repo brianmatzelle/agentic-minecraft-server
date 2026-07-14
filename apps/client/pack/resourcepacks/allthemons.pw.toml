@@ -1,0 +1,13 @@
+name = "allthemons"
+filename = "AllTheMons [R3.5.1].zip"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/JV5dvqVX/versions/xP9xTsa0/AllTheMons%20%5BR3.5.1%5D.zip"
+hash-format = "sha512"
+hash = "3c9cf3216dbc3d250816396a85a447bd0d8c7cc55778731a23910d9b41b79765a052d0e87cd174572f698f62101a37ac9ea1d9f8518d8251103a580061d63121"
+
+[update]
+[update.modrinth]
+mod-id = "JV5dvqVX"
+version = "xP9xTsa0"
