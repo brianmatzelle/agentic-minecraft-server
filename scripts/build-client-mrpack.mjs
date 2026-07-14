@@ -184,15 +184,28 @@ const CLIENT_MODS = [
 // the client needs nothing extra to see them).
 const SERVER_ONLY = ['lithium', 'ferrite-core', 'modernfix', 'spark', 'chunky', 'noisium', 'when-dungeons-arise', 'warputils', 'cobblemon-challenge'];
 
+// Modrinth DATAPACK projects the server installs via itzg's `datapack:` modlist
+// prefix, whose zip players must ALSO have as a resource pack (Cobblemon addon
+// datapacks bundle their models/textures in the same zip). Shipped into the
+// pack's resourcepacks/ — the player still enables it once in Options →
+// Resource Packs. `pin` is required: the server pins a version id, so the pack
+// must ship the byte-identical zip (same drift-lock policy as CLIENT_MODS).
+const CLIENT_RESOURCE_PACKS = [
+  // AllTheMons — models/animations/spawns for 150+ unmodeled Pokémon. Pinned to
+  // 3.5.1 (Cobblemon 1.7+) to match modlist.txt datapack:allthemons:xP9xTsa0.
+  { slug: 'allthemons', pin: '3.5.1' },
+];
+
 function modlistSlugs() {
   return readFileSync(MODLIST, 'utf8')
     .split('\n')
     .map((l) => l.split('#')[0].trim())
     .filter(Boolean)
     // A modlist entry may pin a version as `slug:versionId` (itzg syntax, e.g.
-    // `cobblemon:Uz1QF4Md`). Strip the `:versionId` so the reconcile compares
+    // `cobblemon:Uz1QF4Md`) and/or carry itzg's `datapack:` type prefix (e.g.
+    // `datapack:allthemons:xP9xTsa0`). Strip both so the reconcile compares
     // bare slugs against CLIENT_MODS (which carries its own `pin` field).
-    .map((l) => l.split(/\s+/)[0].split(':')[0]);
+    .map((l) => l.split(/\s+/)[0].replace(/^datapack:/, '').split(':')[0]);
 }
 
 async function getJSON(url) {
@@ -242,7 +255,8 @@ if (notOnServer.length) {
   console.error(`ERROR: client mods not in modlist.txt (server doesn't run them): ${notOnServer.join(', ')}`);
   process.exit(1);
 }
-const unclassified = [...server].filter((s) => !clientSet.has(s) && !serverOnly.has(s));
+const resourcePackSet = new Set(CLIENT_RESOURCE_PACKS.map((m) => m.slug));
+const unclassified = [...server].filter((s) => !clientSet.has(s) && !serverOnly.has(s) && !resourcePackSet.has(s));
 if (unclassified.length) {
   console.error(`WARNING: server mods not classified client/server-only: ${unclassified.join(', ')}`);
   console.error('         → add each to CLIENT_MODS or SERVER_ONLY in this script.');
@@ -283,10 +297,41 @@ for (const mod of CLIENT_MODS) {
   console.error(`  ${mod.slug.padEnd(38)} ${String(v.version_number).padEnd(28)} (client:${mod.client})`);
 }
 
+// ── Resolve each client resource pack (datapack zips players need) ───────────
+// Same Modrinth lookup, but with the `datapack` loader and no NeoForge filter —
+// datapack releases aren't tagged with a mod loader. Lands in resourcepacks/.
+const resolvedPacks = [];
+for (const pack of CLIENT_RESOURCE_PACKS) {
+  const q =
+    `https://api.modrinth.com/v2/project/${pack.slug}/version` +
+    `?loaders=${encodeURIComponent(JSON.stringify(['datapack']))}` +
+    `&game_versions=${encodeURIComponent(JSON.stringify([MC_VERSION]))}`;
+  const versions = await getJSON(q);
+  const v = versions.find((x) => x.version_number === pack.pin);
+  if (!v) throw new Error(`Pinned resource pack ${pack.slug} ${pack.pin} not found among datapack ${MC_VERSION} builds`);
+  const file = pickFile(v);
+  if (!file?.hashes?.sha1 || !file?.hashes?.sha512) {
+    throw new Error(`Missing hashes for ${pack.slug} ${v.version_number}`);
+  }
+  resolvedPacks.push({
+    slug: pack.slug,
+    filename: file.filename,
+    sha1: file.hashes.sha1,
+    sha512: file.hashes.sha512,
+    url: file.url,
+    fileSize: file.size,
+    projectId: v.project_id,
+    versionId: v.id,
+  });
+  console.error(`  ${pack.slug.padEnd(38)} ${String(v.version_number).padEnd(28)} (resource pack)`);
+}
+
 const neoforge = await latestNeoforge();
 console.error(`NeoForge loader: ${neoforge}`);
 
 // mrpack file list — Modrinth-schema fields only. Stable ordering for clean diffs.
+// The server side of a resource pack is 'unsupported' HERE because this pack is
+// the CLIENT installer — the server gets the same zip as a datapack via itzg.
 const files = resolved
   .map((r) => ({
     path: `mods/${r.filename}`,
@@ -295,6 +340,13 @@ const files = resolved
     downloads: [r.url],
     fileSize: r.fileSize,
   }))
+  .concat(resolvedPacks.map((r) => ({
+    path: `resourcepacks/${r.filename}`,
+    hashes: { sha1: r.sha1, sha512: r.sha512 },
+    env: { client: 'required', server: 'unsupported' },
+    downloads: [r.url],
+    fileSize: r.fileSize,
+  })))
   .sort((a, b) => a.path.localeCompare(b.path));
 
 const index = {
@@ -333,6 +385,7 @@ const toml = (s) => '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').
 
 rmSync(PACKWIZ_DIR, { recursive: true, force: true }); // rebuild fresh — drop stale .pw.toml for removed mods
 mkdirSync(join(PACKWIZ_DIR, 'mods'), { recursive: true });
+if (resolvedPacks.length) mkdirSync(join(PACKWIZ_DIR, 'resourcepacks'), { recursive: true });
 
 const indexEntries = [];
 for (const r of [...resolved].sort((a, b) => a.slug.localeCompare(b.slug))) {
@@ -354,6 +407,24 @@ for (const r of [...resolved].sort((a, b) => a.slug.localeCompare(b.slug))) {
   body += `\n[update]\n[update.modrinth]\nmod-id = ${toml(r.projectId)}\nversion = ${toml(r.versionId)}\n`;
 
   const rel = `mods/${r.slug}.pw.toml`;
+  writeFileSync(join(PACKWIZ_DIR, rel), body);
+  indexEntries.push({ file: rel, hash: sha256(body) });
+}
+
+// Resource packs: same metafile format, under resourcepacks/ so packwiz-installer
+// drops the zip in the instance's resourcepacks folder. Client-side only.
+for (const r of [...resolvedPacks].sort((a, b) => a.slug.localeCompare(b.slug))) {
+  const body =
+    `name = ${toml(r.slug)}\n` +
+    `filename = ${toml(r.filename)}\n` +
+    `side = "client"\n\n` +
+    `[download]\n` +
+    `url = ${toml(r.url)}\n` +
+    `hash-format = "sha512"\n` +
+    `hash = ${toml(r.sha512)}\n` +
+    `\n[update]\n[update.modrinth]\nmod-id = ${toml(r.projectId)}\nversion = ${toml(r.versionId)}\n`;
+
+  const rel = `resourcepacks/${r.slug}.pw.toml`;
   writeFileSync(join(PACKWIZ_DIR, rel), body);
   indexEntries.push({ file: rel, hash: sha256(body) });
 }

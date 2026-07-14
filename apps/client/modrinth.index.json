@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-07-03",
+  "versionId": "2026-07-14",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -51,19 +51,19 @@
       "fileSize": 584004
     },
     {
-      "path": "mods/balm-neoforge-1.21.1-21.0.59.jar",
+      "path": "mods/balm-neoforge-1.21.1-21.0.63.jar",
       "hashes": {
-        "sha1": "f6a16626890644544c1f6d345f6df9bba808ea52",
-        "sha512": "e02f05817d8916ce17b0c1c56ff26c8283969212b3cffe977258499d24a5b8926b69d3c3d691058a6b65f807439aac28b9e2de2905a3fea74dc22777dbe44b46"
+        "sha1": "f0b85246a422373cc724affeaedbe2c08e88d67f",
+        "sha512": "36c8e23702ffada79f944e4bad5e9c4538fb4a8804e970dfb738e1da21065fc4ddb7a75636d327d0cb567f3e0e6c5c7a560d2f28fd070bc768aeeb849e2087fb"
       },
       "env": {
         "client": "required",
         "server": "required"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/MBAkmtvl/versions/QXfHYVcw/balm-neoforge-1.21.1-21.0.59.jar"
+        "https://cdn.modrinth.com/data/MBAkmtvl/versions/Yl3tIBea/balm-neoforge-1.21.1-21.0.63.jar"
       ],
-      "fileSize": 735066
+      "fileSize": 782380
     },
     {
       "path": "mods/cc-tweaked-1.21.1-forge-1.120.0.jar",
@@ -231,19 +231,19 @@
       "fileSize": 33120013
     },
     {
-      "path": "mods/DistantHorizons-3.1.2-b-1.21.1-fabric-neoforge.jar",
+      "path": "mods/DistantHorizons-3.2.0-b-1.21.1-fabric-neoforge.jar",
       "hashes": {
-        "sha1": "7508bb82597db391ce9657054e6fee62d4d0ea80",
-        "sha512": "e184723c273aba04b2658f20196755f445860d4dfe929575a1aff006bf53c0d45004acdeaa455d3516b88f7c21f564e0e640315627e3a4080478fe0986a46732"
+        "sha1": "df25e8cfe06917963778723a1d9a60610dd21bec",
+        "sha512": "d4199f92f992fbd2c75a3b0e4e81c8a98bee889013f7347f2149ffa62c86748bde22135e9b2c82a10875db94fa576571c661c5ee16d2f567bd8a93d6f255fd22"
       },
       "env": {
         "client": "optional",
         "server": "unsupported"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/uCdwusMi/versions/g68FsgfE/DistantHorizons-3.1.2-b-1.21.1-fabric-neoforge.jar"
+        "https://cdn.modrinth.com/data/uCdwusMi/versions/ZpKb4kZp/DistantHorizons-3.2.0-b-1.21.1-fabric-neoforge.jar"
       ],
-      "fileSize": 30140037
+      "fileSize": 30207268
     },
     {
       "path": "mods/easy-piglins-neoforge-1.21.1-1.1.0.jar",
@@ -396,19 +396,19 @@
       "fileSize": 725742
     },
     {
-      "path": "mods/jei-1.21.1-neoforge-19.27.0.346.jar",
+      "path": "mods/jei-1.21.1-neoforge-19.38.0.366.jar",
       "hashes": {
-        "sha1": "c9b7e1b94121fed6617b72456d4cc1ba18c17f11",
-        "sha512": "d1eaf27c9b8d2e8c99db7808b27f0286297cbc444dcb2d9f9924f2f7c7bf79038aa38673f5c52ba5656a18dd1d0299a4c965a1fc3536ea6d63c1a3048c24fd05"
+        "sha1": "8f91816e579615b3a157a48b70213fe83a52d70d",
+        "sha512": "21f20b4086647773a982140640d8da817e2b3f7958c9bba7a3b011534f5b92d1a347a7ea041fc70cdf195b759a298904bf3c02b3fc29f17d330ab14aa2c376d1"
       },
       "env": {
         "client": "optional",
         "server": "optional"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/eBag7ypX/jei-1.21.1-neoforge-19.27.0.346.jar"
+        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/uBBwu3s1/jei-1.21.1-neoforge-19.38.0.366.jar"
       ],
-      "fileSize": 1538597
+      "fileSize": 1628259
     },
     {
       "path": "mods/kotlinforforge-5.11.0-all.jar",
@@ -636,19 +636,34 @@
       "fileSize": 85732
     },
     {
-      "path": "mods/waystones-neoforge-1.21.1-21.1.34.jar",
+      "path": "mods/waystones-neoforge-1.21.1-21.1.36.jar",
       "hashes": {
-        "sha1": "6261985211f6484e0427e2de1a10e2f6f8dda1fa",
-        "sha512": "3f7bc40badb3e470f05a7f4e57d96c7a35520f1d56c5b5fd9cb1431a4f4eacfbe1e2e49ffbb8a355ecbf02ef7360f2b12cbcbe7dcd1e594074ac5da059d222ef"
+        "sha1": "ee48dd56992712e66e9ba75f2ed23c2e8b8c53eb",
+        "sha512": "af895062d7836abdea94497d1297d87d295f5a077e7d98ab865ff62e31a8d11a392f68ed2f6cf57c901a309af610df24a99f0018ec1889bd30246a596234aecc"
       },
       "env": {
         "client": "required",
         "server": "required"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/LOpKHB2A/versions/CfDlUc6j/waystones-neoforge-1.21.1-21.1.34.jar"
+        "https://cdn.modrinth.com/data/LOpKHB2A/versions/1Z4G2Vgg/waystones-neoforge-1.21.1-21.1.36.jar"
       ],
-      "fileSize": 878801
+      "fileSize": 1195829
+    },
+    {
+      "path": "resourcepacks/AllTheMons [R3.5.1].zip",
+      "hashes": {
+        "sha1": "24cad3bdd37e658213d6186581e1533b4f1fe96a",
+        "sha512": "3c9cf3216dbc3d250816396a85a447bd0d8c7cc55778731a23910d9b41b79765a052d0e87cd174572f698f62101a37ac9ea1d9f8518d8251103a580061d63121"
+      },
+      "env": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/JV5dvqVX/versions/xP9xTsa0/AllTheMons%20%5BR3.5.1%5D.zip"
+      ],
+      "fileSize": 12452208
     }
   ],
   "dependencies": {
