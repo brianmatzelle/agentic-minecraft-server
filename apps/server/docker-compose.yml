@@ -114,6 +114,16 @@ services:
       # CF_API_KEY: "${CF_API_KEY:-}"
       USE_AIKAR_FLAGS: "true"                   # GC tuning recommended for modded
       OVERRIDE_SERVER_PROPERTIES: "true"        # re-apply env-driven props on restart
+      # --- Mod-config patches (./patches, mounted below) ---
+      # itzg applies every patch file in this directory on each container start,
+      # $set-ing individual keys inside mod configs under /data — so mod settings
+      # live in the REPO instead of hand-edits to gitignored server-data/.
+      # Currently: computercraft-server.json raises CC: Tweaked's max monitor size
+      # 8x6 -> 20x20 ([term_sizes.monitor] width/height in computercraft-server.toml;
+      # CC's hard cap is 32). NOTE: the rewrite keeps values (incl. the ordered
+      # garvtunnel http.rules) but strips comments/formatting from the patched toml
+      # (itzg docs: "processed output is not pretty").
+      PATCH_DEFINITIONS: "/patches"
       # --- RCON (internal only — port 25575 is NOT published in `ports:`) ---
       # Already enabled by default on this image (that's how `rcon-cli` works); declared
       # explicitly now because the backups sidecar below connects over RCON to flush +
@@ -125,6 +135,7 @@ services:
       RCON_PASSWORD: "${RCON_PASSWORD:-minecraft}"
     volumes:
       - ./server-data:/data                     # world + mods + logs (gitignored)
+      - ./patches:/patches:ro                   # mod-config patch definitions (see PATCH_DEFINITIONS above)
 
   # --- World backups (local) -------------------------------------------------
   # itzg/mc-backup sidecar (same author as the server image). Connects over RCON to run

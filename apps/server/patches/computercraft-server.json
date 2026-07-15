@@ -1,0 +1,21 @@
+{
+  "patches": [
+    {
+      "file": "/data/config/computercraft-server.toml",
+      "ops": [
+        {
+          "$set": {
+            "path": "$.term_sizes.monitor.width",
+            "value": 20
+          }
+        },
+        {
+          "$set": {
+            "path": "$.term_sizes.monitor.height",
+            "value": 20
+          }
+        }
+      ]
+    }
+  ]
+}
