@@ -17,6 +17,15 @@ index = json.load(open("/pack/modrinth.index.json"))
 # software GL — the camera runs without them.
 CAMERA_SKIP = ("sodium", "iris", "entityculling")
 
+# Client-only extras NOT in the server pack (no server handshake, so safe to
+# add unilaterally). Baritone = pathfinding legs for Garvis-plays mode.
+EXTRA_MODS = {
+    "baritone-standalone-neoforge-1.11.2.jar": (
+        "https://github.com/cabaletta/baritone/releases/download/v1.11.2/baritone-standalone-neoforge-1.11.2.jar",
+        "5fe6aafcf6ebb38cc956a11a8410dd6bc6734d31",
+    ),
+}
+
 expected = set()
 for f in index["files"]:
     if f.get("env", {}).get("client") == "unsupported":
@@ -35,6 +44,17 @@ for f in index["files"]:
     urllib.request.urlretrieve(f["downloads"][0], dest)
     if hashlib.sha1(open(dest, "rb").read()).hexdigest() != want:
         sys.exit(f"hash mismatch: {f['path']}")
+
+for name, (url, want) in EXTRA_MODS.items():
+    expected.add(name)
+    dest = os.path.join(WORK, "mods", name)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    if os.path.exists(dest) and hashlib.sha1(open(dest, "rb").read()).hexdigest() == want:
+        continue
+    print("fetch extra", name, flush=True)
+    urllib.request.urlretrieve(url, dest)
+    if hashlib.sha1(open(dest, "rb").read()).hexdigest() != want:
+        sys.exit(f"hash mismatch: {name}")
 
 mods_dir = os.path.join(WORK, "mods")
 if os.path.isdir(mods_dir):

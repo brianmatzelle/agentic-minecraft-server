@@ -34,6 +34,21 @@ docker exec mc-neoforge rcon-cli "effect give fat_balls_addict minecraft:night_v
 docker exec mc-garviscam /opt/garviscam/snap.sh   # then docker cp .../snap.png — see what the camera sees
 ```
 
+## Garvis plays (Baritone)
+The camera account doubles as a playable body. `baritone-standalone-neoforge`
+v1.11.2 (= MC 1.21/1.21.1; client-only, no server handshake) is pulled in by
+sync-pack.py's `EXTRA_MODS` (sha1-pinned, exempt from pruning). Control plane =
+`chat.sh` (xdotool types into the client's chat): plain lines go to public
+chat as fat_balls_addict, `#` lines are Baritone commands intercepted
+client-side — `#follow player <name>`, `#goto x y z`, `#stop`, `#set`.
+RCON `gamemode survival|spectator` flips player ↔ camera; in player mode the
+jumbotron streams Garvis's first-person POV. Guardrails: `allowBreak` +
+`allowPlace` false, persisted in `work/baritone/settings.txt`. Death screen
+wedges the client — `pkill -x java`; rejoining auto-respawns.
+Why not Mineflayer/minecraft-mcp-server: vanilla protocol can't pass the
+NeoForge required-mod registry handshake (and that wrapper is offline-auth
+only) — a real modded client was the only way in, and we already had one.
+
 ## Gotchas earned the hard way
 - portablemc's NeoForge installer path dies (`KeyError: 'ROOT'`) — use the
   official NeoForge installer into portablemc's main dir, launch the local
