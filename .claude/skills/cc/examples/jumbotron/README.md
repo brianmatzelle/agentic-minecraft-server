@@ -42,9 +42,18 @@ sync-pack.py's `EXTRA_MODS` (sha1-pinned, exempt from pruning). Control plane =
 chat as fat_balls_addict, `#` lines are Baritone commands intercepted
 client-side — `#follow player <name>`, `#goto x y z`, `#stop`, `#set`.
 RCON `gamemode survival|spectator` flips player ↔ camera; in player mode the
-jumbotron streams Garvis's first-person POV. Guardrails: `allowBreak` +
-`allowPlace` false, persisted in `work/baritone/settings.txt`. Players command
-the body in-game via the `!g` body intent (apps/garvis-bot/src/body.js).
+jumbotron streams Garvis's first-person POV. Since 2026-07-15 the body REALLY
+plays: `allowBreak`/`allowPlace`/`allowInventory` are true (owner unlock,
+persisted in `work/baritone/settings.txt` — revert with `#set allowBreak
+false` etc. if pathing eats a build). Players command the body in-game via the
+`!g` body intent (apps/garvis-bot/src/body.js), and garvis-bot runs his
+survival reflexes host-side, both polling rcon each minute: hunger.js (eat.sh
+= select slot + hold right-click when foodLevel dips; slot 9 lunchbox) and
+sleep.js (at night: #stop, tp-in-place to AIM at the ground ahead — the only
+deterministic way to point a headless client — then eat.sh on a carried bed:
+the press places it, the held repeat-use climbs in; bed reclaimed at dawn via
+guarded setblock-destroy; nearby phantoms rcon-killed first since they'd veto
+the sleep). Kill switches: GARVIS_BODY_AUTOEAT / GARVIS_BODY_AUTOSLEEP.
 Hard-won: chat.sh serializes typists with flock (concurrent typings interleave
 keystrokes into one line and leak the rest in-world — a stray 'e' opens the
 inventory and wedges chat); `#follow player` only binds targets the client has
