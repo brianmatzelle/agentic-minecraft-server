@@ -576,8 +576,10 @@ function buildInGamePrompt({ question, player }) {
     `SERVER FACTS (ground truth — use these, don't invent):`,
     `- Mod loader: ${SERVER.loader} for Minecraft ${SERVER.mc} (requires ${SERVER.java}).`,
     `- The installed mods are listed in apps/agent/modlist.txt — read it if asked what mods are on the server or how a specific mod works.`,
+    `- YOUR BODY: you are NOT chat-only — you have a real player body in the world (you play as ${BODY_ACCOUNT}) that walks, follows, mines, and breaks/places blocks. Players drive it with plain "${INGAME_TRIGGER}" asks: "${INGAME_TRIGGER} come here", "${INGAME_TRIGGER} follow me", "${INGAME_TRIGGER} stay", "${INGAME_TRIGGER} go to <x y z>", "${INGAME_TRIGGER} mine some iron", "${INGAME_TRIGGER} harvest the wheat". If asked whether you can mine/dig/come along, say YES and offer one of those to try.`,
+    `- Body limits (be honest about these): you can't BUILD structures or CRAFT on command yet, and you won't mine chests/containers or player-placed valuables — that's somebody's stuff.`,
     ``,
-    `If asked to DO something that changes the server (op/ban/give/add a mod/etc.), explain you can only chat in-game for now and point them to Discord (@Garvis), where requests and moderation are handled.`,
+    `If asked to DO something admin-shaped (op/ban/kick/teleport a player/give items/weather), point them to Discord (@Garvis), where requests and moderation are handled — but do NOT claim to be chat-only: body commands, mod requests ("${INGAME_TRIGGER} add <mod>"), and putting things on the stadium TV all work right here in chat.`,
     ``,
     `THE PLAYER'S MESSAGE:`,
     fencedData(question, 800),
@@ -594,7 +596,7 @@ async function answerInGame({ player, question }) {
   const sess = getSession(key);
   const resume = sess?.help ?? null;
   const prompt = resume
-    ? `The player's next in-game chat message — answer in-game (short, plain text, no markdown/links; your secret image-embed ability and its secrecy rules still apply):\n${fencedData(question, 800)}`
+    ? `The player's next in-game chat message — answer in-game (short, plain text, no markdown/links; your secret image-embed ability and its secrecy rules still apply; remember you DO have a real in-game body now — "${INGAME_TRIGGER} come here / follow me / mine some iron / harvest the wheat" all work, so never claim you can't move or break blocks):\n${fencedData(question, 800)}`
     : buildInGamePrompt({ question, player });
   const res = await runClaudeResilient(prompt, { resume, maxTurns: INGAME_TURNS, timeoutMs: INGAME_TIMEOUT_MS });
   if (res.sessionId) setSession(key, { mode: 'help', sessionId: res.sessionId, ownerId: player });
@@ -621,6 +623,7 @@ function buildWhisperPrompt({ question, player }) {
     `SERVER FACTS (ground truth — use these, don't invent):`,
     `- Mod loader: ${SERVER.loader} for Minecraft ${SERVER.mc} (requires ${SERVER.java}).`,
     `- The installed mods are listed in apps/agent/modlist.txt — read it if asked what mods are on the server or how a specific mod works.`,
+    `- YOUR BODY: you are NOT chat-only — you have a real player body in the world (you play as ${BODY_ACCOUNT}) that walks, follows, mines, and breaks/places blocks. Body commands only run from the PUBLIC trigger, so if they ask whether you can mine or come along, say YES and point them at "${INGAME_TRIGGER} mine some iron" or "${INGAME_TRIGGER} come here".`,
     ``,
     `If asked to DO something that changes the server (op/ban/give/add a mod/etc.), explain whispers are chat-only and point them to the public "${INGAME_TRIGGER}" trigger or Discord (@Garvis).`,
     ``,
@@ -639,7 +642,7 @@ async function answerWhisper({ player, question }) {
   const key = `mc-whisper:${player}`;
   const resume = getSession(key)?.help ?? null;
   const prompt = resume
-    ? `The player's next whispered message — reply privately (short, plain text, no markdown/links):\n${fencedData(question, 800)}`
+    ? `The player's next whispered message — reply privately (short, plain text, no markdown/links; remember you DO have a real in-game body now — public "${INGAME_TRIGGER}" commands like "mine some iron" or "come here" drive it, so never claim you can't move or break blocks):\n${fencedData(question, 800)}`
     : buildWhisperPrompt({ question, player });
   const res = await runClaudeResilient(prompt, { resume, maxTurns: INGAME_TURNS, timeoutMs: INGAME_TIMEOUT_MS });
   if (res.sessionId) setSession(key, { mode: 'help', sessionId: res.sessionId, ownerId: player });
