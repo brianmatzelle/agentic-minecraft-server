@@ -262,7 +262,47 @@ services:
     ports:
       - "127.0.0.1:8175:8175"                  # control plane, host-only (WS port 8176 stays internal)
 
+  # --- Jumbotron video encoder (stadiumcast) ---------------------------------
+  # sanjuuni (video → ComputerCraft frames) for the Pokémon-stadium jumbotron.
+  # Idles until the host launches an encode/serve job via `docker exec` — a
+  # sanjuuni WebSocket server on :8177 that in-game computer 10 pulls frames
+  # from (ws://stadiumcast:8177, internal network only, nothing published).
+  # PREREQUISITE: CC http allow-rule for host "stadiumcast" ABOVE the
+  # "$private" deny in server-data/config/computercraft-server.toml (NeoForge
+  # hot-reloads it — no restart). ./stadiumcast/media is mounted for clips; the
+  # live GarvisCam capture chain (task: in-game camera) will feed this too.
+  stadiumcast:
+    build: ./stadiumcast
+    container_name: mc-stadiumcast
+    restart: unless-stopped
+    environment:
+      CAST_AUTOSTART: "1"                       # live sanjuuni loop (:8180 in, :8177 ws out)
+    volumes:
+      - ./stadiumcast/media:/media
+
+  # --- Stadium camera operator (garviscam) -----------------------------------
+  # Headless modded Minecraft client (Xvfb + llvmpipe) that joins the server as
+  # the whitelisted GarvisCam account and hovers over the Pokémon stadium as a
+  # spectator. ffmpeg captures its view; stadiumcast (sanjuuni) encodes it for
+  # the jumbotron. Idles until driven via `docker exec` (scripts in
+  # ./garviscam/scripts/: install.sh, launch.sh [offline|online], snap.sh).
+  # Online mode needs a one-time `portablemc login` (MSA device flow) — the
+  # session persists in the garviscam-data volume. GARVISCAM_LOGIN in .env.
+  garviscam:
+    build: ./garviscam
+    container_name: mc-garviscam
+    restart: unless-stopped
+    shm_size: "1g"
+    environment:
+      GARVISCAM_LOGIN: "${GARVISCAM_LOGIN:-}"
+      XVFB_RES: "960x540"
+      CAM_AUTOSTART: "1"                        # supervise client + capture (camloop.sh)
+    volumes:
+      - garviscam-data:/data
+      - ../client:/pack:ro
+
 volumes:
   prometheus-data:                              # Prometheus TSDB (survives restarts)
   grafana-data:                                 # Grafana's own db: users, dashboard edits, prefs
   postgres-data:                                # Garvis conversation log (survives restarts)
+  garviscam-data:                               # GarvisCam client: game files, pack, MSA session
