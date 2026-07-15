@@ -39,7 +39,7 @@ try {
   process.exit(1);
 }
 
-const selStmt = db.prepare('SELECT owner_id, help_session_id, maint_session_id FROM thread_sessions WHERE thread_id = ?');
+const selStmt = db.prepare('SELECT owner_id, help_session_id, maint_session_id, updated_at FROM thread_sessions WHERE thread_id = ?');
 // Upsert ONE mode's session per call: the unused mode is passed as NULL and
 // COALESCE preserves whatever was already stored, so a maintenance turn never
 // clobbers the thread's help session (or vice-versa). owner_id is left untouched
@@ -53,13 +53,14 @@ const upStmt = db.prepare(`INSERT INTO thread_sessions
     updated_at       = @updated`);
 const delStmt = db.prepare('DELETE FROM thread_sessions WHERE thread_id = ?');
 
-// Returns { ownerId, help, maint } — help/maint are per-mode claude session ids,
-// either may be null — or null if the thread isn't tracked.
+// Returns { ownerId, help, maint, updatedAt } — help/maint are per-mode claude
+// session ids, either may be null; updatedAt is the epoch-ms of the last turn so
+// callers can expire idle sessions — or null if the thread isn't tracked.
 export function getSession(threadId) {
   try {
     const row = selStmt.get(String(threadId));
     if (!row) return null;
-    return { ownerId: row.owner_id, help: row.help_session_id ?? null, maint: row.maint_session_id ?? null };
+    return { ownerId: row.owner_id, help: row.help_session_id ?? null, maint: row.maint_session_id ?? null, updatedAt: row.updated_at ?? null };
   } catch (e) {
     console.error(`getSession failed: ${e.message}`);
     return null;

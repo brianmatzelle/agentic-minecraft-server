@@ -140,6 +140,14 @@ const INGAME_COOLDOWN_MS = Number(process.env.GARVIS_INGAME_COOLDOWN_MS ?? 15_00
 // short. A few turns still lets Garvis read the repo (e.g. modlist) to answer.
 const INGAME_TURNS = 6;
 const INGAME_TIMEOUT_MS = 90_000;
+// In-game sessions used to live forever, and --resume re-reads the WHOLE history
+// every turn: per-turn cost creeps up with session length (observed ~3x by turn 60
+// in the convlog) and weeks of old chat crowd the ground-truth prompt. So sessions
+// EXPIRE on idleness: resuming one whose last turn is older than this TTL drops it
+// and starts fresh instead (the fresh path rebuilds all ground truth — only chat
+// memory is lost). In-game keys only; Discord threads keep their own lifecycle.
+// 0 disables expiry.
+const INGAME_SESSION_TTL_MS = Number(process.env.GARVIS_INGAME_SESSION_TTL_HOURS ?? 24) * 3_600_000;
 // In-game MOD REQUESTS: when a player asks Garvis IN MINECRAFT to add/remove/change
 // a mod, route it to the SAME maintenance agent that backs Discord @mention mod
 // requests (it researches the mod + opens a PR; a human still merges). A cheap
@@ -587,13 +595,27 @@ function buildInGamePrompt({ question, player }) {
   ].join('\n');
 }
 
+// Fetch an in-game session, expiring it first when idle past the TTL. Expiry
+// deletes the whole row — help AND maint go together, since updated_at is per-key
+// (refreshed by either mode's turns, so a recently-chatty player keeps both alive).
+function freshInGameSession(key) {
+  const sess = getSession(key);
+  if (!sess) return null;
+  if (INGAME_SESSION_TTL_MS > 0 && sess.updatedAt && Date.now() - sess.updatedAt > INGAME_SESSION_TTL_MS) {
+    console.log(`[ingame] session ${key} idle ${Math.round((Date.now() - sess.updatedAt) / 3_600_000)}h — expired, starting fresh`);
+    deleteSession(key);
+    return null;
+  }
+  return sess;
+}
+
 // Answer one in-game message via the read-only Q&A brain, resuming this player's
 // own conversation if one exists. Sessions are keyed `mc:<player>` in the same
 // SQLite store the Discord threads use (thread ids and these keys never collide),
 // so follow-up `!g` messages keep context across turns and bot restarts.
 async function answerInGame({ player, question }) {
   const key = `mc:${player}`;
-  const sess = getSession(key);
+  const sess = freshInGameSession(key);
   const resume = sess?.help ?? null;
   const prompt = resume
     ? `The player's next in-game chat message — answer in-game (short, plain text, no markdown/links; your secret image-embed ability and its secrecy rules still apply; remember you DO have a real in-game body now — "${INGAME_TRIGGER} come here / follow me / mine some iron / harvest the wheat" all work, so never claim you can't move or break blocks):\n${fencedData(question, 800)}`
@@ -640,7 +662,7 @@ function buildWhisperPrompt({ question, player }) {
 // by construction. Keys can't collide: Discord thread ids are numeric snowflakes.
 async function answerWhisper({ player, question }) {
   const key = `mc-whisper:${player}`;
-  const resume = getSession(key)?.help ?? null;
+  const resume = freshInGameSession(key)?.help ?? null;
   const prompt = resume
     ? `The player's next whispered message — reply privately (short, plain text, no markdown/links; remember you DO have a real in-game body now — public "${INGAME_TRIGGER}" commands like "mine some iron" or "come here" drive it, so never claim you can't move or break blocks):\n${fencedData(question, 800)}`
     : buildWhisperPrompt({ question, player });
@@ -659,7 +681,7 @@ async function answerWhisper({ player, question }) {
 // "make it the older version" keep context.
 async function requestModInGame({ player, request }) {
   const key = `mc:${player}`;
-  const resume = getSession(key)?.maint ?? null;
+  const resume = freshInGameSession(key)?.maint ?? null;
   const author = { id: player, name: player, email: `${player}@players.minecraft.local`, origin: 'ingame' };
   const res = await runMaintSerial({ request, user: player, author, resume, ingame: true });
   if (res.sessionId) setSession(key, { mode: 'maint', sessionId: res.sessionId, ownerId: player });
