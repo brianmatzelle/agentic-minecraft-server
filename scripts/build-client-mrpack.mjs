@@ -113,6 +113,7 @@ const CLIENT_MODS = [
   // out of modlist.txt and this pack together; see modlist.txt for the note.
   // ── Quality-of-life — optional on the client (deselectable on import) ─────
   { slug: 'jei',                                 client: 'optional', server: 'optional' },
+  { slug: 'refined-storage-jei-integration',     client: 'optional', server: 'required' }, // JEI recipe transfer for RS grids — hard-requires JEI: deselect together with JEI or the game won't launch
   { slug: 'jade',                                client: 'optional', server: 'optional' },
   // Cobblemon: Extra Structures — server generates the structures; client mod is
   // optional (Modrinth client_side: optional) but shipped so players see custom
