@@ -41,6 +41,7 @@ import { buildModrinthEmbeds } from './embeds.js';
 import { startInGameBridge, parseIngameClassification } from './ingame.js';
 import { renderSpecToTv, parseTvSpec, extractUrl } from './tv.js';
 import { runBodyAction } from './body.js';
+import { startHungerWatcher } from './hunger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '../..');
@@ -174,8 +175,10 @@ const TV_COMPUTER = process.env.GARVIS_TV_COMPUTER || '9';
 // typed into the live client via chat.sh (fixed-argv docker exec; the typed line is
 // built from validated parts only — see body.js); presence/position checks, the
 // spectator→survival flip, and far hops go through rcon. Same trust level as tv
-// (visible, reversible, no world edits — Baritone allowBreak/allowPlace stay false),
-// so NOT op-gated; the shared cooldown bounds spam. Kill switch: GARVIS_INGAME_BODY=off.
+// (visible and reversible; since 2026-07-15 the body really plays — Baritone
+// allowBreak/allowPlace/allowInventory are ON at the owner's request, so pathing
+// can now edit the world), NOT op-gated; the shared cooldown bounds spam.
+// Kill switches: GARVIS_INGAME_BODY=off, GARVIS_BODY_AUTOEAT=off (hunger.js).
 // See .claude/skills/jumbotron/SKILL.md for the body's ops runbook.
 const INGAME_BODY = (process.env.GARVIS_INGAME_BODY ?? 'on') !== 'off';
 const BODY_CONTAINER = process.env.GARVIS_BODY_CONTAINER || 'mc-garviscam';
@@ -1305,6 +1308,12 @@ if (INGAME_ENABLED) {
   });
 } else {
   console.log('[ingame] disabled (GARVIS_INGAME=off)');
+}
+
+// Keep the body fed while it plays survival — Baritone never eats and no
+// working auto-eat mod exists for NeoForge 21.1 (src/hunger.js has the story).
+if (INGAME_BODY && (process.env.GARVIS_BODY_AUTOEAT ?? 'on') !== 'off') {
+  startHungerWatcher({ rconExec, mcContainer: MC_CONTAINER, bodyContainer: BODY_CONTAINER, account: BODY_ACCOUNT });
 }
 
 // Connect the conversation log before going live (best-effort: a failure just disables

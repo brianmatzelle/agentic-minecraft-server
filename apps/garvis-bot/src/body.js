@@ -11,10 +11,12 @@
 //     client. Baritone intercepts '#' lines client-side, so they never reach
 //     public chat.
 //
-// Safety posture: no world edits (Baritone allowBreak/allowPlace are false and
-// this module never toggles settings), every action is visible and reversible
-// ("!g stop"), and names/coords are RE-validated here even though the classifier
-// already extracted them (same belt-and-braces as moderation.js resolveAction).
+// Safety posture: every action is visible and reversible ("!g stop"), and
+// names/coords are RE-validated here even though the classifier already
+// extracted them (same belt-and-braces as moderation.js resolveAction). Since
+// 2026-07-15 Baritone allowBreak/allowPlace/allowInventory are ON (owner's
+// call — the body really plays survival now); this module still never toggles
+// settings itself.
 import { execFile } from 'node:child_process';
 
 // Same shape ingame.js trusts for chat senders; a followee name from the

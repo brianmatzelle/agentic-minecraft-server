@@ -19,6 +19,13 @@ CAMERA_SKIP = ("sodium", "iris", "entityculling")
 
 # Client-only extras NOT in the server pack (no server handshake, so safe to
 # add unilaterally). Baritone = pathfinding legs for Garvis-plays mode.
+# Auto-eat mods: both Modrinth options are DEAD ENDS on NeoForge 21.1 — don't
+# retry them. "auto-eat" (AutoEat 1.6.0) targets newer FML
+# (FMLLoader.getCurrent()) and crash-loops the client at boot; "easy-auto-eat"
+# (easy_auto_eat 1.1.0) loads but breaks the config-phase handshake, so the
+# server refuses the login with "Incompatible client! Please use NeoForge X".
+# Feeding is handled outside the client instead: garvis-bot's hunger watcher
+# (apps/garvis-bot/src/hunger.js) + eat.sh in this image.
 EXTRA_MODS = {
     "baritone-standalone-neoforge-1.11.2.jar": (
         "https://github.com/cabaletta/baritone/releases/download/v1.11.2/baritone-standalone-neoforge-1.11.2.jar",
