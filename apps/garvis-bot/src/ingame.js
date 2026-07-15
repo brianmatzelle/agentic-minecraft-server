@@ -87,15 +87,20 @@ export function parseIngameClassification(text) {
   // decide text-vs-image and find a real image URL) — no args to extract here.
   if (intent === 'tv') return { intent: 'tv', give: null };
   // 'body' — move Garvis's in-game body. Pure extraction: action must be one of
-  // the four verbs, coords must be real numbers (a goto with no x/z is meaningless
-  // → safe qa). Names/coords are RE-validated by body.js before anything runs.
+  // the known verbs, coords must be real numbers (a goto with no x/z is meaningless
+  // → safe qa), and a mine needs at least one block id. Names/coords/block ids are
+  // RE-validated by body.js before anything runs.
   if (intent === 'body') {
     const b = obj.body && typeof obj.body === 'object' ? obj.body : obj;
     const action = String(b.action ?? '').trim().toLowerCase();
-    if (!['follow', 'come', 'goto', 'stop'].includes(action)) return { intent: 'qa', give: null };
+    if (!['follow', 'come', 'goto', 'stop', 'mine', 'farm'].includes(action)) return { intent: 'qa', give: null };
     const num = (v) => (v == null || String(v).trim() === '' || !Number.isFinite(Number(v)) ? null : Number(v));
-    const body = { action, player: b.player == null ? '' : String(b.player).trim(), x: num(b.x), y: num(b.y), z: num(b.z) };
+    const blocks = Array.isArray(b.blocks)
+      ? b.blocks.map((v) => String(v ?? '').trim().toLowerCase()).filter(Boolean).slice(0, 4)
+      : [];
+    const body = { action, player: b.player == null ? '' : String(b.player).trim(), x: num(b.x), y: num(b.y), z: num(b.z), blocks };
     if (action === 'goto' && (body.x == null || body.z == null)) return { intent: 'qa', give: null };
+    if (action === 'mine' && blocks.length === 0) return { intent: 'qa', give: null };
     return { intent: 'body', give: null, body };
   }
   if (intent === 'give') {

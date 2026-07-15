@@ -17,7 +17,7 @@ Architecture + hard-won landmines: `.claude/skills/cc/examples/jumbotron/README.
 - Night vision (re-apply after account resets): `docker exec mc-neoforge rcon-cli "effect give fat_balls_addict minecraft:night_vision infinite 0 true"`
 
 ## Garvis plays (Baritone legs — same account, same client)
-- Players command him directly in-game: `!g come here` / `follow me` / `stay` / `go to <x y z>` (body intent in apps/garvis-bot — see src/body.js; kill switch GARVIS_INGAME_BODY=off).
+- Players command him directly in-game: `!g come here` / `follow me` / `stay` / `go to <x y z>` / `mine some iron` / `harvest the wheat` (body intent in apps/garvis-bot — see src/body.js; kill switch GARVIS_INGAME_BODY=off). Mine block-ids come from the classifier but are regex-validated + denylisted in body.js (no chests/beacons/metal blocks — anti-theft).
 - Ops path — type into the client's chat: `docker exec mc-garviscam /opt/garviscam/chat.sh '<line>'` — plain text = public chat; `#...` = Baritone command (intercepted client-side; replies in `/data/work/logs/latest.log` `[CHAT]` lines). Serialized via flock — never bypass chat.sh with raw xdotool typing (interleaved keystrokes corrupt the line and leak keys in-world).
 - Play: `docker exec mc-neoforge rcon-cli "gamemode survival fat_balls_addict"` then `chat.sh '#follow player <name>'` · `'#goto <x> <y> <z>'` · `'#stop'`. The jumbotron streams his first-person POV while he plays. `#follow` only binds targets within entity-tracking range (~60 blocks) — tp him close first.
 - Back to camera: `chat.sh '#stop'` → `rcon-cli "gamemode spectator fat_balls_addict"` → tp to the parked shot.

@@ -1,6 +1,7 @@
-// In-game BODY (Layer 3) — "!g come here / follow me / stay / go to <coords>":
-// players command Garvis's physical in-game body (the camera account — a real
-// modded client in the garviscam container with Baritone aboard).
+// In-game BODY (Layer 3) — "!g come here / follow me / stay / go to <coords> /
+// mine some iron / harvest the wheat": players command Garvis's physical
+// in-game body (the camera account — a real modded client in the garviscam
+// container with Baritone aboard).
 //
 // Two control planes, both fixed-argv execFile (no shell), both fed ONLY from
 // validated parts — raw player text NEVER reaches either:
@@ -24,6 +25,17 @@ import { execFile } from 'node:child_process';
 const USERNAME_RE = /^[A-Za-z0-9_]{3,16}$/;
 // rcon-cli output arrives with terminal escapes (itzg TTY) — strip all CSI.
 const ANSI_RE = /\x1b\[[0-9;?]*[ -/]*[@-~]/g;
+
+// Block ids the classifier hands us for "#mine" — shape-checked here before
+// they're ever typed into the client.
+const BLOCK_ID_RE = /^[a-z0-9_]{1,48}$/;
+// Baritone's #mine hunts PLACED blocks too — keep "!g mine diamond blocks"
+// from turning into sanctioned theft of somebody's beacon base or storage.
+const MINE_DENY = new Set([
+  'diamond_block', 'emerald_block', 'gold_block', 'iron_block', 'netherite_block',
+  'beacon', 'chest', 'trapped_chest', 'ender_chest', 'barrel',
+  'spawner', 'conduit', 'dragon_egg',
+]);
 
 // Beyond this, "follow"/"come" teleport the body to the target first. Two
 // reasons: Baritone's "#follow player" only binds entities the CLIENT has
@@ -77,9 +89,37 @@ const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 // Run one validated body action. `asker` is the server-stamped chat sender
 // (trusted); `player`/coords come from the classifier (untrusted, re-checked).
 // Returns { ok, text } — text is a short in-game chat line. Never throws.
-export async function runBodyAction({ action, player, x, y, z }, { rconExec, mcContainer, bodyContainer, account, asker }) {
+export async function runBodyAction({ action, player, x, y, z, blocks = [] }, { rconExec, mcContainer, bodyContainer, account, asker }) {
   const body = await onlinePlayer(rconExec, mcContainer, account);
   if (!body) return { ok: false, text: `My body (${account}) isn't in the game right now — ask an admin to check on it.` };
+
+  // mine / farm — real survival play (Baritone #mine / #farm). Anchor on the
+  // ASKER exactly like follow/come (grounded, working near whoever asked),
+  // then hand Baritone the task; "!g stop" cancels either.
+  if (action === 'mine' || action === 'farm') {
+    const [bodyPos, askerPos, spectating] = await Promise.all([
+      getPos(rconExec, mcContainer, body),
+      getPos(rconExec, mcContainer, asker),
+      isSpectator(rconExec, mcContainer, body),
+    ]);
+    const far = !bodyPos || !askerPos || dist(bodyPos, askerPos) > MAX_WALK;
+    if (spectating || far) await rcon(rconExec, mcContainer, ['tp', body, asker]);
+    await rcon(rconExec, mcContainer, ['gamemode', 'survival', body]);
+    if (action === 'farm') {
+      const t = await typeInClient(bodyContainer, '#farm');
+      return t.ran
+        ? { ok: true, text: `🌾 Farming what's around me — "!g stop" when the harvest's done.` }
+        : { ok: false, text: "I couldn't reach my body's controls — try again in a moment." };
+    }
+    const ids = [...new Set(blocks)].filter((id) => BLOCK_ID_RE.test(id)).slice(0, 4);
+    if (!ids.length) return { ok: false, text: 'Tell me which block to mine — e.g. "!g mine iron ore".' };
+    const banned = ids.find((id) => MINE_DENY.has(id) || id.endsWith('shulker_box'));
+    if (banned) return { ok: false, text: `I don't mine ${banned.replaceAll('_', ' ')} — that's somebody's stuff, not ore.` };
+    const t = await typeInClient(bodyContainer, `#mine ${ids.join(' ')}`);
+    return t.ran
+      ? { ok: true, text: `⛏️ Mining ${ids.join(', ').replaceAll('_', ' ')} — "!g stop" when you've got enough.` }
+      : { ok: false, text: "I couldn't reach my body's controls — try again in a moment." };
+  }
 
   if (action === 'stop') {
     const t = await typeInClient(bodyContainer, '#stop');
