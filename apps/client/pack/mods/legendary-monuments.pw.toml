@@ -1,0 +1,13 @@
+name = "legendary-monuments"
+filename = "legendarymonuments-neoforge-1.21.1-8.0.3.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/m6RyHSbV/versions/l6PiCdpy/legendarymonuments-neoforge-1.21.1-8.0.3.jar"
+hash-format = "sha512"
+hash = "67ad129410494d679c80da882db023e9ac55e34ae0f4a9a888c5fc9d2febbe86ba92820f3b6deeea308e5ddec7edef8b00315fbe089e2d801a071af01b2f9549"
+
+[update]
+[update.modrinth]
+mod-id = "m6RyHSbV"
+version = "l6PiCdpy"
