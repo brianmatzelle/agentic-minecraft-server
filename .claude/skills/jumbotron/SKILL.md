@@ -36,6 +36,7 @@ Drop file in `apps/server/stadiumcast/media/`, then in mc-stadiumcast: `pkill -x
 
 ## Gotchas
 - `garviscam/scripts/*` are baked into the image — **rebuild after edits** (`docker compose build garviscam && docker compose up -d garviscam`).
+- Server restarts can silently break the camera two ways (`Incompatible client! Please use NeoForge X` / `not white-listed` in logs): itzg auto-floats the NeoForge build (`VERSION: "1.21.1"`) — chase it by bumping `NEO_VERSION` in `garviscam/scripts/install.sh` + `NEO_ID` in `launch.sh`, rebuild, `docker exec mc-garviscam /opt/garviscam/install.sh`, `pkill -x java`; and `OVERRIDE_WHITELIST=TRUE` rewrites whitelist.json from `MC_WHITELIST` in `apps/server/.env` each start — keep fat_balls_addict in that env line, RCON-only adds get wiped. A refused *login* logs no vanilla disconnect line, so the self-heal watcher can't see it — the client parks on the Failed to connect / multiplayer screen until you `pkill -x java` (after fixing the cause).
 - sanjuuni `-T` live mode = one ws client; "n" is a rolling head counter, not a total.
 - Pack updated? Resync camera mods: `docker exec mc-garviscam /opt/garviscam/install.sh` (auto-prunes sodium/iris/entityculling).
 - MSA relogin (rare, user-interactive): `! docker exec -it mc-garviscam portablemc --main-dir /data/main --work-dir /data/work login <email> --auth-no-browser`.
