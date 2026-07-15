@@ -43,8 +43,14 @@ chat as fat_balls_addict, `#` lines are Baritone commands intercepted
 client-side — `#follow player <name>`, `#goto x y z`, `#stop`, `#set`.
 RCON `gamemode survival|spectator` flips player ↔ camera; in player mode the
 jumbotron streams Garvis's first-person POV. Guardrails: `allowBreak` +
-`allowPlace` false, persisted in `work/baritone/settings.txt`. Death screen
-wedges the client — `pkill -x java`; rejoining auto-respawns.
+`allowPlace` false, persisted in `work/baritone/settings.txt`. Players command
+the body in-game via the `!g` body intent (apps/garvis-bot/src/body.js).
+Hard-won: chat.sh serializes typists with flock (concurrent typings interleave
+keystrokes into one line and leak the rest in-world — a stray 'e' opens the
+inventory and wedges chat); `#follow player` only binds targets the client has
+LOADED (entity tracking ~60 blocks — tp close first, body.js does); deaths are
+self-healed by camloop's respawn_watcher (Baritone's "Death position saved."
+line → click Respawn at (480,297)@960x540).
 Why not Mineflayer/minecraft-mcp-server: vanilla protocol can't pass the
 NeoForge required-mod registry handshake (and that wrapper is offline-auth
 only) — a real modded client was the only way in, and we already had one.

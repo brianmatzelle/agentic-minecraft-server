@@ -5,6 +5,11 @@
 # (snap.sh to check; Baritone replies land in /data/work/logs/latest.log [CHAT]).
 set -eu
 export DISPLAY=:99
+# Serialize typists: concurrent invocations (bot + ops) interleave keystrokes
+# into one chat line ("dullpnkt") and dump the rest as in-world keypresses
+# ('e' opens the inventory and wedges chat). One at a time, in arrival order.
+exec 9>/tmp/chat.sh.lock
+flock 9
 W=$(xdotool search --class Minecraft | head -1)
 [ -n "$W" ] || { echo "no Minecraft window" >&2; exit 1; }
 xdotool key --window "$W" t

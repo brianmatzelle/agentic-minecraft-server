@@ -65,7 +65,10 @@ export function parseChatLine(raw, trigger) {
 //   {"intent":"give","give":{"item":"minecraft:stone","count":64,"player":"me"}}
 //     -> { intent:'give', give:{ player:'me', item:'minecraft:stone', count:'64' } }
 //   {"intent":"modreq"}  -> { intent:'modreq', give:null }
-//   anything else / unparseable / a give with no item  -> { intent:'qa', give:null }
+//   {"intent":"body","body":{"action":"follow","player":"me"}}
+//     -> { intent:'body', give:null, body:{ action:'follow', player:'me', x:null, y:null, z:null } }
+//   anything else / unparseable / a give with no item / a malformed body
+//     -> { intent:'qa', give:null }
 //
 // 'qa' is the safe default: a classifier hiccup can never silently spawn the maint agent
 // OR perform a give. Pure + testable: no I/O, no state.
@@ -83,6 +86,18 @@ export function parseIngameClassification(text) {
   // 'tv' just routes to the TV handler (which runs its own web-capable director to
   // decide text-vs-image and find a real image URL) — no args to extract here.
   if (intent === 'tv') return { intent: 'tv', give: null };
+  // 'body' — move Garvis's in-game body. Pure extraction: action must be one of
+  // the four verbs, coords must be real numbers (a goto with no x/z is meaningless
+  // → safe qa). Names/coords are RE-validated by body.js before anything runs.
+  if (intent === 'body') {
+    const b = obj.body && typeof obj.body === 'object' ? obj.body : obj;
+    const action = String(b.action ?? '').trim().toLowerCase();
+    if (!['follow', 'come', 'goto', 'stop'].includes(action)) return { intent: 'qa', give: null };
+    const num = (v) => (v == null || String(v).trim() === '' || !Number.isFinite(Number(v)) ? null : Number(v));
+    const body = { action, player: b.player == null ? '' : String(b.player).trim(), x: num(b.x), y: num(b.y), z: num(b.z) };
+    if (action === 'goto' && (body.x == null || body.z == null)) return { intent: 'qa', give: null };
+    return { intent: 'body', give: null, body };
+  }
   if (intent === 'give') {
     // Tolerate either a nested {"give":{…}} or the fields placed flat on the object.
     const g = obj.give && typeof obj.give === 'object' ? obj.give : obj;

@@ -17,11 +17,12 @@ Architecture + hard-won landmines: `.claude/skills/cc/examples/jumbotron/README.
 - Night vision (re-apply after account resets): `docker exec mc-neoforge rcon-cli "effect give fat_balls_addict minecraft:night_vision infinite 0 true"`
 
 ## Garvis plays (Baritone legs — same account, same client)
-- Type into the client's chat: `docker exec mc-garviscam /opt/garviscam/chat.sh '<line>'` — plain text = public chat; `#...` = Baritone command (intercepted client-side; replies in `/data/work/logs/latest.log` `[CHAT]` lines).
-- Play: `docker exec mc-neoforge rcon-cli "gamemode survival fat_balls_addict"` then `chat.sh '#follow player <name>'` · `'#goto <x> <y> <z>'` · `'#stop'`. The jumbotron streams his first-person POV while he plays.
+- Players command him directly in-game: `!g come here` / `follow me` / `stay` / `go to <x y z>` (body intent in apps/garvis-bot — see src/body.js; kill switch GARVIS_INGAME_BODY=off).
+- Ops path — type into the client's chat: `docker exec mc-garviscam /opt/garviscam/chat.sh '<line>'` — plain text = public chat; `#...` = Baritone command (intercepted client-side; replies in `/data/work/logs/latest.log` `[CHAT]` lines). Serialized via flock — never bypass chat.sh with raw xdotool typing (interleaved keystrokes corrupt the line and leak keys in-world).
+- Play: `docker exec mc-neoforge rcon-cli "gamemode survival fat_balls_addict"` then `chat.sh '#follow player <name>'` · `'#goto <x> <y> <z>'` · `'#stop'`. The jumbotron streams his first-person POV while he plays. `#follow` only binds targets within entity-tracking range (~60 blocks) — tp him close first.
 - Back to camera: `chat.sh '#stop'` → `rcon-cli "gamemode spectator fat_balls_addict"` → tp to the parked shot.
 - Guardrails persisted in `/data/work/baritone/settings.txt`: allowBreak + allowPlace **false** (never paths through builds) — leave them unless the owner asks.
-- Death screen wedges the client: `docker exec mc-garviscam sh -c 'pkill -x java'` — rejoining auto-respawns him.
+- Deaths self-heal: camloop's respawn_watcher clicks Respawn (trigger: Baritone's "Death position saved." log line). Fallback if wedged anyway: `docker exec mc-garviscam sh -c 'pkill -x java'` — rejoining auto-respawns him.
 
 ## Health & restarts (stack self-heals; escalate in order)
 - Status: `docker exec mc-neoforge rcon-cli list` (has fat_balls_addict?) · `pgrep -x java`/`ffmpeg` in mc-garviscam · `pgrep -x sanjuuni` in mc-stadiumcast · faces drawing = monitor palette ≠ native (`cc -i 10`).

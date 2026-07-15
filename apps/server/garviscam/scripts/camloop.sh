@@ -30,7 +30,25 @@ postjoin_clicker() {
   [ -n "${W:-}" ] && DISPLAY=:99 xdotool key --window "$W" F1 2>/dev/null
 }
 
+respawn_watcher() {
+  # Survival deaths park the client on the death screen (chat dead, stream
+  # frozen on red) until something clicks Respawn. Baritone logs "Death
+  # position saved." the moment we die — click the fixed-coords button
+  # (centered at 960x540; same fixed-layout assumption as the resource-pack
+  # click above). tail -F survives the log being recreated on client relaunch.
+  tail -F /data/work/logs/latest.log 2>/dev/null | while read -r line; do
+    case "$line" in
+      *"Death position saved"*)
+        sleep 2
+        DISPLAY=:99 xdotool mousemove 480 297 click 1 2>/dev/null
+        echo "[camloop] death detected — clicked Respawn" >> /data/capture.log
+        ;;
+    esac
+  done
+}
+
 capture_loop &
+respawn_watcher &
 while true; do
   postjoin_clicker &
   /opt/garviscam/launch.sh online "$RES"
