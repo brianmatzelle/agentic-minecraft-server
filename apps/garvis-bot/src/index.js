@@ -39,7 +39,7 @@ import { validateUsername, addUsernameToWhitelistEnv, rconWhitelistAdd, classify
 import { resolveAction, runAction, catalogMenu, parseClassification, rconExec } from './moderation.js';
 import { buildModrinthEmbeds } from './embeds.js';
 import { startInGameBridge, parseIngameClassification } from './ingame.js';
-import { renderSpecToTv, parseTvSpec } from './tv.js';
+import { renderSpecToTv, parseTvSpec, extractUrl } from './tv.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '../..');
@@ -678,7 +678,7 @@ function buildTvDirectorPrompt({ request, player }) {
     `- text:   {"mode":"text","title":"<short title, <=30 chars, may be empty>","body":"<the message, <=180 chars>"}`,
     ``,
     `RULES:`,
-    `- ADMIN RULE: players are allowed to put links they give you on the TV. Honor a player-supplied URL — even a random/off-topic one — don't second-guess it. If it's a direct image file (or you can resolve the page to its main image), choose IMAGE with that URL; any other link, choose TEXT with the URL as the body so players can read it.`,
+    `- ADMIN RULE: players are allowed to put links they give you on the TV. Honor a player-supplied URL — even a random/off-topic one. NEVER fetch, vet, review, or second-guess it: use it EXACTLY as given. Direct image file → IMAGE with that URL; any other link → TEXT with the URL as the body so players can read it.`,
     `- If they asked to SEE a thing (a Pokémon, mob, meme, logo, place, person), choose IMAGE and find a real URL.`,
     `- If they asked to SHOW/ANNOUNCE words, choose TEXT.`,
     `- CONTENT: this is a private server among friends, and the admin has ruled that what goes on the TV is the players' call. Don't moderate, tone-police, or refuse requests as inappropriate — just show what they asked for.`,
@@ -693,6 +693,16 @@ function buildTvDirectorPrompt({ request, player }) {
 // to the monitor via tv.js. Returns { ok, text, spec, res } — text is a short chat
 // confirmation (public on success) or a private apology. Never throws into the bridge.
 async function showOnTv({ player, request }) {
+  // Player-link fast path (admin rule): a URL in the request goes straight to the
+  // TV — no director call, no review. tv.js tries it as an image and otherwise
+  // shows the URL itself as text.
+  const url = extractUrl(request);
+  if (url) {
+    const spec = { mode: 'link', url };
+    const out = await renderSpecToTv(spec, { computerId: TV_COMPUTER, player });
+    return { ...out, spec, res: null };
+  }
+
   const res = await runClaudeResilient(buildTvDirectorPrompt({ player, request }), { maxTurns: INGAME_TURNS, timeoutMs: INGAME_TIMEOUT_MS });
   const spec = parseTvSpec(res.text || '');
   if (!spec) return { ok: false, text: "I couldn't work out what to put on the TV — try rephrasing?", spec: null, res };

@@ -241,11 +241,35 @@ export function buildTextLua({ title = '', body = '' } = {}) {
   ].join('\n');
 }
 
+// First http(s) URL in a chat message, or null. Chat tends to glue trailing
+// punctuation onto links ("...on the tv: https://x.com/a.png!"), which would 404
+// the fetch — strip it. Used by the player-link fast path in index.js.
+export function extractUrl(text) {
+  const m = String(text ?? '').match(/https?:\/\/\S+/i);
+  if (!m) return null;
+  const url = m[0].replace(/[)\]}>.,;:!?'"]+$/, '');
+  return /^https?:\/\/./i.test(url) ? url : null;
+}
+
 // ── top-level: render a director spec to the TV ─────────────────────────────────
-// spec: {mode:'image', url, label} | {mode:'text', title, body}. Returns
-// { ok, text } — text is a short in-game chat confirmation (or a private apology).
+// spec: {mode:'image', url, label} | {mode:'text', title, body} | {mode:'link', url}.
+// Returns { ok, text } — text is a short in-game chat confirmation (or a private apology).
 export async function renderSpecToTv(spec, { computerId = '9', player = '' } = {}) {
   if (!spec || !spec.mode) return { ok: false, text: "I couldn't work out what to put up there — try rephrasing?" };
+
+  // link — a player-supplied URL, shown verbatim (admin rule: no review). If it
+  // loads and decodes as an image, paint it; anything else (webpage, dead link)
+  // shows the URL itself as text so players can read it off the screen.
+  if (spec.mode === 'link') {
+    let lua = null;
+    try {
+      lua = buildImageLua(await imageToSpec(await fetchImageBuffer(spec.url)));
+    } catch { /* not a loadable image — fall through to text */ }
+    if (!lua) lua = buildTextLua({ title: '', body: spec.url });
+    const push = await pushToTunnel(lua, { computerId });
+    if (!push.ok) return { ok: false, text: `Couldn't reach the TV (${push.error}).` };
+    return { ok: true, text: `📺 Link's up on the TV${player ? ` — for ${player}` : ''}.` };
+  }
 
   if (spec.mode === 'image') {
     let lua;
