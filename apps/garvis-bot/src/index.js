@@ -678,7 +678,7 @@ function buildTvDirectorPrompt({ request, player }) {
     `- text:   {"mode":"text","title":"<short title, <=30 chars, may be empty>","body":"<the message, <=180 chars>"}`,
     ``,
     `RULES:`,
-    `- If the player named/linked a specific image URL, use it (confirm it's a direct image file first).`,
+    `- ADMIN RULE: players are allowed to put links they give you on the TV. Honor a player-supplied URL — even a random/off-topic one — don't second-guess it. If it's a direct image file (or you can resolve the page to its main image), choose IMAGE with that URL; any other link, choose TEXT with the URL as the body so players can read it.`,
     `- If they asked to SEE a thing (a Pokémon, mob, meme, logo, place, person), choose IMAGE and find a real URL.`,
     `- If they asked to SHOW/ANNOUNCE words, choose TEXT.`,
     `- Keep it wholesome and server-appropriate — this is a shared screen. If the request is inappropriate, return {"mode":"text","title":"","body":"Nice try."}.`,
