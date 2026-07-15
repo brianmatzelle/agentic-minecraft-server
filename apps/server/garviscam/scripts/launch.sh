@@ -6,7 +6,7 @@
 set -euo pipefail
 MODE="${1:-offline}"
 RES="${2:-960x540}"
-NEO_ID="neoforge-21.1.235"
+NEO_ID="neoforge-21.1.236"
 
 # display is owned by the container entrypoint — just wait for it
 for _ in $(seq 1 20); do xdpyinfo -display :99 >/dev/null 2>&1 && break; sleep 0.5; done

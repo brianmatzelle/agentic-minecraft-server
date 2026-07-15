@@ -2,7 +2,7 @@
 # One-time install: vanilla files + NeoForge + the client pack, all into /data.
 set -euo pipefail
 MC_VERSION=1.21.1
-NEO_VERSION=21.1.235
+NEO_VERSION=21.1.236
 
 echo "== vanilla $MC_VERSION files =="
 portablemc --main-dir "$PMC_MAIN" --work-dir "$PMC_WORK" start --dry -u GarvisCam "$MC_VERSION"
