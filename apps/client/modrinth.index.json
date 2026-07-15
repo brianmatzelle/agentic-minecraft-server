@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-07-14",
+  "versionId": "2026-07-15",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -51,6 +51,21 @@
       "fileSize": 584004
     },
     {
+      "path": "mods/athena-neoforge-1.21.1-4.0.6.jar",
+      "hashes": {
+        "sha1": "4bcbdf388bd5e387beca7c627224aac33584b55b",
+        "sha512": "ab40a306a26ce834daae921a1e87768cd2538a4bfe27a4480f97af854084cc334e7416b1bd0b7583834a32a86951283f29fd4b1df7b98a967a6b26a3ec05e2cf"
+      },
+      "env": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/b1ZV3DIJ/versions/dJgL278E/athena-neoforge-1.21.1-4.0.6.jar"
+      ],
+      "fileSize": 99944
+    },
+    {
       "path": "mods/balm-neoforge-1.21.1-21.0.63.jar",
       "hashes": {
         "sha1": "f0b85246a422373cc724affeaedbe2c08e88d67f",
@@ -94,6 +109,21 @@
         "https://cdn.modrinth.com/data/zhVN1dvW/versions/hqAoNNVF/ChatImage-1.4.7%2B1.21.0%2Bneoforge.jar"
       ],
       "fileSize": 702438
+    },
+    {
+      "path": "mods/chipped-neoforge-1.21.1-4.0.2.jar",
+      "hashes": {
+        "sha1": "6f5395f58139802edfde7cb9170279f92f291971",
+        "sha512": "f3083b01267e7c674c4b42f45a317c93ee7723443cba2051fe5bc593638b533b0fe90699e2101661c934dff458eab693cce4e188533bfe977778c249563a2fa5"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/BAscRYKm/versions/eqVowbGc/chipped-neoforge-1.21.1-4.0.2.jar"
+      ],
+      "fileSize": 15020578
     },
     {
       "path": "mods/cloth-config-15.0.140-neoforge.jar",
@@ -396,19 +426,19 @@
       "fileSize": 725742
     },
     {
-      "path": "mods/jei-1.21.1-neoforge-19.38.0.366.jar",
+      "path": "mods/jei-1.21.1-neoforge-19.39.0.368.jar",
       "hashes": {
-        "sha1": "8f91816e579615b3a157a48b70213fe83a52d70d",
-        "sha512": "21f20b4086647773a982140640d8da817e2b3f7958c9bba7a3b011534f5b92d1a347a7ea041fc70cdf195b759a298904bf3c02b3fc29f17d330ab14aa2c376d1"
+        "sha1": "82a8ee647d81c40f149c444c5d37088f035cb773",
+        "sha512": "e0fedc5dddea7f48a061053f5f3cb8e4805dbd0734ee9ae07809a1766a02c7b6ed938b1d34234628dbb73e21277d9f09dacd20902006c678180ce009f4bc07b3"
       },
       "env": {
         "client": "optional",
         "server": "optional"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/uBBwu3s1/jei-1.21.1-neoforge-19.38.0.366.jar"
+        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/bEGnP8IF/jei-1.21.1-neoforge-19.39.0.368.jar"
       ],
-      "fileSize": 1628259
+      "fileSize": 1635411
     },
     {
       "path": "mods/kotlinforforge-5.11.0-all.jar",
@@ -424,6 +454,51 @@
         "https://cdn.modrinth.com/data/ordsPcFz/versions/NrSebcsG/kotlinforforge-5.11.0-all.jar"
       ],
       "fileSize": 6869790
+    },
+    {
+      "path": "mods/legendarymonuments-neoforge-1.21.1-8.0.3.jar",
+      "hashes": {
+        "sha1": "84983373bf415314d9197534eaf4a234f9e91137",
+        "sha512": "67ad129410494d679c80da882db023e9ac55e34ae0f4a9a888c5fc9d2febbe86ba92820f3b6deeea308e5ddec7edef8b00315fbe089e2d801a071af01b2f9549"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/m6RyHSbV/versions/l6PiCdpy/legendarymonuments-neoforge-1.21.1-8.0.3.jar"
+      ],
+      "fileSize": 16584616
+    },
+    {
+      "path": "mods/lithostitched-1.7.13-neoforge-21.1.jar",
+      "hashes": {
+        "sha1": "771a104dde071e16e67c7cd3149f7c3015375483",
+        "sha512": "04409013edce65678d02489a7b830ba7d5e18e7c705243c8208f52661da62e7e337a09fe2797c85d7a00bc66cb50949b157b267afd216e7b900ddde9849dff32"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/XaDC71GB/versions/qPASucBM/lithostitched-1.7.13-neoforge-21.1.jar"
+      ],
+      "fileSize": 852541
+    },
+    {
+      "path": "mods/mega_showdown-neoforge-1.6.1+1.7.1+1.21.1.jar",
+      "hashes": {
+        "sha1": "c93c0ef35c5ed9ab5d4bd9ce6a88c7cda77209f0",
+        "sha512": "89a050b34659a0faac6aade9a600ab2ce5b0ff2882462635e13ce808a86f325a6dcf727b757b9362aa2593910cbadbb1741235cb7c1c4fd0f22c05ed400a5a17"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/SszvX85I/versions/qDIlaSjM/mega_showdown-neoforge-1.6.1%2B1.7.1%2B1.21.1.jar"
+      ],
+      "fileSize": 16319875
     },
     {
       "path": "mods/Mekanism-1.21.1-10.7.19.85.jar",
@@ -561,6 +636,21 @@
       "fileSize": 4360871
     },
     {
+      "path": "mods/resourcefullib-neoforge-1.21-3.0.12.jar",
+      "hashes": {
+        "sha1": "24389c8e48ff0e8594e4686b750c494c66a5f8df",
+        "sha512": "a9d20e345faa9bcb297bd95ac9524205834804d1bb13518397dd4f7f62b352b08c3339ee7f7870d3669078ceeb33d5c31ea527aecce4b31d62ec1ff7d8b562c8"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/G1hIVOrD/versions/x99nCLTm/resourcefullib-neoforge-1.21-3.0.12.jar"
+      ],
+      "fileSize": 484332
+    },
+    {
       "path": "mods/sable-neoforge-1.21.1-2.0.3.jar",
       "hashes": {
         "sha1": "f3ba9a497122ba29d9e94ebe6f9a3a3aaa5fa756",
@@ -668,6 +758,6 @@
   ],
   "dependencies": {
     "minecraft": "1.21.1",
-    "neoforge": "21.1.235"
+    "neoforge": "21.1.236"
   }
 }

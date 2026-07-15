@@ -65,10 +65,25 @@ const CLIENT_MODS = [
   // Pin both sides to the build the server runs. Matches modlist.txt kotlin-for-forge:NrSebcsG.
   { slug: 'kotlin-for-forge',                    client: 'required', server: 'required', pin: '5.11.0' }, // Cobblemon runtime
   // rctmod (Radical Cobblemon Trainers) + rctapi removed 2026-06-25 by request.
-  // cobblemon-mega-showdown DISABLED 2026-06-24: mega_showdown 1.8.4 fatally NPEs on
-  // server datapack load (HeldItems.reload → receiveHeldItemDataFn null) vs Cobblemon
-  // 1.7.3. Removed from the server modlist + client pack in lockstep. Re-add (both
-  // here and in modlist.txt) once a compatible/pinned Cobblemon↔mega-showdown pair exists.
+  // RE-ENABLED 2026-07-15, PINNED to the last build made FOR Cobblemon 1.7.1 (the
+  // 2026-06-24 disable was mega_showdown 1.8.4, a Cobblemon-1.7.3 build, NPEing
+  // against a mismatched Cobblemon). DO NOT unpin: newer MSD targets Cobblemon
+  // 1.7.3+. Matches modlist.txt cobblemon-mega-showdown:qDIlaSjM.
+  { slug: 'cobblemon-mega-showdown',             client: 'required', server: 'required', pin: '1.6.1+1.7.1+1.21.1' },
+  // PINNED to 8.0.3: requires cobblemon [1.7.0,) — fine for our pinned 1.7.1 — but a
+  // future build may target newer Cobblemon/MSD. Pin both sides so neither drifts off
+  // the pinned server. Matches modlist.txt legendary-monuments:l6PiCdpy. (Discord req 2026-07-15)
+  { slug: 'legendary-monuments',                 client: 'required', server: 'required', pin: '8.0.3' },
+  { slug: 'chipped',                             client: 'required', server: 'required' }, // legendary-monuments dep (structures use Chipped blocks)
+  { slug: 'resourceful-lib',                     client: 'required', server: 'required' }, // chipped dep
+  // Athena — Chipped's connected-textures dep, declared side=CLIENT in Chipped's
+  // neoforge.mods.toml: clients need it, the server never runs it (Modrinth tags
+  // server 'unsupported'), so it stays out of modlist.txt like the FPS mods.
+  { slug: 'athena-ctm',                          client: 'required', server: 'unsupported' },
+  // Lithostitched — legendary-monuments' worldgen lib. Modrinth tags client
+  // 'unsupported', but LM declares the dep side=BOTH, so LM clients must have the
+  // jar or NeoForge refuses to launch. It's on the server too (modlist.txt).
+  { slug: 'lithostitched',                       client: 'required', server: 'required' },
   { slug: 'simpletms-tms-and-trs-for-cobblemon', client: 'required', server: 'required' },
   { slug: 'cobbledollars',                       client: 'required', server: 'required' },
   { slug: 'cobblepedia',                         client: 'required', server: 'required' },

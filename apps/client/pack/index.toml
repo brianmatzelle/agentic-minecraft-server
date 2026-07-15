@@ -16,6 +16,11 @@ hash = "6dab8d2507eeacddfad622e58416aae44ed7425de6cae35f8e5694f88ac270f7"
 metafile = true
 
 [[files]]
+file = "mods/athena-ctm.pw.toml"
+hash = "673da3b1a88c94d56c0d7cbcdf3232d4933d1a1fb149188487088e49ff0618f3"
+metafile = true
+
+[[files]]
 file = "mods/balm.pw.toml"
 hash = "6f45abb9ea3a42133391f83a0f050d82891f5297529020b951587a8d9481eaaf"
 metafile = true
@@ -31,6 +36,11 @@ hash = "42f4e411a46b812ec3a86156846d8cca32cdb16bd33e9315543ad6e8d025aa6b"
 metafile = true
 
 [[files]]
+file = "mods/chipped.pw.toml"
+hash = "2590576d697aea5b3d08d3ca295c76b2decfe47baabf118267e4fbf5e726fdb3"
+metafile = true
+
+[[files]]
 file = "mods/cloth-config.pw.toml"
 hash = "11e5787b803246751da8491db9b2beed21328dffa3828b23793fff4a87505517"
 metafile = true
@@ -43,6 +53,11 @@ metafile = true
 [[files]]
 file = "mods/cobblemon.pw.toml"
 hash = "116cf6fc697132d270a93241c63d9216f99b41fa9efa43e0d990245b593fdafa"
+metafile = true
+
+[[files]]
+file = "mods/cobblemon-mega-showdown.pw.toml"
+hash = "a30d5ddbd1612a41d5f930776c965fe2841c6d88f80728aa297a6c912def72e8"
 metafile = true
 
 [[files]]
@@ -132,12 +147,22 @@ metafile = true
 
 [[files]]
 file = "mods/jei.pw.toml"
-hash = "67ba4285662344580237f84c79c668adea75f2059f973a1d8bf935a53af9369e"
+hash = "941307c1162606f6d6a0b010ec5c8967935ba8a1e4991d9ddeb22f1a44653163"
 metafile = true
 
 [[files]]
 file = "mods/kotlin-for-forge.pw.toml"
 hash = "464e92f88ee1ffe24cc59093ee5b45a3c43753e532d031d0f584447492e84480"
+metafile = true
+
+[[files]]
+file = "mods/legendary-monuments.pw.toml"
+hash = "a82fd9d336c4cfd27c1a6ab826903a47b52cf85e2465e91e5e01e0ce62518456"
+metafile = true
+
+[[files]]
+file = "mods/lithostitched.pw.toml"
+hash = "2325761f8a94c3b25a3daf84a4a378e95a9dc22235a4076380faad80202f0688"
 metafile = true
 
 [[files]]
@@ -183,6 +208,11 @@ metafile = true
 [[files]]
 file = "mods/refined-storage-jei-integration.pw.toml"
 hash = "6e60ad2315e9b73b9d533942376fdb15c51a66927b063f7c59b15a55050baea1"
+metafile = true
+
+[[files]]
+file = "mods/resourceful-lib.pw.toml"
+hash = "23f1f4f6e1cccf290531eeb2f5229b2e06500469d738c7643fb6f2d2d5504a72"
 metafile = true
 
 [[files]]
