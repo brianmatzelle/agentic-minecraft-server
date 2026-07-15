@@ -50,7 +50,10 @@ keystrokes into one line and leak the rest in-world — a stray 'e' opens the
 inventory and wedges chat); `#follow player` only binds targets the client has
 LOADED (entity tracking ~60 blocks — tp close first, body.js does); deaths are
 self-healed by camloop's respawn_watcher (Baritone's "Death position saved."
-line → click Respawn at (480,297)@960x540).
+line → click Respawn at (480,297)@960x540), and Connection Lost screens too
+("Client disconnected with reason:" in latest.log → pkill java → relaunch loop
+rejoins; fires on kicks, netty errors, and server stops alike). Baritone
+forgets its task on relaunch — re-issue #follow/#goto after a self-heal.
 Why not Mineflayer/minecraft-mcp-server: vanilla protocol can't pass the
 NeoForge required-mod registry handshake (and that wrapper is offline-auth
 only) — a real modded client was the only way in, and we already had one.

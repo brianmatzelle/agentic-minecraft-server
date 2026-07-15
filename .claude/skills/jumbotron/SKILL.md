@@ -22,7 +22,7 @@ Architecture + hard-won landmines: `.claude/skills/cc/examples/jumbotron/README.
 - Play: `docker exec mc-neoforge rcon-cli "gamemode survival fat_balls_addict"` then `chat.sh '#follow player <name>'` · `'#goto <x> <y> <z>'` · `'#stop'`. The jumbotron streams his first-person POV while he plays. `#follow` only binds targets within entity-tracking range (~60 blocks) — tp him close first.
 - Back to camera: `chat.sh '#stop'` → `rcon-cli "gamemode spectator fat_balls_addict"` → tp to the parked shot.
 - Guardrails persisted in `/data/work/baritone/settings.txt`: allowBreak + allowPlace **false** (never paths through builds) — leave them unless the owner asks.
-- Deaths self-heal: camloop's respawn_watcher clicks Respawn (trigger: Baritone's "Death position saved." log line). Fallback if wedged anyway: `docker exec mc-garviscam sh -c 'pkill -x java'` — rejoining auto-respawns him.
+- Deaths + disconnects self-heal: camloop's respawn_watcher clicks Respawn on death (trigger: Baritone's "Death position saved." log line) and relaunches the client on any server-side drop (trigger: "Client disconnected with reason:" — kicks, netty errors, server stops). Fallback if wedged anyway: `docker exec mc-garviscam sh -c 'pkill -x java'` — rejoining auto-respawns him. Baritone forgets its task on relaunch — re-issue `#follow`/`#goto` after any self-heal.
 
 ## Health & restarts (stack self-heals; escalate in order)
 - Status: `docker exec mc-neoforge rcon-cli list` (has fat_balls_addict?) · `pgrep -x java`/`ffmpeg` in mc-garviscam · `pgrep -x sanjuuni` in mc-stadiumcast · faces drawing = monitor palette ≠ native (`cc -i 10`).

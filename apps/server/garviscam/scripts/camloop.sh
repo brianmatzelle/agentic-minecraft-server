@@ -31,17 +31,27 @@ postjoin_clicker() {
 }
 
 respawn_watcher() {
-  # Survival deaths park the client on the death screen (chat dead, stream
-  # frozen on red) until something clicks Respawn. Baritone logs "Death
-  # position saved." the moment we die — click the fixed-coords button
-  # (centered at 960x540; same fixed-layout assumption as the resource-pack
-  # click above). tail -F survives the log being recreated on client relaunch.
+  # Two wedge states park the client on a dead screen (chat dead, stream
+  # frozen) until something intervenes; watch latest.log for their signatures.
+  # tail -F survives the log being recreated on client relaunch.
+  # - Death screen: Baritone logs "Death position saved." the moment we die —
+  #   click Respawn at its fixed coords (centered at 960x540; same fixed-layout
+  #   assumption as the resource-pack click above).
+  # - Connection Lost screen: any server-side drop (kick, netty error, server
+  #   stop) logs "Client disconnected with reason:" — no button worth clicking,
+  #   kill the client and let the relaunch loop below rejoin. If the server is
+  #   down the relaunch just retries on its own 15s cadence.
   tail -F /data/work/logs/latest.log 2>/dev/null | while read -r line; do
     case "$line" in
       *"Death position saved"*)
         sleep 2
         DISPLAY=:99 xdotool mousemove 480 297 click 1 2>/dev/null
         echo "[camloop] death detected — clicked Respawn" >> /data/capture.log
+        ;;
+      *"Client disconnected with reason"*)
+        echo "[camloop] server disconnect detected — relaunching client" >> /data/capture.log
+        sleep 5
+        pkill -x java
         ;;
     esac
   done
