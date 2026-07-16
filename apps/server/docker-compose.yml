@@ -325,6 +325,39 @@ services:
     volumes:
       - owncast-data:/app/data
 
+  # --- Garvis TV tollbooth (pay to command Garvis) ------------------------------
+  # Stream viewers buy command credits over x402 (USDC via HTTP 402 — browsers
+  # get a wallet paywall, agents get machine-readable terms) and spend them in
+  # the Owncast stream chat: !redeem <code>, then "!g mine some iron" etc. This
+  # sidecar sells codes + gates the chat commands into a Postgres queue; the
+  # HOST garvis-bot (src/streamchat.js) is the executor — body verbs + TV only,
+  # never the rcon agent. Public side rides the SAME cloudflared tunnel as
+  # owncast via a path route (https://tv.starting.cc/tollbooth → :8090); the
+  # Owncast webhook lands on :8091 which is compose-internal ONLY (a forged
+  # "chat" post can't arrive via the tunnel). Default network = Base Sepolia
+  # TESTNET; mainnet = X402_NETWORK=eip155:8453 + a mainnet facilitator + the
+  # owner's own X402_PAY_TO wallet.
+  tollbooth:
+    build: ./tollbooth
+    container_name: mc-tollbooth
+    restart: unless-stopped
+    environment:
+      TOLLBOOTH_PG_URL: "postgres://${POSTGRES_USER:-garvis}:${POSTGRES_PASSWORD:-garvis}@postgres:5432/${POSTGRES_DB:-garvis}"
+      OWNCAST_URL: "http://owncast:8080"
+      OWNCAST_BOT_TOKEN: "${OWNCAST_BOT_TOKEN:?set OWNCAST_BOT_TOKEN in apps/server/.env}"
+      X402_PAY_TO: "${X402_PAY_TO:?set X402_PAY_TO in apps/server/.env}"
+      X402_NETWORK: "${X402_NETWORK:-eip155:84532}"
+      X402_FACILITATOR_URL: "${X402_FACILITATOR_URL:-https://x402.org/facilitator}"
+      TOLLBOOTH_PRICE_USD: "${TOLLBOOTH_PRICE_USD:-1.00}"
+      TOLLBOOTH_CREDITS: "${TOLLBOOTH_CREDITS:-10}"
+      PUBLIC_URL: "https://tv.starting.cc/tollbooth"
+      STREAM_URL: "https://tv.starting.cc"
+    ports:
+      - "127.0.0.1:8090:8090"                  # tunnel-only (path route) — webhook :8091 stays internal
+    depends_on:
+      - postgres
+      - owncast
+
 volumes:
   prometheus-data:                              # Prometheus TSDB (survives restarts)
   grafana-data:                                 # Grafana's own db: users, dashboard edits, prefs

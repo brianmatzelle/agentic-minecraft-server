@@ -93,7 +93,7 @@ export function parseIngameClassification(text) {
   if (intent === 'body') {
     const b = obj.body && typeof obj.body === 'object' ? obj.body : obj;
     const action = String(b.action ?? '').trim().toLowerCase();
-    if (!['follow', 'come', 'goto', 'stop', 'mine', 'farm'].includes(action)) return { intent: 'qa', give: null };
+    if (!['follow', 'come', 'goto', 'stop', 'mine', 'farm', 'spectate'].includes(action)) return { intent: 'qa', give: null };
     const num = (v) => (v == null || String(v).trim() === '' || !Number.isFinite(Number(v)) ? null : Number(v));
     const blocks = Array.isArray(b.blocks)
       ? b.blocks.map((v) => String(v ?? '').trim().toLowerCase()).filter(Boolean).slice(0, 4)

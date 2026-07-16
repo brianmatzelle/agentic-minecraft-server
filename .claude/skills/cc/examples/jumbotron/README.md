@@ -95,6 +95,8 @@ owncast's 8088 binding is 127.0.0.1-only:
 - Health: `curl -s localhost:8088/api/status | jq .online` — flips true ~10s
   after ffmpeg #2 connects. Owncast re-encodes internally, viewer latency is
   ~10–20s. Restart layer: `docker compose restart owncast`.
+- Viewers can PAY to command Garvis from the stream chat (x402/USDC credits →
+  body verbs + TV): the tollbooth sidecar, `apps/server/tollbooth/README.md`.
 
 ## Gotchas earned the hard way
 - portablemc's NeoForge installer path dies (`KeyError: 'ROOT'`) — use the

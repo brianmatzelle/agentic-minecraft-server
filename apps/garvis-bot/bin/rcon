@@ -1,0 +1,45 @@
+#!/usr/bin/env node
+// Game-scoped RCON tool for the in-game Garvis agent (the `!g` Q&A brain).
+//
+//   rcon <minecraft console command>
+//   e.g.  rcon list
+//         rcon "give @a diamond 64"
+//         rcon "time set day"
+//         rcon "tp Steve 0 100 0"
+//
+// It runs the ONE command in the live server via `docker exec <container> rcon-cli`
+// and prints the server's reply. This is the ONLY server-admin surface the sandboxed
+// agent can reach, and by design it can reach nothing more:
+//   - Fixed leading argv (['exec', container, 'rcon-cli', ...cmd]) via execFile — NO
+//     shell — so the agent controls only the Minecraft command tokens, never docker
+//     itself. It cannot exec into other containers, mount the socket, or run a host
+//     shell. The capability envelope is exactly "Minecraft console commands," i.e.
+//     game-scoped, NOT host access — the docker/rcon-cli Bash denies in index.js stay
+//     intact and the host-RCE boundary is unchanged.
+//   - No RCON password is needed or read here: rcon-cli reads it from the container's
+//     own env, so RCON_PASSWORD stays scrubbed from the agent (AGENT_SCRUB_ENV).
+//
+// Kept deliberately tiny and dependency-free. See index.js (INGAME_RCON) + the give/
+// body/moderation paths, which run the same `docker exec … rcon-cli` from the trusted
+// bot process.
+import { execFile } from 'node:child_process';
+
+const container = process.env.MC_CONTAINER || 'mc-neoforge';
+const cmd = process.argv.slice(2);
+if (cmd.length === 0 || cmd.every((a) => a.trim() === '')) {
+  process.stderr.write('usage: rcon <minecraft command>   e.g. rcon list  |  rcon "give @a diamond 64"\n');
+  process.exit(2);
+}
+
+// Strip ANSI (rcon-cli colorizes with a trailing reset) so the agent sees clean text.
+const clean = (s) => String(s ?? '').replace(/\x1b\[[0-9;]*m/g, '').trimEnd();
+
+execFile('docker', ['exec', container, 'rcon-cli', ...cmd], { timeout: 10_000, maxBuffer: 1 << 20 }, (err, stdout, stderr) => {
+  const out = clean(stdout);
+  if (out) process.stdout.write(out + '\n');
+  if (err) {
+    const msg = clean(stderr) || err.message || 'command failed';
+    process.stderr.write(`rcon: ${msg}\n`);
+    process.exit(err.killed ? 124 : 1);
+  }
+});

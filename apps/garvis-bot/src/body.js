@@ -1,12 +1,13 @@
 // In-game BODY (Layer 3) — "!g come here / follow me / stay / go to <coords> /
-// mine some iron / harvest the wheat": players command Garvis's physical
-// in-game body (the camera account — a real modded client in the garviscam
-// container with Baritone aboard).
+// mine some iron / harvest the wheat / spectate <player>": players command
+// Garvis's physical in-game body (the camera account — a real modded client in
+// the garviscam container with Baritone aboard).
 //
 // Two control planes, both fixed-argv execFile (no shell), both fed ONLY from
 // validated parts — raw player text NEVER reaches either:
 //   • rcon (moderation.js rconExec, passed in): presence checks, positions, the
-//     spectator→survival flip, and the far-hop teleport.
+//     spectator→survival flip, the far-hop teleport, and the ghost-cam
+//     attach/release (vanilla /spectate).
 //   • chat.sh (docker exec into the body container): xdotool-types a Baritone
 //     command ("#follow player <name>", "#goto x y z", "#stop") into the live
 //     client. Baritone intercepts '#' lines client-side, so they never reach
@@ -62,11 +63,27 @@ async function rcon(rconExec, container, argv) {
 
 // Resolve a name against the live player list, case-insensitively, returning
 // the server's canonical casing (the classifier may lowercase what was typed).
+// Falls back to a UNIQUE prefix match — players say "spectate ruben", not
+// "spectate rubenwarrior38" — and an ambiguous prefix resolves to nobody.
 async function onlinePlayer(rconExec, container, name) {
   const res = await rcon(rconExec, container, ['list']);
   if (!res.ran) return null;
   const names = (res.output.split(':').pop() ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-  return names.find((n) => n.toLowerCase() === name.toLowerCase()) ?? null;
+  const q = name.toLowerCase();
+  const exact = names.find((n) => n.toLowerCase() === q);
+  if (exact) return exact;
+  const prefixed = names.filter((n) => n.toLowerCase().startsWith(q));
+  return prefixed.length === 1 ? prefixed[0] : null;
+}
+
+// Any online player who isn't the body itself — the ground anchor for askerless
+// (stream-viewer) commands when the body is hovering in spectator: players are
+// guaranteed to be standing somewhere survivable, raw coords are not.
+async function anyOnlinePlayer(rconExec, container, body) {
+  const res = await rcon(rconExec, container, ['list']);
+  if (!res.ran) return null;
+  const names = (res.output.split(':').pop() ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  return names.find((n) => n.toLowerCase() !== body.toLowerCase()) ?? null;
 }
 
 // "<name> has the following entity data: [-918.4d, 81.0d, -152.8d]" → {x,y,z}
@@ -77,9 +94,16 @@ async function getPos(rconExec, container, name) {
   return { x: Number(m[1]), y: Number(m[2]), z: Number(m[3]) };
 }
 
-// playerGameType: 0 survival, 1 creative, 2 adventure, 3 spectator.
+// playerGameType: 0 survival, 1 creative, 2 adventure, 3 spectator. Vanilla
+// quirk (host-verified 2026-07-16): while POV-attached via /spectate, a player
+// drops out of `data get entity` lookup ENTIRELY ("No entity was found") even
+// though `list` shows them online and tp/execute still target them fine. An
+// online body we can't find is therefore attached — report spectator so every
+// verb anchors (tp) before flipping gamemode, instead of dropping him into
+// survival mid-air wherever the spectated player happens to be flying.
 async function isSpectator(rconExec, container, name) {
   const res = await rcon(rconExec, container, ['data', 'get', 'entity', name, 'playerGameType']);
+  if (/no entity was found/i.test(res.output)) return true;
   const m = res.output.match(/:\s*(\d+)\s*$/);
   return m ? Number(m[1]) === 3 : false;
 }
@@ -88,22 +112,34 @@ const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 
 // Run one validated body action. `asker` is the server-stamped chat sender
 // (trusted); `player`/coords come from the classifier (untrusted, re-checked).
-// Returns { ok, text } — text is a short in-game chat line. Never throws.
+// `asker` may be NULL: a stream-viewer command (Garvis TV tollbooth) has no
+// avatar in the world — asker-anchored verbs then anchor on any online player
+// (or refuse, for the verbs that only make sense in-world: "come here",
+// "follow me", "spectate me"). Returns { ok, text } — text is a short chat
+// line. Never throws.
 export async function runBodyAction({ action, player, x, y, z, blocks = [] }, { rconExec, mcContainer, bodyContainer, account, asker }) {
   const body = await onlinePlayer(rconExec, mcContainer, account);
   if (!body) return { ok: false, text: `My body (${account}) isn't in the game right now — ask an admin to check on it.` };
 
   // mine / farm — real survival play (Baritone #mine / #farm). Anchor on the
   // ASKER exactly like follow/come (grounded, working near whoever asked),
-  // then hand Baritone the task; "!g stop" cancels either.
+  // then hand Baritone the task; "!g stop" cancels either. Askerless (stream)
+  // commands work from wherever he stands; off the camera perch they anchor
+  // on any online player instead.
   if (action === 'mine' || action === 'farm') {
-    const [bodyPos, askerPos, spectating] = await Promise.all([
-      getPos(rconExec, mcContainer, body),
-      getPos(rconExec, mcContainer, asker),
-      isSpectator(rconExec, mcContainer, body),
-    ]);
-    const far = !bodyPos || !askerPos || dist(bodyPos, askerPos) > MAX_WALK;
-    if (spectating || far) await rcon(rconExec, mcContainer, ['tp', body, asker]);
+    const spectating = await isSpectator(rconExec, mcContainer, body);
+    if (asker) {
+      const [bodyPos, askerPos] = await Promise.all([
+        getPos(rconExec, mcContainer, body),
+        getPos(rconExec, mcContainer, asker),
+      ]);
+      const far = !bodyPos || !askerPos || dist(bodyPos, askerPos) > MAX_WALK;
+      if (spectating || far) await rcon(rconExec, mcContainer, ['tp', body, asker]);
+    } else if (spectating) {
+      const anchor = await anyOnlinePlayer(rconExec, mcContainer, body);
+      if (!anchor) return { ok: false, text: "I'm up on camera duty and nobody's in the world to drop in next to — try again when someone's online." };
+      await rcon(rconExec, mcContainer, ['tp', body, anchor]);
+    }
     await rcon(rconExec, mcContainer, ['gamemode', 'survival', body]);
     if (action === 'farm') {
       const t = await typeInClient(bodyContainer, '#farm');
@@ -122,8 +158,44 @@ export async function runBodyAction({ action, player, x, y, z, blocks = [] }, { 
   }
 
   if (action === 'stop') {
+    // Release a ghost-cam POV attach BEFORE touching the keyboard: while
+    // attached, 't' doesn't open chat, so typed lines leak into the game as
+    // raw keypresses — and '#'/'!' press Shift, which is sneak, the vanilla
+    // detach key (host-verified 2026-07-16). The in-place tp detaches cleanly
+    // over rcon and is a harmless no-op when he's just hovering on jumbotron
+    // camera duty (position and rotation both kept).
+    const ghosting = await isSpectator(rconExec, mcContainer, body);
+    if (ghosting) await rcon(rconExec, mcContainer, ['execute', 'at', body, 'run', 'tp', body, '~', '~', '~']);
     const t = await typeInClient(bodyContainer, '#stop');
-    return t.ran ? { ok: true, text: '🦿 Staying put.' } : { ok: false, text: "I couldn't reach my body's controls — try again in a moment." };
+    if (!t.ran) return { ok: false, text: "I couldn't reach my body's controls — try again in a moment." };
+    return ghosting
+      ? { ok: true, text: `👻 Ghost-cam off — I'm hovering where I stopped; "!g come here" puts my feet back on the ground.` }
+      : { ok: true, text: '🦿 Staying put.' };
+  }
+
+  // spectate — ghost-cam: POV-attach the body to a player with vanilla
+  // /spectate, so the stream (jumbotron faces + Garvis TV) renders THEIR
+  // first-person view. Baritone can't path without collision, so no #follow
+  // here — the server glues the camera to the target and the client just
+  // renders it (smooth, cross-dimension, zero tick cost). Released by
+  // "!g stop", or naturally by any body verb (they all tp + flip to survival).
+  if (action === 'spectate') {
+    const rawWatch = !player || player.toLowerCase() === 'me' ? asker : player;
+    if (!rawWatch) return { ok: false, text: 'Tell me WHO to spectate — e.g. "spectate Steve".' };
+    if (!USERNAME_RE.test(rawWatch)) return { ok: false, text: `"${rawWatch}" doesn't look like a player name.` };
+    const target = await onlinePlayer(rconExec, mcContainer, rawWatch);
+    if (!target) return { ok: false, text: `${rawWatch} isn't online right now.` };
+    if (target === body) return { ok: false, text: "That's me — I can't spectate myself." };
+    // tp FIRST: it detaches any previous attach (typing is dead while
+    // attached — see the stop handler) and anchors same-dimension for the new
+    // one; only then is the keyboard safe for Baritone's #stop.
+    await rcon(rconExec, mcContainer, ['tp', body, target]);
+    await typeInClient(bodyContainer, '#stop');                    // drop any walk/mine before ghosting out
+    await rcon(rconExec, mcContainer, ['gamemode', 'spectator', body]);
+    const s = await rcon(rconExec, mcContainer, ['spectate', target, body]);
+    return s.ran && /now spectating/i.test(s.output)
+      ? { ok: true, text: `👻 Spectating ${target} — their POV is live on Garvis TV. "!g stop" releases me.` }
+      : { ok: false, text: `I couldn't lock onto ${target} — try again in a moment.` };
   }
 
   if (action === 'goto') {
@@ -135,8 +207,11 @@ export async function runBodyAction({ action, player, x, y, z, blocks = [] }, { 
     const hasY = Number.isFinite(y) && y >= -64 && y <= 320;
     if (await isSpectator(rconExec, mcContainer, body)) {
       // Can't flip to survival mid-hover at the camera perch — anchor to the
-      // asker (guaranteed on ground) before walking off.
-      await rcon(rconExec, mcContainer, ['tp', body, asker]);
+      // asker (guaranteed on ground) before walking off; an askerless (stream)
+      // command anchors on any online player instead.
+      const anchor = asker ?? await anyOnlinePlayer(rconExec, mcContainer, body);
+      if (!anchor) return { ok: false, text: "I'm up on camera duty and nobody's in the world to drop in next to — try again when someone's online." };
+      await rcon(rconExec, mcContainer, ['tp', body, anchor]);
     }
     await rcon(rconExec, mcContainer, ['gamemode', 'survival', body]);
     const target = hasY ? `${Math.round(x)} ${Math.round(y)} ${Math.round(z)}` : `${Math.round(x)} ${Math.round(z)}`;
@@ -148,6 +223,7 @@ export async function runBodyAction({ action, player, x, y, z, blocks = [] }, { 
 
   // follow / come — both anchor on a player: the named followee, or the asker.
   const rawTarget = action === 'come' || !player || player.toLowerCase() === 'me' ? asker : player;
+  if (!rawTarget) return { ok: false, text: 'You\'re watching from outside the world — name a player ("follow Steve") or send me somewhere ("go to -948 85 -147").' };
   if (!USERNAME_RE.test(rawTarget)) return { ok: false, text: `"${rawTarget}" doesn't look like a player name.` };
   const target = await onlinePlayer(rconExec, mcContainer, rawTarget);
   if (!target) return { ok: false, text: `${rawTarget} isn't online right now.` };
