@@ -5,11 +5,19 @@
 //   PUBLIC (:8090, host-published 127.0.0.1-only → cloudflared path route
 //   https://tv.starting.cc/tollbooth):
 //     GET /tollbooth        — landing page: what it is, price, how to redeem
-//     GET /tollbooth/buy    — x402-GATED (HTTP 402 → pay USDC → retry): a
-//                             settled payment mints a one-time redeem code
-//                             worth TOLLBOOTH_CREDITS commands. Browsers get
-//                             the @x402/paywall wallet UI; agents get the
-//                             machine-readable 402 terms. NO account, NO keys.
+//     GET /tollbooth/pay    — Base Pay checkout (the human/mobile front door):
+//                             a keyless @base-org/account button; the buyer's
+//                             own browser pays USDC to X402_PAY_TO, then POSTs
+//                             the payment id to /pay/verify below.
+//     POST /tollbooth/pay/verify — server-side getPaymentStatus (keyless): on a
+//                             'completed' pay to the right address for the right
+//                             amount, mints a one-time redeem code. Never trusts
+//                             the page; dedupes the id.
+//     GET /tollbooth/buy    — x402-GATED (HTTP 402 → pay USDC → retry): the
+//                             AGENT rail — a settled payment mints the same kind
+//                             of code. Agents get machine-readable 402 terms.
+//                             (The @x402/paywall browser UI never completes on
+//                             mobile — that's why /pay exists.) NO account, NO keys.
 //     GET /tollbooth/health — {ok, queued, viewers} for ops checks
 //
 //   WEBHOOK (:8091, compose-internal ONLY — owncast posts here; never
@@ -24,8 +32,9 @@
 //
 // Money: x402 verification+settlement is done by the FACILITATOR (default
 // https://x402.org/facilitator = Base Sepolia TESTNET). Mainnet = set
-// X402_NETWORK=eip155:8453, point X402_FACILITATOR_URL at a mainnet
-// facilitator (e.g. CDP's), and make X402_PAY_TO a wallet the owner controls.
+// X402_NETWORK=eip155:8453 and use a mainnet facilitator: either keyless via
+// X402_FACILITATOR_URL (PayAI — what production uses) or Coinbase's via CDP
+// API keys, and make X402_PAY_TO a wallet the owner controls.
 // This process never holds keys — payTo is just the receiving address.
 import express from 'express';
 import pg from 'pg';
@@ -33,6 +42,7 @@ import crypto from 'node:crypto';
 import { paymentMiddleware, x402ResourceServer } from '@x402/express';
 import { ExactEvmScheme } from '@x402/evm/exact/server';
 import { HTTPFacilitatorClient } from '@x402/core/server';
+import { createFacilitatorConfig } from '@coinbase/x402';
 import { createPaywall } from '@x402/paywall';
 import { evmPaywall } from '@x402/paywall/evm';
 import { initDb } from './schema.js';
@@ -45,7 +55,8 @@ const OWNCAST_URL = process.env.OWNCAST_URL || 'http://owncast:8080';
 const OWNCAST_BOT_TOKEN = process.env.OWNCAST_BOT_TOKEN || '';
 const PAY_TO = process.env.X402_PAY_TO || '';
 const NETWORK = process.env.X402_NETWORK || 'eip155:84532';          // Base Sepolia
-const FACILITATOR_URL = process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator';
+const DEFAULT_FACILITATOR = 'https://x402.org/facilitator';           // TESTNET-ONLY
+const FACILITATOR_URL = process.env.X402_FACILITATOR_URL || DEFAULT_FACILITATOR;
 const PRICE_USD = String(process.env.TOLLBOOTH_PRICE_USD || '1.00'); // dollars, no "$"
 const CREDITS = Math.max(1, Number(process.env.TOLLBOOTH_CREDITS || 10));
 const COOLDOWN_S = Math.max(0, Number(process.env.TOLLBOOTH_COOLDOWN_S || 20));
@@ -55,8 +66,29 @@ const PUBLIC_PORT = Number(process.env.TOLLBOOTH_PUBLIC_PORT || 8090);
 const WEBHOOK_PORT = Number(process.env.TOLLBOOTH_WEBHOOK_PORT || 8091);
 const TESTNET = NETWORK !== 'eip155:8453';
 
+// Base Pay — the human/mobile front door (keyless USDC checkout via
+// @base-org/account). x402 stays the agent rail; this is what a viewer on a
+// phone actually uses, because the @x402/paywall injected-wallet handshake
+// never completes on mobile. The buyer's browser loads THIS version from
+// esm.sh; the server verifies with the installed copy — keep both in sync with
+// package.json. It shares X402_NETWORK (testnet flag) and X402_PAY_TO.
+const BASE_ACCOUNT_VERSION = '2.5.7';
+
+// Facilitator: with CDP API keys present, use Coinbase's hosted facilitator
+// (auth'd verify/settle; 1,000 free tx/month, then $0.001; needs a
+// business-verified CDP account). Without keys, X402_FACILITATOR_URL is used
+// as-is — but the DEFAULT one is TESTNET-ONLY, so mainnet demands either CDP
+// keys or an explicitly chosen mainnet facilitator (keyless options exist,
+// e.g. https://facilitator.payai.network) rather than booting a
+// silently-broken paywall. Facilitators never custody funds — settlement pays
+// PAY_TO directly — so the trust surface is fake-verify/downtime, not theft.
+const CDP_API_KEY_ID = process.env.CDP_API_KEY_ID || '';
+const CDP_API_KEY_SECRET = process.env.CDP_API_KEY_SECRET || '';
+const useCdp = Boolean(CDP_API_KEY_ID && CDP_API_KEY_SECRET);
+
 if (!PG_URL) { console.error('[tollbooth] TOLLBOOTH_PG_URL is required'); process.exit(1); }
 if (!/^0x[0-9a-fA-F]{40}$/.test(PAY_TO)) { console.error('[tollbooth] X402_PAY_TO must be an EVM address'); process.exit(1); }
+if (!TESTNET && !useCdp && FACILITATOR_URL === DEFAULT_FACILITATOR) { console.error('[tollbooth] mainnet needs a mainnet facilitator — set CDP_API_KEY_ID + CDP_API_KEY_SECRET, or point X402_FACILITATOR_URL at one that settles eip155:8453 (e.g. https://facilitator.payai.network)'); process.exit(1); }
 if (!OWNCAST_BOT_TOKEN) log('WARNING: OWNCAST_BOT_TOKEN unset — chat replies disabled (webhook still processes)');
 
 const pool = new pg.Pool({ connectionString: PG_URL, max: 4, connectionTimeoutMillis: 5_000, idleTimeoutMillis: 30_000 });
@@ -98,6 +130,47 @@ async function mintCode(paymentRef) {
     }
   }
   throw new Error('could not mint a unique code');
+}
+
+// ── Base Pay verification ──────────────────────────────────────────────────
+// getPaymentStatus is keyless (reads Base on-chain state) and documented as a
+// backend call. Loaded lazily so a bad import can never take down the x402 rail
+// or the webhook — only Base Pay checkout degrades.
+let _basePayStatus = null;
+function basePayStatus(args) {
+  if (!_basePayStatus) _basePayStatus = import('@base-org/account').then((m) => m.getPaymentStatus);
+  return _basePayStatus.then((fn) => fn(args));
+}
+
+// Mint (or re-return) the ONE code owed for a Base Pay payment id. Idempotent:
+// a page reload / double-submit of the same id yields the same code, never a
+// second mint. An xact advisory lock keyed on the id serializes concurrent
+// verifies of the same payment without any global unique constraint (comped and
+// x402 refs share the column and mustn't be forced unique).
+async function mintForBasePay(id) {
+  const ref = `basepay:${id}`;
+  const c = await pool.connect();
+  try {
+    await c.query('BEGIN');
+    await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [ref]);
+    const seen = await c.query('SELECT code FROM stream_codes WHERE payment_ref = $1 LIMIT 1', [ref]);
+    if (seen.rows.length) { await c.query('COMMIT'); return { code: seen.rows[0].code, fresh: false }; }
+    let code = null;
+    for (let attempt = 0; attempt < 5 && !code; attempt++) {
+      let cand = 'GT';
+      for (const b of crypto.randomBytes(8)) cand += CODE_ALPHABET[b % CODE_ALPHABET.length];
+      try {
+        await c.query('INSERT INTO stream_codes (code, credits, payment_ref) VALUES ($1, $2, $3)', [cand, CREDITS, ref]);
+        code = cand;
+      } catch (e) { if (e.code !== '23505') throw e; }        // dup code — roll again
+    }
+    if (!code) throw new Error('could not mint a unique code');
+    await c.query('COMMIT');
+    return { code, fresh: true };
+  } catch (e) {
+    await c.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally { c.release(); }
 }
 
 // ── Viewer ledger helpers ─────────────────────────────────────────────────
@@ -192,7 +265,29 @@ async function handleChat(payload) {
 const app = express();
 app.disable('x-powered-by');
 
-const facilitatorClient = new HTTPFacilitatorClient({ url: FACILITATOR_URL });
+const facilitatorClient = new HTTPFacilitatorClient(
+  useCdp ? createFacilitatorConfig(CDP_API_KEY_ID, CDP_API_KEY_SECRET) : { url: FACILITATOR_URL },
+);
+
+// Ops logging: the middleware turns a facilitator failure into a bare 502 that
+// the buyer only sees as a "network error" — so log the real verify/settle
+// outcome here. settle success = the money event (payer + on-chain tx).
+for (const m of ['verify', 'settle']) {
+  const orig = facilitatorClient[m]?.bind(facilitatorClient);
+  if (!orig) continue;
+  facilitatorClient[m] = async (...a) => {
+    try {
+      const r = await orig(...a);
+      if (m === 'settle') log(`settle ${r?.success ? 'OK' : 'FAILED'} payer=${r?.payer || '?'} tx=${r?.transaction || '-'} net=${r?.network || '-'}`);
+      else if (r && r.isValid === false) log(`verify rejected: ${r?.invalidReason || 'unknown'}`);
+      return r;
+    } catch (e) {
+      log(`facilitator.${m} threw: ${e?.message}`);
+      throw e;
+    }
+  };
+}
+
 const resourceServer = new x402ResourceServer(facilitatorClient).register(NETWORK, new ExactEvmScheme());
 const paywall = createPaywall()
   .withNetwork(evmPaywall)
@@ -227,21 +322,121 @@ const landing = () => page('Garvis TV Tollbooth', `
   <b>$${PRICE_USD}</b> you get <b>${CREDITS} commands</b>: send him mining or farming, make him
   follow a player, put anything on the in-game TV, or lock the stream camera to somebody's POV.</p>
   <ol>
-    <li>Buy a code below — pay with USDC straight from your wallet (<a href="https://www.x402.org">x402</a>, no signup).</li>
+    <li>Buy a code below — pay <b>$${PRICE_USD} in USDC with Base Pay</b>, right from your phone. No signup, no app.</li>
     <li>Type <code>!redeem YOUR-CODE</code> in the <a href="${STREAM_URL}">stream chat</a>.</li>
     <li>Command away: <code>!g mine some iron</code> · <code>!g put a creeper on the TV</code> · <code>!g spectate a player</code></li>
   </ol>
-  <a class="btn" href="${PUBLIC_URL}/buy">Buy ${CREDITS} commands — $${PRICE_USD}</a>
+  <a class="btn" href="${PUBLIC_URL}/pay">Buy ${CREDITS} commands — $${PRICE_USD}</a>
   <p class="dim">A command only costs a credit when it works. Agents welcome: <code>GET ${PUBLIC_URL}/buy</code> speaks HTTP 402.</p>
   ${TESTNET ? '<p class="warn">⚠️ Currently on Base Sepolia TESTNET — payments use test USDC, not real money.</p>' : ''}
 `);
 
 app.get(['/tollbooth', '/tollbooth/'], (_req, res) => { res.type('html').send(landing()); });
 
-// Only reached once the x402 middleware has verified payment.
+// Base Pay checkout — the mobile front door. Loads the SDK straight into the
+// buyer's browser from esm.sh (their phone fetches it, not this container), pops
+// the Base Account smart-wallet popup, then hands the payment id to us to
+// verify + mint. All the money-side validation happens server-side in
+// /pay/verify — the page is untrusted glue.
+const payPage = () => page('Buy Garvis commands', `
+  <h1>🎟️ Buy ${CREDITS} commands — $${PRICE_USD}</h1>
+  <p>Pay <b>$${PRICE_USD} in USDC</b> with <b>Base Pay</b> — sign in with a passkey or email, no wallet app to install. You'll get a one-time code to <code>!redeem</code> in the <a href="${STREAM_URL}">stream chat</a>.</p>
+  ${TESTNET ? '<p class="warn">⚠️ Base Sepolia TESTNET — this charges test USDC, not real money.</p>' : ''}
+  <p><button id="buy" class="btn" style="border:0;cursor:pointer;font:inherit;font-weight:600">Pay $${PRICE_USD} with Base</button></p>
+  <p id="status" class="dim" role="status" aria-live="polite"></p>
+  <div id="result" style="display:none">
+    <p>✅ Paid — here's your code:</p>
+    <div class="code big" id="code"></div>
+    <p>In the <a href="${STREAM_URL}">stream chat</a>, type:</p>
+    <p><code id="redeem"></code></p>
+    <p>then spend your ${CREDITS} commands: <code>!g mine some iron</code> · <code>!g put a creeper on the TV</code> · <code>!g spectate a player</code></p>
+    <p class="warn">Save this code — it's shown once and works once.</p>
+  </div>
+  <p class="dim">Prefer an agent or CLI? <code>GET ${PUBLIC_URL}/buy</code> speaks HTTP 402 (x402).</p>
+  <script type="module">
+    import { pay } from 'https://esm.sh/@base-org/account@${BASE_ACCOUNT_VERSION}';
+    const PAY_TO=${JSON.stringify(PAY_TO)}, AMOUNT=${JSON.stringify(PRICE_USD)}, TESTNET=${TESTNET}, VERIFY=${JSON.stringify(PUBLIC_URL + '/pay/verify')};
+    const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+    const btn=document.getElementById('buy'), statusEl=document.getElementById('status'), resultEl=document.getElementById('result');
+    async function confirmPayment(id){
+      for(let i=0;i<20;i++){
+        const r=await fetch(VERIFY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+        let d={}; try{ d=await r.json(); }catch(_){}
+        // 202 = still settling — MUST be checked before r.ok (202 is a 2xx, so
+        // r.ok is true for it too). Only a 200 carries the minted code.
+        if(r.status===202){ statusEl.textContent='Confirming on-chain… ('+(i+1)+')'; await sleep(1500); continue; }
+        if(r.status===200&&d&&d.code) return d;
+        throw new Error((d&&d.error)||('could not verify ('+r.status+')'));
+      }
+      throw new Error('still settling after 30s — your payment is safe on-chain; reload and it will finish, or contact the admin');
+    }
+    btn.addEventListener('click', async ()=>{
+      btn.disabled=true; statusEl.textContent='Opening Base Pay…';
+      try{
+        const res=await pay({amount:AMOUNT,to:PAY_TO,testnet:TESTNET});
+        if(res&&res.error) throw new Error(res.error);
+        const id=res&&res.id; if(!id) throw new Error('payment was not completed');
+        statusEl.textContent='Payment sent — confirming…';
+        const d=await confirmPayment(id);
+        statusEl.textContent='';
+        document.getElementById('code').textContent=d.code;
+        document.getElementById('redeem').textContent=d.redeem||('!redeem '+d.code);
+        resultEl.style.display='block'; btn.style.display='none';
+      }catch(e){
+        statusEl.textContent='⚠️ '+((e&&e.message)||'payment failed')+' — you can try again.';
+        btn.disabled=false;
+      }
+    });
+  </script>
+`);
+
+app.get('/tollbooth/pay', (_req, res) => { res.type('html').send(payPage()); });
+
+// Verify a Base Pay payment id on-chain (keyless getPaymentStatus) and mint the
+// code. NEVER trusts the page: revalidates recipient + amount here, dedupes the
+// id (idempotent), and only 'completed' pays out. 202 = still settling (client
+// polls); 402 = a real rejection.
+app.post('/tollbooth/pay/verify', express.json({ limit: '8kb' }), async (req, res) => {
+  const id = String(req.body?.id || '').trim();
+  if (!/^[A-Za-z0-9_-]{4,256}$/.test(id)) return res.status(400).json({ error: 'bad payment id' });
+  try {
+    const st = await basePayStatus({ id, testnet: TESTNET });
+    const status = String(st?.status || '').toLowerCase();
+    if (status !== 'completed') {
+      const terminal = ['failed', 'error', 'not_found', 'notfound', 'canceled', 'cancelled', 'expired', 'reverted'].includes(status);
+      log(`basepay ${terminal ? 'rejected' : 'pending'}: id=${id.slice(0, 80)} status=${status || 'unknown'}`);
+      return res.status(terminal ? 402 : 202).json(terminal ? { error: `payment ${status}` } : { pending: true, status: status || 'unknown' });
+    }
+    const recipient = String(st?.recipient || '').toLowerCase();
+    const amount = Number(st?.amount);
+    if (recipient !== PAY_TO.toLowerCase()) { log(`basepay rejected: recipient ${recipient} != payTo`); return res.status(402).json({ error: 'payment went to the wrong address' }); }
+    if (!(amount + 1e-6 >= Number(PRICE_USD))) { log(`basepay rejected: amount ${amount} < ${PRICE_USD}`); return res.status(402).json({ error: 'payment amount too low' }); }
+    const { code, fresh } = await mintForBasePay(id);
+    const pretty = displayCode(code);
+    log(`basepay code ${fresh ? 'minted' : 're-served'} (${CREDITS} credits) payer=${String(st?.sender || '?').slice(0, 12)} amt=${amount}`);
+    res.json({ code: pretty, credits: CREDITS, redeem: `!redeem ${pretty}`, chat: STREAM_URL });
+  } catch (e) {
+    log(`basepay verify failed: ${e.message}`);
+    res.status(500).json({ error: 'could not verify payment — if you were charged, your funds are safe on-chain; contact the admin' });
+  }
+});
+
+// HEAD /buy: prefetch/preview probes — never a payment. Answer 402 and stop,
+// so Express doesn't fall through to the GET mint handler.
+app.head('/tollbooth/buy', (_req, res) => res.status(402).end());
+
+// Belt-and-suspenders: the x402 middleware only guards the GET verb, but
+// Express routes HEAD (and any verb) to this GET handler — a HEAD /buy (iOS
+// Safari prefetch, link previews, crawlers) sails past the paywall as
+// "no-payment-required" and would mint a free code. The middleware only ever
+// lets a request through here AFTER verifying a payment, and a verified
+// payment always carries the payment header — so if there's no payment header,
+// this was NOT verified: refuse to mint. (A bogus header can't reach here
+// either: the middleware fails its verification and 402s first.)
 app.get('/tollbooth/buy', async (req, res) => {
   try {
     const ref = (req.get('payment-signature') || req.get('x-payment') || '').slice(0, 120) || null;
+    if (!ref) { log(`refused mint: no payment header on ${req.method} ${req.originalUrl}`); return res.status(402).json({ error: 'payment required' }); }
     const code = await mintCode(ref);
     const pretty = displayCode(code);
     log(`code minted (${CREDITS} credits)${ref ? ' [ref captured]' : ''}`);
@@ -272,6 +467,13 @@ app.get('/tollbooth/health', async (_req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
+// Log any error the paywall middleware surfaces (502 facilitator boundary, 500
+// handler) — otherwise a buyer's "network error" leaves no server-side trace.
+app.use((err, _req, res, _next) => {
+  log(`express error: ${err?.message}`);
+  if (!res.headersSent) res.status(500).json({ error: 'internal' });
+});
+
 // ── Webhook app (compose-internal) ────────────────────────────────────────
 const hooks = express();
 hooks.disable('x-powered-by');
@@ -282,5 +484,5 @@ hooks.post('/owncast-webhook', express.json({ limit: '64kb' }), (req, res) => {
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 await initDb(pool, log);
-app.listen(PUBLIC_PORT, () => log(`public app on :${PUBLIC_PORT} (${PUBLIC_URL}) — ${TESTNET ? 'TESTNET ' + NETWORK : 'MAINNET'} → ${PAY_TO.slice(0, 10)}…`));
+app.listen(PUBLIC_PORT, () => log(`public app on :${PUBLIC_PORT} (${PUBLIC_URL}) — ${TESTNET ? 'TESTNET ' + NETWORK : 'MAINNET'} → ${PAY_TO.slice(0, 10)}… via ${useCdp ? 'CDP facilitator' : FACILITATOR_URL}`));
 hooks.listen(WEBHOOK_PORT, () => log(`owncast webhook listener on :${WEBHOOK_PORT} (compose-internal)`));
