@@ -38,7 +38,7 @@ Stream viewers buy command credits with USDC (HTTP 402) at **https://tv.starting
 - Chain: mc-tollbooth sidecar (:8090 public via the SAME tunnel, path-routed; :8091 = Owncast CHAT webhook, compose-internal) → credits/queue in mc-postgres → garvis-bot worker (src/streamchat.js) executes body+TV ONLY (asker:null; never qa/give/rcon), burns 1 credit on success, replies as `garvis-tollbooth` in stream chat + tellraws the world.
 - Health: `curl -s localhost:8090/tollbooth/health` · sell logs `docker logs mc-tollbooth` · worker `journalctl --user -u garvis-bot | grep '\[stream\]'` · ledger `docker exec mc-postgres psql -U garvis -d garvis -c "SELECT * FROM stream_commands ORDER BY id DESC LIMIT 5"`.
 - Kill switches: stop selling `docker compose stop tollbooth` · stop executing `GARVIS_STREAM_COMMANDS=off` in apps/garvis-bot/.env + restart bot.
-- Money: TESTNET (Base Sepolia) — payTo is a throwaway; mainnet flip documented in the tollbooth README. Comp credits: INSERT into stream_codes (see README).
+- Money: **MAINNET (real money) since 2026-07-16** — real Base USDC → the owner's wallet, via the keyless PayAI facilitator (facilitator.payai.network; CDP keys in .env would override it). Back to testnet: `X402_NETWORK=eip155:84532` in apps/server/.env + `docker compose up -d tollbooth`. Boot log names network + facilitator. Comp credits: INSERT into stream_codes (see README).
 
 ## Health & restarts (stack self-heals; escalate in order)
 - Status: `docker exec mc-neoforge rcon-cli list` (has fat_balls_addict?) · `pgrep -x java`/`ffmpeg` in mc-garviscam · `pgrep -x sanjuuni` in mc-stadiumcast · faces drawing = monitor palette ≠ native (`cc -i 10`).

@@ -314,6 +314,9 @@ services:
   # OWNCAST_ADMIN_PASSWORD). -streamkey is "temporary for this session" by
   # design: re-asserted from .env on every container start, so the .env value
   # is always the truth.
+  # Page BRANDING (Garvis TV name/logo/theme/about, owncast chrome hidden) is
+  # config-state in the owncast-data volume — ./owncast/brand.sh is its source
+  # of truth (idempotent; re-run after any volume wipe).
   owncast:
     image: owncast/owncast:0.2.5
     container_name: mc-owncast
@@ -348,6 +351,10 @@ services:
       X402_PAY_TO: "${X402_PAY_TO:?set X402_PAY_TO in apps/server/.env}"
       X402_NETWORK: "${X402_NETWORK:-eip155:84532}"
       X402_FACILITATOR_URL: "${X402_FACILITATOR_URL:-https://x402.org/facilitator}"
+      # CDP API keys switch the facilitator to Coinbase's hosted one (required
+      # for mainnet; the keyless x402.org facilitator is testnet-only)
+      CDP_API_KEY_ID: "${CDP_API_KEY_ID:-}"
+      CDP_API_KEY_SECRET: "${CDP_API_KEY_SECRET:-}"
       TOLLBOOTH_PRICE_USD: "${TOLLBOOTH_PRICE_USD:-1.00}"
       TOLLBOOTH_CREDITS: "${TOLLBOOTH_CREDITS:-10}"
       PUBLIC_URL: "https://tv.starting.cc/tollbooth"
