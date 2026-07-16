@@ -16,6 +16,27 @@ capture_loop() {
   done
 }
 
+stream_loop() {
+  # Second, independent capture: video + game audio → Owncast (Garvis TV web
+  # page). Separate encode so the jumbotron chain above is never disturbed.
+  # Audio comes from the mcsink null sink's monitor (see entrypoint.sh); if
+  # PulseAudio is down this ffmpeg fails outright — by design, it retries.
+  # Kill switch: GARVIS_STREAM=0. Key comes from OWNCAST_STREAM_KEY in .env.
+  [ "${GARVIS_STREAM:-1}" = "1" ] || return 0
+  [ -n "${OWNCAST_STREAM_KEY:-}" ] || { echo "[camloop] OWNCAST_STREAM_KEY unset — web stream disabled" >> /data/stream.log; return 0; }
+  while true; do
+    ffmpeg -loglevel warning \
+      -f x11grab -framerate 10 -video_size "$RES" -i :99 \
+      -f pulse -i mcsink.monitor \
+      -c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p \
+      -g 20 -b:v 2000k -maxrate 2500k -bufsize 4000k \
+      -c:a aac -b:a 128k -ar 44100 \
+      -f flv "rtmp://owncast:1935/live/${OWNCAST_STREAM_KEY}" >> /data/stream.log 2>&1
+    echo "[camloop] stream ffmpeg exited, retrying in 10s" >> /data/stream.log
+    sleep 10
+  done
+}
+
 postjoin_clicker() {
   # For ~3 min after each client start: accept the resource-pack prompt if it
   # appears, then hide the HUD. Blind clicks at these coords are harmless on
@@ -58,6 +79,7 @@ respawn_watcher() {
 }
 
 capture_loop &
+stream_loop &
 respawn_watcher &
 while true; do
   postjoin_clicker &

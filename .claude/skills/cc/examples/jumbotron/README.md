@@ -67,6 +67,35 @@ Why not Mineflayer/minecraft-mcp-server: vanilla protocol can't pass the
 NeoForge required-mod registry handshake (and that wrapper is offline-auth
 only) — a real modded client was the only way in, and we already had one.
 
+## Web stream — Garvis TV (Owncast)
+The same camera also streams to the web, with game audio, at
+**https://tv.starting.cc** — served through the HOST's existing cloudflared
+tunnel (user unit `writing-tunnel.service`, ingress in
+`~/.cloudflared/config.yml` → localhost:8088), so no router port is open;
+owncast's 8088 binding is 127.0.0.1-only:
+
+    Xvfb :99 ──x11grab──┐
+                        ├─ ffmpeg #1 → mpegts → stadiumcast (jumbotron, video only)
+    pulse null sink ────┤
+    "mcsink" (audio) ───┴─ ffmpeg #2 → RTMP → mc-owncast → HLS watch page
+                                               127.0.0.1:8088 ← cloudflared
+                                               → https://tv.starting.cc
+
+- Audio: entrypoint.sh starts PulseAudio with a null sink (`mcsink`) BEFORE the
+  client launches; MC's OpenAL binds to it (`OpenAL initialized on device
+  mcsink` in latest.log). If pulse ever starts late, the client renders
+  silence until a java restart. ffmpeg #2 captures `mcsink.monitor`.
+- stream_loop in camloop.sh owns ffmpeg #2 — independent of the jumbotron
+  capture, retries every 10s, logs to /data/stream.log (audio setup:
+  /data/audio.log). Kill switch: `GARVIS_STREAM=0` in garviscam's env.
+- Secrets: `OWNCAST_STREAM_KEY` + `OWNCAST_ADMIN_PASSWORD` in apps/server/.env
+  (gitignored, nowhere else). Admin panel: `http://<host>:8088/admin`, user
+  `admin`. The `-streamkey` flag is per-session — compose re-asserts it from
+  .env every start, so rotating = edit .env + restart both containers.
+- Health: `curl -s localhost:8088/api/status | jq .online` — flips true ~10s
+  after ffmpeg #2 connects. Owncast re-encodes internally, viewer latency is
+  ~10–20s. Restart layer: `docker compose restart owncast`.
+
 ## Gotchas earned the hard way
 - portablemc's NeoForge installer path dies (`KeyError: 'ROOT'`) — use the
   official NeoForge installer into portablemc's main dir, launch the local

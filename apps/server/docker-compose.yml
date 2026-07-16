@@ -297,12 +297,37 @@ services:
       GARVISCAM_LOGIN: "${GARVISCAM_LOGIN:-}"
       XVFB_RES: "960x540"
       CAM_AUTOSTART: "1"                        # supervise client + capture (camloop.sh)
+      GARVIS_STREAM: "${GARVIS_STREAM:-1}"      # web-stream kill switch (camloop stream_loop → owncast)
+      OWNCAST_STREAM_KEY: "${OWNCAST_STREAM_KEY:-}"
     volumes:
       - garviscam-data:/data
       - ../client:/pack:ro
+
+  # --- Garvis TV (Owncast web stream) -----------------------------------------
+  # Self-hosted Twitch-style watch page for the GarvisCam POV — video + game
+  # audio, live chat, viewer count, proper offline screen. garviscam's
+  # stream_loop pushes RTMP over the compose network (owncast:1935, NOT
+  # published). The web page reaches friends via the HOST's cloudflared tunnel
+  # (user unit writing-tunnel.service, ~/.cloudflared/config.yml):
+  # https://tv.starting.cc → localhost:8088 — no router port forward, hence
+  # the 127.0.0.1 bind. Admin panel at /admin (user "admin", password
+  # OWNCAST_ADMIN_PASSWORD). -streamkey is "temporary for this session" by
+  # design: re-asserted from .env on every container start, so the .env value
+  # is always the truth.
+  owncast:
+    image: owncast/owncast:0.2.5
+    container_name: mc-owncast
+    restart: unless-stopped
+    command: ["-streamkey", "${OWNCAST_STREAM_KEY:?set OWNCAST_STREAM_KEY in apps/server/.env}",
+              "-adminpassword", "${OWNCAST_ADMIN_PASSWORD:?set OWNCAST_ADMIN_PASSWORD in apps/server/.env}"]
+    ports:
+      - "127.0.0.1:8088:8080"                  # tunnel-only — cloudflared on the host is the sole consumer
+    volumes:
+      - owncast-data:/app/data
 
 volumes:
   prometheus-data:                              # Prometheus TSDB (survives restarts)
   grafana-data:                                 # Grafana's own db: users, dashboard edits, prefs
   postgres-data:                                # Garvis conversation log (survives restarts)
   garviscam-data:                               # GarvisCam client: game files, pack, MSA session
+  owncast-data:                                 # Garvis TV: owncast config/db (stream title, chat history)

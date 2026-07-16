@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 libgl1-mesa-dri libglx-mesa0 libegl-mesa0 \
     libx11-6 libxext6 libxrandr2 libxcursor1 libxi6 libxinerama1 \
     libxxf86vm1 libxrender1 libxtst6 libopenal1 \
+    pulseaudio pulseaudio-utils \
     xdotool \
     ffmpeg \
     python3 python3-venv \
