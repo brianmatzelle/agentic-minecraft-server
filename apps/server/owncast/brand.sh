@@ -94,6 +94,22 @@ post appearance <<'EOF'
 }}
 EOF
 
+# Not branding, but the same config-state-in-volume problem: near-realtime
+# video. Low HLS latency buffer + video passthrough (streamloop.sh already
+# encodes zerolatency x264 with 1s wall-clock keyframes — Owncast re-encoding
+# it only added delay and host CPU). Passthrough slices segments on inbound
+# keyframes, so streamloop's keyframe cadence must stay ≈1s. Applies on the
+# NEXT inbound stream connect. Level 1 = 2s segments ≈ 7-10s glass-to-glass;
+# level 0 (1s segments, ~4-6s) was tried 2026-07-16 and BUFFERED even on the
+# owner's connection — don't go back without a reason. Still buffering → 2.
+post video/streamlatencylevel <<'EOF'
+{"value": 1}
+EOF
+
+post video/streamoutputvariants <<'EOF'
+{"value": [{"name": "source-passthrough", "videoPassthrough": true, "audioPassthrough": true, "videoBitrate": 0, "audioBitrate": 0, "cpuUsageLevel": 2, "framerate": 0}]}
+EOF
+
 # What variables can't reach: hide the Owncast footer, fix the chat input's
 # Ant-default text color, darken Ant popup surfaces, green system bubble.
 post customstyles <<'EOF'

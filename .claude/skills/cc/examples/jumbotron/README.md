@@ -85,16 +85,33 @@ owncast's 8088 binding is 127.0.0.1-only:
   client launches; MC's OpenAL binds to it (`OpenAL initialized on device
   mcsink` in latest.log). If pulse ever starts late, the client renders
   silence until a java restart. ffmpeg #2 captures `mcsink.monitor`.
-- stream_loop in camloop.sh owns ffmpeg #2 — independent of the jumbotron
-  capture, retries every 10s, logs to /data/stream.log (audio setup:
-  /data/audio.log). Kill switch: `GARVIS_STREAM=0` in garviscam's env.
+- streamloop.sh (split out of camloop.sh 2026-07-16) owns ffmpeg #2 —
+  independent of the jumbotron capture, retries every 10s, logs to
+  /data/stream.log (audio setup: /data/audio.log). Kill switch:
+  `GARVIS_STREAM=0` in garviscam's env. Hot-restart WITHOUT bouncing the
+  client (body stays in-game): docker cp the script in, kill the running
+  ffmpeg AND its parent bash (pgrep -f rtmp → ps -o ppid=), then
+  `docker exec -d mc-garviscam /opt/garviscam/streamloop.sh`.
 - Secrets: `OWNCAST_STREAM_KEY` + `OWNCAST_ADMIN_PASSWORD` in apps/server/.env
   (gitignored, nowhere else). Admin panel: `http://<host>:8088/admin`, user
   `admin`. The `-streamkey` flag is per-session — compose re-asserts it from
   .env every start, so rotating = edit .env + restart both containers.
 - Health: `curl -s localhost:8088/api/status | jq .online` — flips true ~10s
-  after ffmpeg #2 connects. Owncast re-encodes internally, viewer latency is
-  ~10–20s. Restart layer: `docker compose restart owncast`.
+  after ffmpeg #2 connects. Restart layer: `docker compose restart owncast`.
+- LATENCY (tuned 2026-07-16, ~7–10s glass-to-glass): Owncast runs the feed as
+  video PASSTHROUGH at HLS latency level 1 (2s segments) — set via admin API,
+  persisted in apps/server/owncast/brand.sh (config-state; applies on next
+  inbound connect — hot-reconnect: `pkill -f "rtmp[:]//owncast"` in
+  mc-garviscam, NEVER `pkill -x ffmpeg` which also kills the jumbotron feed
+  and wedges stadiumcast's one-shot :8180 listen; the [:] keeps pkill from
+  matching its own cmdline). Passthrough slices segments on keyframes only,
+  and under llvmpipe load the real capture rate sags to ~3–5fps, so `-g`
+  (frames) is NOT enough — streamloop.sh pins keyframes to 1s of wall-clock
+  with `-force_key_frames "expr:gte(t,n_forced*1)"`. Segments must probe ≈2s
+  (`curl -s localhost:8088/hls/0/stream.m3u8 | grep EXTINF`). Level 0 (1s
+  segments, ~4–6s) was tried and BUFFERED even on the owner's connection —
+  1s fetch cadence through the CF tunnel starves the tiny player buffer;
+  don't retry. Still buffering → level 2.
 - Viewers can PAY to command Garvis from the stream chat (x402/USDC credits →
   body verbs + TV): the tollbooth sidecar, `apps/server/tollbooth/README.md`.
 
