@@ -17,6 +17,11 @@ services:
     stop_grace_period: 120s                    # give the modded server up to 2m to save+shut down on stop/reboot (default is 10s)
     ports:
       - "25565:25565"
+      # Simple Voice Chat — voice audio travels over its OWN UDP socket, separate
+      # from the TCP game connection. 24454 is the mod's default (config/voicechat/
+      # voicechat-server.properties, generated on first boot). If the host has an
+      # external firewall (ufw/cloud), UDP 24454 must be opened there too.
+      - "24454:24454/udp"
     environment:
       EULA: "TRUE"                              # accepts https://aka.ms/MinecraftEULA
       TYPE: "NEOFORGE"
