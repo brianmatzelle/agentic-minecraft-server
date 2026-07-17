@@ -221,6 +221,11 @@ hash = "9d2bfd56b708f836600a9b37fa5923a2189cdecaed87643f1a8f9ef65732c500"
 metafile = true
 
 [[files]]
+file = "mods/simple-voice-chat.pw.toml"
+hash = "f49c1a6ac54ad4f0b122d926f628331b7373aee15af170620a5c510d062421b1"
+metafile = true
+
+[[files]]
 file = "mods/simpletms-tms-and-trs-for-cobblemon.pw.toml"
 hash = "611e2f98143de53af78bb9aa9606416f11a90eb9f057179abe2bb18cc1a86bc4"
 metafile = true
