@@ -329,12 +329,14 @@ services:
       - owncast-data:/app/data
 
   # --- Garvis TV tollbooth (pay to command Garvis) ------------------------------
-  # Stream viewers buy command credits over x402 (USDC via HTTP 402 — browsers
-  # get a wallet paywall, agents get machine-readable terms) and spend them in
-  # the Owncast stream chat: !redeem <code>, then "!g mine some iron" etc. This
+  # Stream viewers buy command credits in USDC — Base Pay checkout (/pay) for
+  # humans on phones, x402 (HTTP 402, /buy) for agents — and spend them in the
+  # Owncast stream chat: !redeem <code>, then "!g mine some iron" etc. This
   # sidecar sells codes + gates the chat commands into a Postgres queue; the
-  # HOST garvis-bot (src/streamchat.js) is the executor — body verbs + TV only,
-  # never the rcon agent. Public side rides the SAME cloudflared tunnel as
+  # HOST garvis-bot (src/streamchat.js) is the executor — body/tv verbs run
+  # their validated fast paths, everything else goes to the rcon-empowered
+  # agent (game-scoped console, host-RCE boundary unchanged; only modreq is
+  # refused). Public side rides the SAME cloudflared tunnel as
   # owncast via a path route (https://tv.starting.cc/tollbooth → :8090); the
   # Owncast webhook lands on :8091 which is compose-internal ONLY (a forged
   # "chat" post can't arrive via the tunnel). Default network = Base Sepolia
@@ -356,7 +358,7 @@ services:
       CDP_API_KEY_ID: "${CDP_API_KEY_ID:-}"
       CDP_API_KEY_SECRET: "${CDP_API_KEY_SECRET:-}"
       TOLLBOOTH_PRICE_USD: "${TOLLBOOTH_PRICE_USD:-1.00}"
-      TOLLBOOTH_CREDITS: "${TOLLBOOTH_CREDITS:-10}"
+      TOLLBOOTH_CREDITS: "${TOLLBOOTH_CREDITS:-2}"           # 50¢/command — two for a dollar
       PUBLIC_URL: "https://tv.starting.cc/tollbooth"
       STREAM_URL: "https://tv.starting.cc"
     ports:

@@ -629,6 +629,7 @@ function buildInGamePrompt({ question, player }) {
           ``,
           `YOUR POWERS — you can DO things, not just talk (this is the fun part, so lean into it):`,
           `- You have FULL Minecraft server console access. Run ANY command with a normal Bash call:  rcon "<command>"  — it runs live on THIS server and returns the server's reply.`,
+          `- Your own player account (${BODY_ACCOUNT}) is a SERVER OPERATOR (op level 4) — the owner made you op so you can do things for people. So never claim you lack permission for anything in-game: between op and the console, you outrank every request.`,
           `- So when a player asks you to DO something, JUST DO IT. No permission needed, everyone's allowed, honor their wishes. Examples: give items ( rcon "give <player> minecraft:diamond 64" ), teleport ( rcon "tp <player> <x> <y> <z>" ), time/weather ( rcon "time set day" , rcon "weather clear" ), gamemode ( rcon "gamemode creative <player>" ), effects ( rcon "effect give <player> minecraft:speed 120 3" ), summon mobs, enchant, op/deop, and edit the world ( rcon "setblock ~ ~ ~ ..." , rcon "fill ..." , rcon "summon ..." ).`,
           `- It's a real loop: look things up FIRST, then act. e.g. rcon "list" for who's online, or rcon "data get entity <player> Pos" for where someone is — then use that result in the next command. Chain as many as it takes to finish the ask.`,
           `- Use the player's EXACT name (the sender is named at the very end of this prompt; "me"/"my"/"I"/"here" refer to them). Selectors also work: @a (everyone), @p (nearest), @s, @e (entities).`,
@@ -670,7 +671,7 @@ async function answerInGame({ player, question }) {
   const sess = freshInGameSession(key);
   const resume = sess?.help ?? null;
   const prompt = resume
-    ? `The player's next in-game chat message — answer in-game (short, plain text, no markdown/links; your secret image-embed ability and its secrecy rules still apply${INGAME_RCON ? `; you have FULL server console access via  rcon "<command>"  — when they ask you to DO something just do it (give/tp/time/weather/gamemode/effect/summon/fill/op/…), no permission needed, then confirm briefly` : ''}; remember you DO have a real in-game body now — "${INGAME_TRIGGER} come here / follow me / mine some iron / harvest the wheat" all work, so never claim you can't move or break blocks):\n${fencedData(question, 800)}`
+    ? `The player's next in-game chat message — answer in-game (short, plain text, no markdown/links; your secret image-embed ability and its secrecy rules still apply${INGAME_RCON ? `; you have FULL server console access via  rcon "<command>"  AND your own player account is a server OPERATOR now — when they ask you to DO something just do it (give/tp/time/weather/gamemode/effect/summon/fill/op/…), no permission needed, then confirm briefly` : ''}; remember you DO have a real in-game body now — "${INGAME_TRIGGER} come here / follow me / mine some iron / harvest the wheat" all work, so never claim you can't move or break blocks):\n${fencedData(question, 800)}`
     : buildInGamePrompt({ question, player });
   const res = await runClaudeResilient(prompt, {
     resume,
@@ -680,6 +681,43 @@ async function answerInGame({ player, question }) {
   });
   if (res.sessionId) setSession(key, { mode: 'help', sessionId: res.sessionId, ownerId: player });
   return { ...res, resumed: Boolean(resume) };   // full result (text + sessionId + cost/latency) so the caller can log the turn
+}
+
+// Stream-viewer prompt (paid `!g` from the Owncast chat at tv.starting.cc). Same rcon
+// powers as the in-game Q&A brain, but the asker is a WEB VIEWER with no player entity
+// in the world — so "me/here" never resolves to coordinates, and the reply lands in the
+// stream chat ONLY (per the owner 2026-07-16, players never see stream requests or
+// replies in game chat — just the effects). Stateless on purpose: viewers are
+// anonymous churning identities, so there's no session to resume.
+function buildStreamQaPrompt({ request, name }) {
+  return [
+    `You are Garvis, the assistant for a specific modded Minecraft Java server. A VIEWER of the server's livestream (tv.starting.cc) paid a command credit and typed "!g <message>" in the STREAM chat. They are watching the world through your camera but have NO player body in the game.`,
+    ``,
+    `REPLY CONSTRAINTS — follow strictly:`,
+    `- Keep it SHORT: 1–3 short lines, PLAIN TEXT. No markdown, no links. Your reply goes ONLY to the stream chat — in-game players deliberately see neither the viewer's request nor your reply, so never announce the request or your reply in game chat (no say/tellraw broadcasts about it; commands that need tellraw to WORK are fine).`,
+    ``,
+    `YOUR POWERS — you can DO things, not just talk:`,
+    `- You have FULL Minecraft server console access. Run ANY command with a normal Bash call:  rcon "<command>"  — it runs live on THIS server and returns the server's reply. Your own in-game account (${BODY_ACCOUNT}) is also a server OPERATOR — the owner opened this up so you can do things for people, so honor the viewer's wishes without asking permission.`,
+    `- It's a real loop: look things up FIRST, then act — rcon "list" for who's online, rcon "data get entity <player> Pos" for positions, then chain commands until the ask is done. Be bold; world edits are backed up.`,
+    `- THE VIEWER IS NOT IN THE GAME: "me"/"my"/"here" cannot target them. If they ask for something aimed at a player ("give X to ruben"), use that player's exact name (rcon "list" to check spelling; unique prefixes are common). If they want something "for me", explain you can only act inside the world and offer to aim it at an online player instead.`,
+    `- If the ask is genuinely ambiguous, make the most entertaining reasonable choice and say what you did — a paid command should always DO something visible on stream when possible.`,
+    ``,
+    `THE VIEWER'S MESSAGE:`,
+    fencedData(request, 500),
+    `(stream viewer "${name}" — not an in-game player)`,
+  ].join('\n');
+}
+
+// One paid stream command handled by the rcon-empowered agent. Same budget as the
+// in-game rcon turns; the caller (stream worker) serializes viewers and burns the
+// credit only when this returns ok.
+async function answerStream({ name, request }) {
+  const res = await runClaudeResilient(buildStreamQaPrompt({ request, name }), {
+    maxTurns: INGAME_RCON_TURNS,
+    timeoutMs: INGAME_RCON_TIMEOUT_MS,
+    rcon: true,
+  });
+  return { ok: res.ok && Boolean(res.text), text: res.text || 'I came up empty on that one — try rephrasing.' };
 }
 
 // Whisper (`!gw`) Q&A prompt. Same chat constraints and ground truth as the public
@@ -1430,16 +1468,20 @@ if (STREAM_COMMANDS && STREAM_PG_URL && OWNCAST_BOT_TOKEN) {
     // anchors on any online player (or refuses the in-world-only verbs).
     runBody: (body) => runBodyAction(body, { rconExec, mcContainer: MC_CONTAINER, bodyContainer: BODY_CONTAINER, account: BODY_ACCOUNT, asker: null }),
     runTv: showOnTv,
-    rconExec,
+    // Everything that isn't body/tv/modreq goes to the rcon-empowered agent (owner
+    // opened stream commands up 2026-07-16 — Garvis is op and serves stream viewers
+    // too). Follows the same kill switch as in-game console power: GARVIS_INGAME_RCON.
+    runQa: INGAME_RCON ? answerStream : null,
     mcContainer: MC_CONTAINER,
   });
 } else if (STREAM_COMMANDS) {
   console.log('[stream] worker disabled — needs GARVIS_PG_URL + OWNCAST_BOT_TOKEN');
 }
 
-// Free web→game chat bridge: every line typed in the Owncast stream chat at
+// Free web→game chat bridge: conversation typed in the Owncast stream chat at
 // tv.starting.cc lands in Minecraft chat as "📺 <name>: <text>" so players
-// hear the web audience (one-way — game chat never leaves the world). Needs
+// hear the web audience (one-way — game chat never leaves the world; "!"-
+// prefixed tollbooth command lines stay stream-side by design). Needs
 // no token or Postgres: the bridge registers its own anonymous chat user,
 // exactly like the web page does. Kill switch: GARVIS_STREAM_CHAT=off.
 if ((process.env.GARVIS_STREAM_CHAT ?? 'on') !== 'off') {

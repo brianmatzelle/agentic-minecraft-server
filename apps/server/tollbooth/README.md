@@ -27,7 +27,7 @@ viewer clicks "🎟️ Command Garvis" (Owncast external action) → /tollbooth 
   HUMAN  → /tollbooth/pay → Base Pay button → smart-wallet popup pays $1 USDC
          → page POSTs the payment id to /pay/verify
          → server getPaymentStatus() confirms completed + right addr + amount
-         → mints a one-time code (GT-XXXX-XXXX, 10 credits)
+         → mints a one-time code (GT-XXXX-XXXX, 2 credits — 50¢/command)
 
   AGENT  → GET /tollbooth/buy ──402──▶ PAYMENT-REQUIRED header terms
          → pays $1 USDC (facilitator verifies + settles; response BUFFERED
@@ -73,7 +73,7 @@ A command that fails or classifies outside the sold powers costs **nothing**.
 | `X402_NETWORK` | `eip155:84532` (Base Sepolia) | `eip155:8453` = Base mainnet (**current setting**) |
 | `X402_FACILITATOR_URL` | `https://x402.org/facilitator` (**testnet-only**) | set to `https://facilitator.payai.network` in .env — keyless, settles mainnet + Sepolia; ignored when CDP keys are set |
 | `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET` | (empty) | optional: switches to Coinbase's hosted facilitator (@coinbase/x402) — but needs a business-verified CDP account, which is why we use PayAI |
-| `TOLLBOOTH_PRICE_USD` / `TOLLBOOTH_CREDITS` | 1.00 / 10 | the bundle |
+| `TOLLBOOTH_PRICE_USD` / `TOLLBOOTH_CREDITS` | 1.00 / 2 | the bundle (50¢/command) |
 | `TOLLBOOTH_COOLDOWN_S` | 20 | per-viewer enqueue cooldown |
 
 **Base Pay needs no extra config.** It's keyless — it reuses `X402_PAY_TO` as

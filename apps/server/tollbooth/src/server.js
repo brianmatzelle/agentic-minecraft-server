@@ -58,7 +58,7 @@ const NETWORK = process.env.X402_NETWORK || 'eip155:84532';          // Base Sep
 const DEFAULT_FACILITATOR = 'https://x402.org/facilitator';           // TESTNET-ONLY
 const FACILITATOR_URL = process.env.X402_FACILITATOR_URL || DEFAULT_FACILITATOR;
 const PRICE_USD = String(process.env.TOLLBOOTH_PRICE_USD || '1.00'); // dollars, no "$"
-const CREDITS = Math.max(1, Number(process.env.TOLLBOOTH_CREDITS || 10));
+const CREDITS = Math.max(1, Number(process.env.TOLLBOOTH_CREDITS || 2));
 const COOLDOWN_S = Math.max(0, Number(process.env.TOLLBOOTH_COOLDOWN_S || 20));
 const PUBLIC_URL = process.env.PUBLIC_URL || 'https://tv.starting.cc/tollbooth';
 const STREAM_URL = process.env.STREAM_URL || 'https://tv.starting.cc';
@@ -216,8 +216,9 @@ async function redeem(owncastId, displayName, rawCode) {
 
 // ── Stream-chat command router (webhook side) ─────────────────────────────
 const HELP =
-  `commands → !redeem YOUR-CODE · !balance · !g your command — e.g. "!g mine some iron", "!g put a creeper on the TV", ` +
-  `"!g spectate somebody", "!g follow a player", "!g go to 0 70 0". Credits: ${PUBLIC_URL}`;
+  `commands → !redeem YOUR-CODE · !balance · !g your command — Garvis is a server op, so ask for almost anything: ` +
+  `"!g mine some iron", "!g put a creeper on the TV", "!g spectate somebody", "!g make it daytime", ` +
+  `"!g give a player 64 diamonds", "!g summon a wither at spawn". Credits: ${PUBLIC_URL}`;
 
 async function handleChat(payload) {
   if (payload?.type !== 'CHAT') return;
@@ -234,7 +235,7 @@ async function handleChat(payload) {
   } else if ((m = text.match(/^!redeem\s+(.+)$/i))) {
     const res = await redeem(u.id, name, m[1]);
     await say(res.ok
-      ? `@${name} ✅ +${res.added} credits — balance ${res.balance}. Try: !g mine some iron · !g put a creeper on the TV`
+      ? `@${name} ✅ +${res.added} credits — balance ${res.balance}. Try: !g mine some iron · !g make it daytime · !g put a creeper on the TV`
       : `@${name} that code isn't valid (or it's already been used). Codes come from ${PUBLIC_URL}`);
   } else if (/^!balance\b/i.test(text)) {
     const s = await viewerState(u.id);
@@ -318,13 +319,14 @@ const page = (title, body) => `<!doctype html><html><head><meta charset="utf-8">
 
 const landing = () => page('Garvis TV Tollbooth', `
   <h1>🎟️ Command Garvis</h1>
-  <p>Garvis is the AI playing Minecraft live on <a href="${STREAM_URL}">Garvis TV</a>. For
-  <b>$${PRICE_USD}</b> you get <b>${CREDITS} commands</b>: send him mining or farming, make him
-  follow a player, put anything on the in-game TV, or lock the stream camera to somebody's POV.</p>
+  <p>Garvis is the AI playing Minecraft live on <a href="${STREAM_URL}">Garvis TV</a> — and he's a
+  <b>server operator</b>. For <b>$${PRICE_USD}</b> you get <b>${CREDITS} commands</b>: send him mining,
+  make him follow a player, put anything on the in-game TV, lock the camera to somebody's POV — or
+  just ask: flip the weather, rain diamonds on a player, summon mobs, light up the sky.</p>
   <ol>
     <li>Buy a code below — pay <b>$${PRICE_USD} in USDC with Base Pay</b>, right from your phone. No signup, no app.</li>
     <li>Type <code>!redeem YOUR-CODE</code> in the <a href="${STREAM_URL}">stream chat</a>.</li>
-    <li>Command away: <code>!g mine some iron</code> · <code>!g put a creeper on the TV</code> · <code>!g spectate a player</code></li>
+    <li>Command away: <code>!g mine some iron</code> · <code>!g make it daytime</code> · <code>!g summon a wither at spawn</code> · <code>!g put a creeper on the TV</code></li>
   </ol>
   <a class="btn" href="${PUBLIC_URL}/pay">Buy ${CREDITS} commands — $${PRICE_USD}</a>
   <p class="dim">A command only costs a credit when it works. Agents welcome: <code>GET ${PUBLIC_URL}/buy</code> speaks HTTP 402.</p>
@@ -446,7 +448,7 @@ app.get('/tollbooth/buy', async (req, res) => {
         <div class="code big">${pretty}</div>
         <p>Now in the <a href="${STREAM_URL}">stream chat</a>, type:</p>
         <p><code>!redeem ${pretty}</code></p>
-        <p>then spend your ${CREDITS} commands: <code>!g mine some iron</code> · <code>!g put a creeper on the TV</code> · <code>!g spectate a player</code> · <code>!g follow a player</code></p>
+        <p>then spend your ${CREDITS} commands: <code>!g mine some iron</code> · <code>!g make it daytime</code> · <code>!g give a player 64 diamonds</code> · <code>!g put a creeper on the TV</code> · <code>!g spectate a player</code></p>
         <p class="warn">Save this code — it's shown once and works once.</p>`));
     } else {
       res.json({ code: pretty, credits: CREDITS, redeem: `!redeem ${pretty}`, chat: STREAM_URL });

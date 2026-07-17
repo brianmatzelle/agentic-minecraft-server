@@ -9,20 +9,27 @@
 //
 //   poll stream_commands (pg, FOR UPDATE SKIP LOCKED, ONE at a time)
 //     -> classify with the SAME in-game intent classifier (injected)
-//     -> execute ONLY body / tv intents — the powers the owner put on sale;
-//        qa/give/modreq are refused and the credit is NOT burned
-//     -> burn 1 credit on success, write reply+status back to the row,
-//        push the reply into the stream chat (Owncast integrations API),
-//        and tellraw the in-game world so players see WHY the body moved.
+//     -> body / tv intents run their dedicated paths; everything else
+//        (qa/give/…) goes to the rcon-empowered agent via the injected runQa —
+//        the owner opened stream commands up to the full console surface
+//        2026-07-16 (Garvis is a server op now and serves stream viewers too).
+//        Only modreq is refused (repo/PR work stays a Discord/in-game thing);
+//        refused or failed commands do NOT burn the credit.
+//     -> burn 1 credit on success, write reply+status back to the row, and
+//        push the reply into the stream chat (Owncast integrations API).
+//        NOTHING is announced in game chat — the owner wants stream requests
+//        and replies visible only at tv.starting.cc (2026-07-16), so in-game
+//        players just see the effects happen.
 //
 // Trust model: a stream viewer is ANONYMOUS (an Owncast chat identity — no
-// whitelist, no ops.json). They get exactly the body-verb + TV surface in-game
-// players already have (re-validated + denylisted in body.js / tv.js, executed
-// with asker:null so "come here"-style verbs refuse cleanly), bought with
-// credits. They NEVER reach qa (the free-form agent), give, modreq, or the
-// rcon-empowered `!g` agent — refused intents cost nothing and run nothing.
+// whitelist, no ops.json), but every command is PAID, and the power on sale is
+// now the same game-scoped console the public in-game `!g` already has (rcon =
+// fixed docker exec, game-only — the host-RCE boundary is unchanged). Body/tv
+// keep their validated fast paths (re-validated + denylisted in body.js /
+// tv.js, executed with asker:null so "come here"-style verbs refuse cleanly).
+// When runQa is absent (GARVIS_INGAME_RCON=off), qa/give fall back to refusal.
 // The single-claim loop also serializes viewers, so two paying strangers can't
-// interleave Baritone commands.
+// interleave commands.
 //
 // Like convlog.js this module degrades, never dies: a down Postgres or Owncast
 // just idles the worker (logged), and every loop turn is fully try/caught.
@@ -81,20 +88,6 @@ async function sendStreamChat(owncastUrl, token, text, log) {
   }
 }
 
-// One public in-game line so players see why the body just walked off / the TV
-// changed: "[Garvis] 📺 name (stream): ...". Fixed argv via the injected
-// rconExec (execFile, no shell); viewer text never lands raw — only our own
-// reply text does, JSON-escaped.
-async function tellrawStream(rconExec, mcContainer, name, text, log) {
-  const component = ['',
-    { text: '[Garvis] ', color: 'aqua', bold: true },
-    { text: `📺 ${name} (stream): `, color: 'gold' },
-    { text: String(text), color: 'white' },
-  ];
-  const res = await rconExec(mcContainer, ['tellraw', '@a', JSON.stringify(component)]);
-  if (!res.ran) log(`tellraw failed: ${(res.output || '').slice(0, 120)}`);
-}
-
 // Claim the oldest queued command, marking it running. SKIP LOCKED keeps this
 // safe even if a second bot instance ever runs.
 async function claimNext(pool) {
@@ -121,6 +114,7 @@ async function claimNext(pool) {
 //   classify(text) -> { intent, body, ... }   (the in-game classifier, fails safe to qa)
 //   runBody(body)  -> { ok, text }            (runBodyAction pre-bound with asker:null)
 //   runTv({player, request}) -> { ok, text }  (showOnTv)
+//   runQa({name, request}) -> { ok, text }    (rcon-empowered agent turn; null = refuse qa)
 // Returns { stop }.
 export function startStreamWorker({
   pgUrl,
@@ -129,7 +123,7 @@ export function startStreamWorker({
   classify,
   runBody,
   runTv,
-  rconExec,
+  runQa = null,
   mcContainer,
   pollMs = 2500,
   log = (m) => console.log(`[stream] ${m}`),
@@ -150,12 +144,19 @@ export function startStreamWorker({
         out = await runBody(intent.body);
       } else if (intent.intent === 'tv') {
         out = await runTv({ player: name, request: cmd.request });
-      } else {
+      } else if (intent.intent === 'modreq' || !runQa) {
         refused = true;
         out = {
           ok: false,
-          text: 'that reads like chat, not a command — from the stream I do body work (mine <block> / farm / follow <player> / go to <x y z> / spectate <player>) and TV spots ("put a creeper on the TV").',
+          text: runQa
+            ? 'adding mods is a bigger job than a stream credit — ask on the server\'s Discord (@Garvis) and I\'ll research it and open a PR.'
+            : 'that reads like chat, not a command — from the stream I do body work (mine <block> / farm / follow <player> / go to <x y z> / spectate <player>) and TV spots ("put a creeper on the TV").',
         };
+      } else {
+        // qa/give/anything-else: the full rcon-empowered agent. Slower than the
+        // body/tv fast paths (a real agentic loop), but the claim loop already
+        // serializes viewers, so it just queues.
+        out = await runQa({ name, request: cmd.request });
       }
     } catch (e) {
       out = { ok: false, text: 'I hit a snag on that one — no credit spent, give it another go in a moment.' };
@@ -182,7 +183,6 @@ export function startStreamWorker({
 
     const suffix = out.ok ? ` · −1 credit${left == null ? '' : `, ${left} left`}` : ' · no credit spent';
     await sendStreamChat(owncastUrl, owncastToken, `@${name} ${out.text}${suffix}`, log);
-    if (out.ok) await tellrawStream(rconExec, mcContainer, name, out.text, log);
 
     logTurn({
       source: 'stream', server: mcContainer, trigger: '!g', player: name,
@@ -227,9 +227,13 @@ export function startStreamWorker({
 }
 
 // ── Free chat bridge (web → game) ────────────────────────────────────────────
-// Mirrors every message typed in the Owncast stream chat at tv.starting.cc into
+// Mirrors conversation typed in the Owncast stream chat at tv.starting.cc into
 // Minecraft chat as "📺 <name>: <text>", so in-game players can hear the web
-// audience. One-way on purpose — game chat never leaves the world.
+// audience. One-way on purpose — game chat never leaves the world. Lines
+// starting with "!" are NOT bridged: that's the tollbooth's command surface
+// (!g/!garvis/!redeem/!balance/!help — same startsWith('!') rule its webhook
+// uses), and the owner wants what viewers ask Garvis to do kept off game chat
+// (2026-07-16) — players have to watch tv.starting.cc to see it.
 //
 // Transport: no token and no tollbooth involved. The bridge registers itself an
 // ANONYMOUS chat user (the same POST /api/chat/register the web page uses) and
@@ -316,6 +320,11 @@ export function startChatBridge({
       .replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24) || 'viewer';
     const text = htmlToChatText(m.body).slice(0, maxLen);
     if (!text) return;
+    // Tollbooth command traffic stays stream-side (see header). Check the
+    // tollbooth's own reduction as well as the flattened text — the tollbooth
+    // drops emote alts when tag-stripping, so an emote-prefixed "!g …" still
+    // runs as a command and must not bridge.
+    if (text.startsWith('!') || String(m.body ?? '').replace(/<[^>]*>/g, '').trim().startsWith('!')) return;
     if (!takeToken()) { log(`rate-limited, dropped ${name}: ${text.slice(0, 40)}`); return; }
     const component = ['',
       { text: '📺 ', color: 'aqua' },
