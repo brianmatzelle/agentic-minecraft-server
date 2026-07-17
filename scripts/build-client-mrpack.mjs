@@ -134,14 +134,6 @@ const CLIENT_MODS = [
   // optional (Modrinth client_side: optional) but shipped so players see custom
   // structure content. Discord req 2026-06-28.
   { slug: 'cobblemonextrastructures',            client: 'optional', server: 'required' },
-  // Simple Voice Chat — proximity voice. Not needed to CONNECT (clients without it
-  // just have no voice), so client: 'optional' (installed by default, deselectable —
-  // no-mic players can skip it). PINNED to the server's exact build: SVC runs its own
-  // client<->server voice-compat handshake, so a drifted server build can silently
-  // kill voice for everyone. Matches modlist.txt simple-voice-chat:8xOu3Um5.
-  // Server side needs UDP 24454 published (apps/server/docker-compose.yml).
-  // Discord req 2026-07-16.
-  { slug: 'simple-voice-chat',                   client: 'optional', server: 'required', pin: 'neoforge-1.21.1-2.6.20' },
   // ── Chat image embeds (client-only; server never runs it → server: 'unsupported') ─
   // ChatImage (kitUIN) renders an inline image in chat wherever a message carries a
   // [[CICode,url=…]] tag — including tellraw JSON, which is how in-game Garvis speaks

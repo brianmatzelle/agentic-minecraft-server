@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-07-17",
+  "versionId": "2026-07-15",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -741,21 +741,6 @@
       "fileSize": 85732
     },
     {
-      "path": "mods/voicechat-neoforge-1.21.1-2.6.20.jar",
-      "hashes": {
-        "sha1": "e320dab1795ec1193a57ea709f23f49b662ef2a1",
-        "sha512": "934b2b5f474fa2b43ee052cbc7802a2d282a11c1f76ceb1ec434293e05614cf971f64e397c3cf03445d793617bf9e0c315cb434b5adeb110aa40eb0192e8c745"
-      },
-      "env": {
-        "client": "optional",
-        "server": "required"
-      },
-      "downloads": [
-        "https://cdn.modrinth.com/data/9eGKb6K1/versions/8xOu3Um5/voicechat-neoforge-1.21.1-2.6.20.jar"
-      ],
-      "fileSize": 4910868
-    },
-    {
       "path": "mods/waystones-neoforge-1.21.1-21.1.36.jar",
       "hashes": {
         "sha1": "ee48dd56992712e66e9ba75f2ed23c2e8b8c53eb",
@@ -773,6 +758,6 @@
   ],
   "dependencies": {
     "minecraft": "1.21.1",
-    "neoforge": "21.1.238"
+    "neoforge": "21.1.236"
   }
 }
