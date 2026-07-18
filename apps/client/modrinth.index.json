@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-07-15",
+  "versionId": "2026-07-18",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -351,6 +351,21 @@
       "fileSize": 3163042
     },
     {
+      "path": "mods/geckolib-neoforge-1.21.1-4.9.2.jar",
+      "hashes": {
+        "sha1": "14c64013cadee7d28f3685f94350f9a4d2ec6d86",
+        "sha512": "c91012b16cc40c8f48f69b78cb8e2e5c006486ae2431fbd289dfc01be7a4217294becea22d83a155d6b32b3969450df871352a3695e1452168b84f41355f7b9e"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/8BmcQJ2H/versions/tPkJmim6/geckolib-neoforge-1.21.1-4.9.2.jar"
+      ],
+      "fileSize": 630584
+    },
+    {
       "path": "mods/gravestone-neoforge-1.21.1-1.0.37.jar",
       "hashes": {
         "sha1": "b2cc8077ff7184e3791af3edd4b5b894e62b127f",
@@ -591,6 +606,21 @@
       "fileSize": 646777
     },
     {
+      "path": "mods/pointblank-neoforge-1.21-1.11.1.jar",
+      "hashes": {
+        "sha1": "58570698e839acec1ad9a9778802dac8550d49ce",
+        "sha512": "3f2175757533f5db36d2c58e2059d1b41a146563e483ec495787b169bf254f6381766c3a594e6841d8d81e8627dad5a5b781c863b43506c01405cf2c8a54a186"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/og4KPYmA/versions/E7JIkQhi/pointblank-neoforge-1.21-1.11.1.jar"
+      ],
+      "fileSize": 17553459
+    },
+    {
       "path": "mods/pylons-1.21.1-5.4.2.jar",
       "hashes": {
         "sha1": "7a17b8fda2557c9466bc871403ba3b6ea5990e58",
@@ -741,23 +771,23 @@
       "fileSize": 85732
     },
     {
-      "path": "mods/waystones-neoforge-1.21.1-21.1.36.jar",
+      "path": "mods/waystones-neoforge-1.21.1-21.1.37.jar",
       "hashes": {
-        "sha1": "ee48dd56992712e66e9ba75f2ed23c2e8b8c53eb",
-        "sha512": "af895062d7836abdea94497d1297d87d295f5a077e7d98ab865ff62e31a8d11a392f68ed2f6cf57c901a309af610df24a99f0018ec1889bd30246a596234aecc"
+        "sha1": "ffada9b8b212102d7bdd006f773ac0b29c5b815c",
+        "sha512": "d9e90a81376393b4aecd19f527dc68f44908ed0f5cb26b2e3236cdc0373b661225a5365cd448c622c112460a6d005480c14349aa6b1050138f2582261b355595"
       },
       "env": {
         "client": "required",
         "server": "required"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/LOpKHB2A/versions/1Z4G2Vgg/waystones-neoforge-1.21.1-21.1.36.jar"
+        "https://cdn.modrinth.com/data/LOpKHB2A/versions/az73Oero/waystones-neoforge-1.21.1-21.1.37.jar"
       ],
-      "fileSize": 1195829
+      "fileSize": 1201931
     }
   ],
   "dependencies": {
     "minecraft": "1.21.1",
-    "neoforge": "21.1.236"
+    "neoforge": "21.1.240"
   }
 }

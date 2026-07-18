@@ -1,0 +1,13 @@
+name = "vics-point-blank"
+filename = "pointblank-neoforge-1.21-1.11.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/og4KPYmA/versions/E7JIkQhi/pointblank-neoforge-1.21-1.11.1.jar"
+hash-format = "sha512"
+hash = "3f2175757533f5db36d2c58e2059d1b41a146563e483ec495787b169bf254f6381766c3a594e6841d8d81e8627dad5a5b781c863b43506c01405cf2c8a54a186"
+
+[update]
+[update.modrinth]
+mod-id = "og4KPYmA"
+version = "E7JIkQhi"
