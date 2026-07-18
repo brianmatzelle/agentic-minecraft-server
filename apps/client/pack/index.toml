@@ -121,6 +121,11 @@ hash = "b7f5ee4986d5f58638b6b6879eb4f6909a3765ae3657dbb7f9667b7eaf9348b7"
 metafile = true
 
 [[files]]
+file = "mods/geckolib.pw.toml"
+hash = "52deacaea4c409c36e38f1f85437edfd1dc01ca827e6f415e488ca3bf277a3f0"
+metafile = true
+
+[[files]]
 file = "mods/gravestone-mod.pw.toml"
 hash = "4da926bee4759b5449a2a9e4cc32ac2d855d12e8f7e867313dac2cd2ed4a7a9a"
 metafile = true
@@ -246,6 +251,11 @@ hash = "6a55e09cf44a282f2882a8dadb7cd4864f092d30aa2674e1434cda47a656efd4"
 metafile = true
 
 [[files]]
+file = "mods/vics-point-blank.pw.toml"
+hash = "79f528f94907a7729eac56bc00fb196fa41cdd1afb30f337e4612cf5a7a4eb10"
+metafile = true
+
+[[files]]
 file = "mods/waystones.pw.toml"
-hash = "bdda545343fc93a67a12f2d24b099a9f08c417b07afa1e118ae912256020b034"
+hash = "7584c74952bd2f3950fb925bb2f292500dbf5fdbe1d86e3d79cdd3ee8bfa412c"
 metafile = true

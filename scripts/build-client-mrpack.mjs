@@ -112,6 +112,9 @@ const CLIENT_MODS = [
   { slug: 'create',                              client: 'required', server: 'required' }, // now required: Create: Aeronautics depends on it
   { slug: 'create-aeronautics',                  client: 'required', server: 'required' },
   { slug: 'sable',                               client: 'required', server: 'required' }, // create-aeronautics dep
+  // ── Guns (Discord req 2026-07-18) — content mod, required client-side ──────
+  { slug: 'vics-point-blank',                    client: 'required', server: 'required' }, // Vic's Point Blank — modern 3D guns
+  { slug: 'geckolib',                            client: 'required', server: 'required' }, // vics-point-blank dep (animation engine)
   // ── Tech, storage & villager QoL (Discord req 2026-06-28) — content mods, required client-side ─
   { slug: 'mekanism',                            client: 'required', server: 'required' },
   { slug: 'mekanism-generators',                 client: 'required', server: 'required' }, // mekanism addon
