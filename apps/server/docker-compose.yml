@@ -140,8 +140,9 @@ services:
   # --- World backups (local) -------------------------------------------------
   # itzg/mc-backup sidecar (same author as the server image). Connects over RCON to run
   # save-off + save-all before archiving and save-on after, so each .tgz is a consistent
-  # snapshot of the world. Archives land on the host in ./backups (gitignored). Local-only
-  # for now — see docs/backups.md for restore steps and the offsite-copy TODO.
+  # snapshot of the world. Archives land on the host in ./backups (gitignored). This is the
+  # FAST same-box rollback copy; the backups-offsite sidecar below is the disaster-recovery
+  # copy that survives the host disk dying. See docs/backups.md for restore steps.
   backups:
     image: itzg/mc-backup
     container_name: mc-backup
@@ -160,6 +161,42 @@ services:
     volumes:
       - ./server-data:/data:ro                   # read the live world, read-only — the sidecar never writes here
       - ./backups:/backups                       # archives written here on the host
+
+  # --- World backups (offsite, encrypted) ------------------------------------
+  # Second itzg/mc-backup sidecar, restic method → S3 bucket garvis-mc-backups-430842105371
+  # (us-east-2, AWS account 430842105371, IAM user garvis-mc-backup scoped to just that bucket).
+  # Same RCON save-off/flush/save-on dance as the local sidecar, but restic dedupes + encrypts
+  # client-side (RESTIC_BACKUP_PASSWORD) and uploads only changed blocks — so the first run ships
+  # the whole ~11G world and every run after is tiny. This is the DISASTER-RECOVERY copy (survives
+  # the host disk dying); the local tar sidecar above stays the fast same-box rollback. Creds + the
+  # repo password live in .env (gitignored) — lose RESTIC_BACKUP_PASSWORD and the repo is
+  # unrecoverable, so it's saved off-host too. Restore steps: docs/backups.md.
+  backups-offsite:
+    image: itzg/mc-backup
+    container_name: mc-backup-offsite
+    restart: unless-stopped
+    depends_on:
+      minecraft:
+        condition: service_healthy             # wait for the server's healthcheck before connecting RCON
+    environment:
+      RCON_HOST: minecraft                      # reach the server by its compose service name (internal network)
+      RCON_PASSWORD: "${RCON_PASSWORD:-minecraft}"   # MUST match the minecraft service above
+      BACKUP_INTERVAL: "${BACKUP_INTERVAL:-24h}"     # daily; naturally offset from the local sidecar (started later)
+      PAUSE_IF_NO_PLAYERS: "true"               # skip the snapshot when nobody is online (no idle churn)
+      BACKUP_METHOD: restic                      # encrypted + deduplicated + incremental (auto-inits the repo)
+      # restic repo lives at s3://<bucket>/world via the REGIONAL endpoint — an explicit region avoids
+      # the 301 redirect a non-us-east-1 bucket returns on the global s3.amazonaws.com endpoint.
+      RESTIC_REPOSITORY: "s3:s3.${AWS_BACKUP_REGION}.amazonaws.com/${RESTIC_S3_BUCKET}/world"
+      RESTIC_PASSWORD: "${RESTIC_BACKUP_PASSWORD:?set RESTIC_BACKUP_PASSWORD in .env}"
+      AWS_ACCESS_KEY_ID: "${AWS_BACKUP_ACCESS_KEY_ID:?set AWS_BACKUP_ACCESS_KEY_ID in .env}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_BACKUP_SECRET_ACCESS_KEY:?set AWS_BACKUP_SECRET_ACCESS_KEY in .env}"
+      AWS_DEFAULT_REGION: "${AWS_BACKUP_REGION}"
+      # retention applied by `restic forget --prune` after each run: 7 daily + 5 weekly + 6 monthly
+      PRUNE_RESTIC_RETENTION: "--keep-daily 7 --keep-weekly 5 --keep-monthly 6"
+      TZ: "${TZ:-UTC}"                           # timezone for snapshot timestamps
+    volumes:
+      - ./server-data:/data:ro                   # read the live world, read-only — never writes here
+      - restic-cache:/var/cache/restic           # persist restic's local cache across restarts (faster runs)
 
   # --- Metrics: Prometheus (time-series DB) ----------------------------------
   # Scrapes the prometheus-exporter mod inside the minecraft container (port 19565,
@@ -373,3 +410,4 @@ volumes:
   postgres-data:                                # Garvis conversation log (survives restarts)
   garviscam-data:                               # GarvisCam client: game files, pack, MSA session
   owncast-data:                                 # Garvis TV: owncast config/db (stream title, chat history)
+  restic-cache:                                 # offsite backup sidecar: restic's local cache (perf only)
