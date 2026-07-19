@@ -81,6 +81,12 @@ services:
       RESOURCE_PACK_PROMPT: '{"text":"mc.starting.cc recommends Faithful 32x - crisp HD-vanilla textures"}'
       # --- Mods from Modrinth (auto-downloaded at startup) ---
       MODRINTH_PROJECTS: "${MODRINTH_PROJECTS:-}"
+      # mc-image-helper's per-request HTTP read timeout (ISO-8601), default PT30S.
+      # 30s is too tight when Modrinth's API is degraded-but-alive (2026-07-18:
+      # project lookups took 30-45s+ during an incident → ReadTimeoutException →
+      # container crash-looped and the server stayed DOWN until Modrinth recovered,
+      # since every boot re-resolves the whole modlist). 5m rides out slow spells.
+      FETCH_RESPONSE_TIMEOUT: "PT5M"
       # MUST stay "none". With "required", itzg re-resolves every listed mod's
       # required dependencies to their LATEST compatible build and UPGRADES over
       # any explicit version pin — e.g. the Cobblemon add-ons (SimpleTMs etc.)
