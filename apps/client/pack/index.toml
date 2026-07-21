@@ -91,6 +91,11 @@ hash = "eddfdf96b56f51bd37e4c78b95061d91a36ad4ba9eded561c7c3bac9aee85646"
 metafile = true
 
 [[files]]
+file = "mods/curios.pw.toml"
+hash = "63eb0b9f9868a15c76487dc16d625dddb19af74ef695ae6049425a05a3fb7d94"
+metafile = true
+
+[[files]]
 file = "mods/distanthorizons.pw.toml"
 hash = "e6a792eef5fdf3a380a8668b55e3db4be0faec648d66e82e5b18ca59c50551fd"
 metafile = true
@@ -152,7 +157,7 @@ metafile = true
 
 [[files]]
 file = "mods/jei.pw.toml"
-hash = "941307c1162606f6d6a0b010ec5c8967935ba8a1e4991d9ddeb22f1a44653163"
+hash = "201141419236a1b685ee6d82bd3651971e1f2dce8def7b8967bb728b9b9f0cdc"
 metafile = true
 
 [[files]]
@@ -243,6 +248,11 @@ metafile = true
 [[files]]
 file = "mods/sophisticated-core.pw.toml"
 hash = "c41d4e6e20ad74aaa0e865f43bb00f096b6d3745314879a2d8d2ae5d4f933a46"
+metafile = true
+
+[[files]]
+file = "mods/superb-warfare.pw.toml"
+hash = "e3621029343a540d50eb68db0a777507dd4ab407bab3daf270de80f7cf80415c"
 metafile = true
 
 [[files]]

@@ -114,7 +114,10 @@ const CLIENT_MODS = [
   { slug: 'sable',                               client: 'required', server: 'required' }, // create-aeronautics dep
   // ── Guns (Discord req 2026-07-18) — content mod, required client-side ──────
   { slug: 'vics-point-blank',                    client: 'required', server: 'required' }, // Vic's Point Blank — modern 3D guns
-  { slug: 'geckolib',                            client: 'required', server: 'required' }, // vics-point-blank dep (animation engine)
+  { slug: 'geckolib',                            client: 'required', server: 'required' }, // vics-point-blank + superb-warfare dep (animation engine)
+  // ── Tanks & military vehicles (Discord req 2026-07-21) — content mod, required client-side ─
+  { slug: 'superb-warfare',                      client: 'required', server: 'required' }, // Superb Warfare — tanks, helicopters, artillery, drones
+  { slug: 'curios',                              client: 'required', server: 'required' }, // superb-warfare dep (accessory slots)
   // ── Tech, storage & villager QoL (Discord req 2026-06-28) — content mods, required client-side ─
   { slug: 'mekanism',                            client: 'required', server: 'required' },
   { slug: 'mekanism-generators',                 client: 'required', server: 'required' }, // mekanism addon

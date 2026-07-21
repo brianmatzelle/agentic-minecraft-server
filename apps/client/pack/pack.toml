@@ -1,13 +1,13 @@
 name = "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)"
 author = "mc.starting.cc"
-version = "2026-07-18"
+version = "2026-07-21"
 pack-format = "packwiz:1.1.0"
 
 [index]
 file = "index.toml"
 hash-format = "sha256"
-hash = "b1101c40e8786f61305fc44a83c2c431f641dc9386658b89d30db393847d7d67"
+hash = "c248f2ca8948ba9dbeeb95cfcbdf29de254293bbce10a79bb29c3df28e6954d8"
 
 [versions]
 minecraft = "1.21.1"
-neoforge = "21.1.240"
+neoforge = "21.1.242"
