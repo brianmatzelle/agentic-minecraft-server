@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-07-18",
+  "versionId": "2026-07-21",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -261,6 +261,21 @@
       "fileSize": 33120013
     },
     {
+      "path": "mods/curios-neoforge-9.5.1+1.21.1.jar",
+      "hashes": {
+        "sha1": "418fcd42e3a7844c9bdc71c9b6401fdb3894e0c4",
+        "sha512": "5981a267686b744e7e3c227f78cbcd5267c14ac6979a28e814695f4589273998563147207fef4a5cdb7cdbdc39797cd95d9e4abadb55869f18e02a38d0654ae5"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/vvuO3ImH/versions/yohfFbgD/curios-neoforge-9.5.1%2B1.21.1.jar"
+      ],
+      "fileSize": 410690
+    },
+    {
       "path": "mods/DistantHorizons-3.2.0-b-1.21.1-fabric-neoforge.jar",
       "hashes": {
         "sha1": "df25e8cfe06917963778723a1d9a60610dd21bec",
@@ -441,19 +456,19 @@
       "fileSize": 725742
     },
     {
-      "path": "mods/jei-1.21.1-neoforge-19.39.0.368.jar",
+      "path": "mods/jei-1.21.1-neoforge-19.39.0.369.jar",
       "hashes": {
-        "sha1": "82a8ee647d81c40f149c444c5d37088f035cb773",
-        "sha512": "e0fedc5dddea7f48a061053f5f3cb8e4805dbd0734ee9ae07809a1766a02c7b6ed938b1d34234628dbb73e21277d9f09dacd20902006c678180ce009f4bc07b3"
+        "sha1": "d8733a53161c70e68512de4c4ac412caa1a616cc",
+        "sha512": "23948f0343309c67a720544c2fd0c419f215e66085cb4103c58732b98a628b43b82992bfeca556b1754d2c9e703ab3c29f010411f8dc3eb19b545eacad274242"
       },
       "env": {
         "client": "optional",
         "server": "optional"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/bEGnP8IF/jei-1.21.1-neoforge-19.39.0.368.jar"
+        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/5lWKlj9s/jei-1.21.1-neoforge-19.39.0.369.jar"
       ],
-      "fileSize": 1635411
+      "fileSize": 1635413
     },
     {
       "path": "mods/kotlinforforge-5.11.0-all.jar",
@@ -756,6 +771,21 @@
       "fileSize": 1649625
     },
     {
+      "path": "mods/superbwarfare-0.8.9-final-mc1.21.1-9b5284f4.jar",
+      "hashes": {
+        "sha1": "4efc370919a87480b95975f180f41d0288314ee3",
+        "sha512": "6d3eeff13f5634d6f3e977cc490fea1c8af607ae02c66eadcb2af90ae76e17bb67256189687598e6dcd4bdcadbcf429f5564cea09a77a99774b2d08c3b5ec0e6"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/Cd3DYqzn/versions/Qdwf6rIX/superbwarfare-0.8.9-final-mc1.21.1-9b5284f4.jar"
+      ],
+      "fileSize": 31688244
+    },
+    {
       "path": "mods/trade-cycling-neoforge-1.21.1-1.0.18.jar",
       "hashes": {
         "sha1": "8dc82c390a2b1d5e46ae9d0d5673279b83904c7c",
@@ -788,6 +818,6 @@
   ],
   "dependencies": {
     "minecraft": "1.21.1",
-    "neoforge": "21.1.240"
+    "neoforge": "21.1.242"
   }
 }

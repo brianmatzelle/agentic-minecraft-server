@@ -1,0 +1,13 @@
+name = "superb-warfare"
+filename = "superbwarfare-0.8.9-final-mc1.21.1-9b5284f4.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/Cd3DYqzn/versions/Qdwf6rIX/superbwarfare-0.8.9-final-mc1.21.1-9b5284f4.jar"
+hash-format = "sha512"
+hash = "6d3eeff13f5634d6f3e977cc490fea1c8af607ae02c66eadcb2af90ae76e17bb67256189687598e6dcd4bdcadbcf429f5564cea09a77a99774b2d08c3b5ec0e6"
+
+[update]
+[update.modrinth]
+mod-id = "Cd3DYqzn"
+version = "Qdwf6rIX"
