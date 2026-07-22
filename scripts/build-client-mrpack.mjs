@@ -85,7 +85,11 @@ const CLIENT_MODS = [
   // jar or NeoForge refuses to launch. It's on the server too (modlist.txt).
   { slug: 'lithostitched',                       client: 'required', server: 'required' },
   { slug: 'simpletms-tms-and-trs-for-cobblemon', client: 'required', server: 'required' },
-  { slug: 'cobbledollars',                       client: 'required', server: 'required' },
+  // PINNED to 2.0.0+Beta-5.1: the SERVER is pinned to this exact build
+  // (modlist.txt cobbledollars:QSl34Qen), but this entry was unpinned — so the
+  // 2026-07-21 regen silently re-resolved it to the newer 2.0.0+Beta-6 and would
+  // have shipped a client that mismatches the pinned server. Pin both sides.
+  { slug: 'cobbledollars',                       client: 'required', server: 'required', pin: '2.0.0+Beta-5.1' },
   { slug: 'cobblepedia',                         client: 'required', server: 'required' },
   // PINNED to 2.3.3: its neoforge.mods.toml requires Cobblemon [1.7.0,) — fine for our
   // pinned 1.7.1 — but a future Cobblenav may target Cobblemon 1.8. Pin both sides so
@@ -95,6 +99,16 @@ const CLIENT_MODS = [
   // both sides so a future "latest" Cobbreeding can't drift onto a Cobblemon 1.8
   // build and mismatch the pinned server. Matches modlist.txt cobbreeding:xt8IiPEN.
   { slug: 'cobbreeding',                         client: 'required', server: 'required', pin: '2.2.1' },
+  // Secret Base Trainer — customizable player-made trainer NPCs (Discord req 2026-07-21).
+  // PINNED to 1.14.29: requires cobblemon [1.6,) — fine for our pinned 1.7.1 — but a future
+  // build may target Cobblemon 1.8. Pin both sides so neither drifts off the pinned server.
+  // Matches modlist.txt cobblemon-secret-base-trainer:tutdY3Ij.
+  { slug: 'cobblemon-secret-base-trainer',       client: 'required', server: 'required', pin: '1.14.29' },
+  // rctapi — SBT's required dep, declared side=BOTH, so clients need the jar even though
+  // Modrinth tags it optional/optional. rctmod (the 1500-trainer content pack) is NOT
+  // re-added. PINNED to 0.15.2-beta, the build SBT 1.14.29 was released against.
+  // Matches modlist.txt rctapi:zpphgptV.
+  { slug: 'rctapi',                              client: 'required', server: 'required', pin: '0.15.2-beta' },
   { slug: 'waystones',                           client: 'required', server: 'required' },
   { slug: 'balm',                                client: 'required', server: 'required' }, // waystones dep
   { slug: 'sophisticated-backpacks',             client: 'required', server: 'required', pin: '1.21.1-3.25.65.1955' }, // PINNED — was unpinned & drifted ahead of the client on 2026-06-30; pin both sides. Matches modlist.txt sophisticated-backpacks:y2W0V4fw

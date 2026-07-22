@@ -66,6 +66,11 @@ hash = "6acdf2d4c8add01a15dba0097abe7e0e51bfc9ea608506622e5ee32f44775a9a"
 metafile = true
 
 [[files]]
+file = "mods/cobblemon-secret-base-trainer.pw.toml"
+hash = "038663f821b4df70d9e0e26c4ab9d48d71d9d98483057a2b0a844ee68b545a3f"
+metafile = true
+
+[[files]]
 file = "mods/cobblemonextrastructures.pw.toml"
 hash = "6fd159914772a59c81926ea3cfa06a1e347bcccc73bab097e543f1b135e6b67d"
 metafile = true
@@ -208,6 +213,11 @@ metafile = true
 [[files]]
 file = "mods/pylons.pw.toml"
 hash = "370f75402d55ed882bc5de1dc9966f75392fc2973ab183f937ae0e743c4c82a1"
+metafile = true
+
+[[files]]
+file = "mods/rctapi.pw.toml"
+hash = "a4c4ed54b6f79a8c5a65aa8779c4770c65ac4bb96ae79aad5be9d895e50495d3"
 metafile = true
 
 [[files]]
