@@ -126,7 +126,13 @@ services:
       # live in the REPO instead of hand-edits to gitignored server-data/.
       # Currently: computercraft-server.json raises CC: Tweaked's max monitor size
       # 8x6 -> 20x20 ([term_sizes.monitor] width/height in computercraft-server.toml;
-      # CC's hard cap is 32). NOTE: the rewrite keeps values (incl. the ordered
+      # CC's hard cap is 32); customdiscs-server.json widens the Custom Discs music
+      # zone 64 -> 128 blocks (audio.maxAudibleDistance in world/serverconfig/
+      # customdiscs-server.toml; broadcastRadius 144 keeps the default +16 download
+      # head-start margin). That serverconfig file only generates on the world's
+      # first boot WITH the mod, so the patch lands from the second start onward
+      # (itzg skips patches whose target file is missing).
+      # NOTE: the rewrite keeps values (incl. the ordered
       # garvtunnel http.rules) but strips comments/formatting from the patched toml
       # (itzg docs: "processed output is not pretty").
       PATCH_DEFINITIONS: "/patches"

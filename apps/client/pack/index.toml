@@ -101,6 +101,11 @@ hash = "63eb0b9f9868a15c76487dc16d625dddb19af74ef695ae6049425a05a3fb7d94"
 metafile = true
 
 [[files]]
+file = "mods/customdiscs-mod.pw.toml"
+hash = "3e972fe1a63bbdacac985a9c3cf114a287d33c479fc5606bdcc6a699f15fec45"
+metafile = true
+
+[[files]]
 file = "mods/distanthorizons.pw.toml"
 hash = "e6a792eef5fdf3a380a8668b55e3db4be0faec648d66e82e5b18ca59c50551fd"
 metafile = true
@@ -162,7 +167,7 @@ metafile = true
 
 [[files]]
 file = "mods/jei.pw.toml"
-hash = "201141419236a1b685ee6d82bd3651971e1f2dce8def7b8967bb728b9b9f0cdc"
+hash = "3efa9f089202bf54faba9d438b4d6fe69e2ca41916120a1aeb9c377a1905cafc"
 metafile = true
 
 [[files]]

@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-07-22",
+  "versionId": "2026-07-23",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -291,6 +291,21 @@
       "fileSize": 410690
     },
     {
+      "path": "mods/customdiscs-1.1.0.jar",
+      "hashes": {
+        "sha1": "75fc47b1bd8c329e51150bfead33cbb699bff3c6",
+        "sha512": "32001e6b52d1a03e8b016db8e81bada206dc75b182302223349530a118a2b93f7ed57b1f4a449af65f5ab502288a1f1a89f257e2bfb08a7e698907bde453c51b"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/3sTE0a54/versions/SA03lXMA/customdiscs-1.1.0.jar"
+      ],
+      "fileSize": 550074
+    },
+    {
       "path": "mods/DistantHorizons-3.2.0-b-1.21.1-fabric-neoforge.jar",
       "hashes": {
         "sha1": "df25e8cfe06917963778723a1d9a60610dd21bec",
@@ -471,19 +486,19 @@
       "fileSize": 725742
     },
     {
-      "path": "mods/jei-1.21.1-neoforge-19.39.0.369.jar",
+      "path": "mods/jei-1.21.1-neoforge-19.39.0.370.jar",
       "hashes": {
-        "sha1": "d8733a53161c70e68512de4c4ac412caa1a616cc",
-        "sha512": "23948f0343309c67a720544c2fd0c419f215e66085cb4103c58732b98a628b43b82992bfeca556b1754d2c9e703ab3c29f010411f8dc3eb19b545eacad274242"
+        "sha1": "b6d4e2b65720a50c82a6b4d52e00cefd561604e5",
+        "sha512": "06034b91b03094614bb5ee201a98b210c425c3b15b921f9b46b5ec805de36a2b843aaa35c1fb41e0197fce831244dd40ed7abd33ba77ca71ea4c48dd6d20b9ce"
       },
       "env": {
         "client": "optional",
         "server": "optional"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/5lWKlj9s/jei-1.21.1-neoforge-19.39.0.369.jar"
+        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/P6MOayB0/jei-1.21.1-neoforge-19.39.0.370.jar"
       ],
-      "fileSize": 1635413
+      "fileSize": 1635412
     },
     {
       "path": "mods/kotlinforforge-5.11.0-all.jar",
@@ -848,6 +863,6 @@
   ],
   "dependencies": {
     "minecraft": "1.21.1",
-    "neoforge": "21.1.242"
+    "neoforge": "21.1.243"
   }
 }
