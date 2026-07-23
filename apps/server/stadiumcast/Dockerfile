@@ -21,7 +21,8 @@ RUN git clone --depth 1 --branch "$SANJUUNI_REF" https://github.com/MCJack123/sa
 
 WORKDIR /media
 COPY entrypoint.sh /opt/entrypoint.sh
-RUN chmod +x /opt/entrypoint.sh
+COPY source.sh /opt/source.sh
+RUN chmod +x /opt/entrypoint.sh /opt/source.sh
 # CAST_AUTOSTART=1 (compose) runs the live sanjuuni loop; docker exec still
 # works for ad-hoc jobs (test clips etc.).
 ENTRYPOINT ["/opt/entrypoint.sh"]

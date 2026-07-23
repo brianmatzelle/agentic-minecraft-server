@@ -50,8 +50,15 @@ Stream viewers buy command credits with USDC (HTTP 402) at **https://tv.starting
 - Whole layer: `docker compose restart garviscam` / `stadiumcast` (from `apps/server/`).
 - CC player: `apps/server/garvtunnel/cc -i 10 'os.queueEvent("cc_stop")'` then `CCDEPLOY_ID=10 ccdeploy .claude/skills/cc/examples/jumbotron/jumboplay.lua /jumboplay.lua jumboplay`.
 
+## Bloomberg on the jumbotron (source switch, since 2026-07-23)
+- Flip: `docker exec mc-stadiumcast /opt/source.sh bloomberg` · back: `/opt/source.sh live`. State file `/media/source` (persists across restarts — "live" is the no-file default); the entrypoint loop re-reads it and swaps the pipeline within ~5s.
+- Bloomberg mode: in-container ffmpeg pulls Bloomberg TV's public HLS feed (`https://bloomberg.com/media-manifest/streams/us.m3u8`, from iptv-org's streams.json — same source the ~/projects/active/tv termtv app uses; override via `BLOOMBERG_URL` env) → 10fps/542x414 h264 mpegts → sanjuuni on 127.0.0.1:8181. garviscam's :8180 push just gets refused meanwhile — camloop retries forever, camera + Owncast web stream unaffected.
+- URL dead? Re-resolve: `curl -s https://iptv-org.github.io/api/streams.json | jq -r '.[] | select(.channel == "BloombergTV.us") | .url'`.
+- Logs: `/media/bloomberg.log` (ffmpeg pull) + `/media/live.log` (sanjuuni). KNOW: sanjuuni `-T` encodes frames only as the ws client REQUESTS them — with no jumboplay connected (computer 10's chunk unloaded = camera account offline and nobody at the stadium), sanjuuni sits at `frame 0/0` with the tcp queue backed up. That's idle, not broken; it starts the moment jumboplay connects.
+- Video only — no audio path to the jumbotron.
+
 ## Non-live content (clips on the faces)
-Drop file in `apps/server/stadiumcast/media/`, then in mc-stadiumcast: `pkill -x sanjuuni`, `docker exec -d mc-stadiumcast sh -c 'sanjuuni -i /media/<file> -w 8177 -W 542 -H 414 > /media/clip.log 2>&1'` — jumboplay reconnects by itself. `docker compose restart stadiumcast` returns to live mode.
+Drop file in `apps/server/stadiumcast/media/`, then in mc-stadiumcast: `pkill -x sanjuuni`, `docker exec -d mc-stadiumcast sh -c 'sanjuuni -i /media/<file> -w 8177 -W 542 -H 414 > /media/clip.log 2>&1'` — jumboplay reconnects by itself. `docker exec mc-stadiumcast /opt/source.sh live` returns to camera mode (compose restart alone now resumes whatever `/media/source` says).
 
 ## Gotchas
 - `garviscam/scripts/*` are baked into the image — **rebuild after edits** (`docker compose build garviscam && docker compose up -d garviscam`).

@@ -21,7 +21,19 @@ A real livestream of the running world, drawn on the 5-face CC monitor jumbotron
   server resource-pack prompt (xdotool). MSA session lives in the
   `garviscam-data` volume (one-time `portablemc login <email> --auth-no-browser`).
 - **stadiumcast** (`apps/server/stadiumcast/`): sanjuuni built from source;
-  live loop = listen :8180 for mpegts → serve CC frames on ws :8177.
+  live loop = listen :8180 for mpegts → serve CC frames on ws :8177. The
+  source is switchable since 2026-07-23 (`/opt/source.sh live|bloomberg`,
+  state in `/media/source`, persists across restarts): `bloomberg` swaps the
+  camera feed for Bloomberg TV's public HLS stream
+  (`bloomberg.com/media-manifest/streams/us.m3u8`, found via iptv-org's
+  streams.json like the termtv app; `BLOOMBERG_URL` env overrides) — an
+  in-container ffmpeg downsamples it to 10fps/542x414 (the known-good
+  sanjuuni load, camloop's codec recipe) and pushes mpegts to sanjuuni on
+  127.0.0.1:8181. garviscam's :8180 push gets connection-refused meanwhile
+  (camloop retries forever — camera client and Owncast stream unaffected).
+  Landmine: sanjuuni `-T` encodes only as the ws client REQUESTS frames — no
+  jumboplay connected (stadium chunk unloaded) = sanjuuni parked at
+  `frame 0/0`, ffmpeg's tcp send-queue backed up. Idle, not broken.
 - **jumboplay.lua** (this dir): sanjuuni websocket protocol ("n" is a *rolling*
   head counter in live mode — chase it, jump forward when >2s behind), draws
   every attached monitor, auto-reconnects, `cc_stop`/q to stop. In computer
