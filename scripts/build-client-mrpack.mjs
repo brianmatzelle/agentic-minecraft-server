@@ -16,7 +16,8 @@
 //      NeoForge 1.21.1 build (same "latest compatible" policy itzg uses on the
 //      server, alpha/beta channels included) and grab its primary file's
 //      url + size + sha1/sha512.
-//   2. Resolve the newest NeoForge 21.1.x loader build.
+//   2. Resolve the newest NeoForge 21.1.x loader build that Prism Launcher's
+//      metadata service has actually mirrored (see latestNeoforge below).
 //   3. Write apps/client/modrinth.index.json (human-readable, committed for PR
 //      review) and zip it to apps/client/starting-cc-client.mrpack.
 //   4. Emit apps/client/pack/ in packwiz format (pack.toml + index.toml +
@@ -238,6 +239,21 @@ async function getJSON(url) {
   return r.json();
 }
 
+// Prism Launcher doesn't install loaders from NeoForge's Maven — it installs the
+// component from meta.prismlauncher.org, which mirrors Maven on a lag of hours to
+// days. Pinning the pack to a build Prism hasn't mirrored yet makes EVERY import
+// and update fail with "Could not download metadata for net.neoforged <build>",
+// so we only ever pin a build Prism can actually resolve.
+async function prismNeoforgeBuilds() {
+  try {
+    const idx = await getJSON('https://meta.prismlauncher.org/v1/net.neoforged/index.json');
+    return new Set((idx.versions || []).map((v) => v.version));
+  } catch (e) {
+    console.error(`WARN: Prism meta unreachable (${e.message}) — pinning newest Maven build unchecked`);
+    return null;
+  }
+}
+
 async function latestNeoforge() {
   const r = await fetch(
     'https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml',
@@ -252,7 +268,18 @@ async function latestNeoforge() {
     .filter((x) => Number.isFinite(x.patch))
     .sort((a, b) => a.patch - b.patch);
   if (!builds.length) throw new Error('No NeoForge 21.1.x builds found');
-  return builds[builds.length - 1].v;
+
+  const prism = await prismNeoforgeBuilds();
+  if (!prism) return builds[builds.length - 1].v;
+
+  const usable = builds.filter((b) => prism.has(b.v));
+  if (!usable.length) throw new Error('No NeoForge 21.1.x build is mirrored by meta.prismlauncher.org');
+  const picked = usable[usable.length - 1].v;
+  const newest = builds[builds.length - 1].v;
+  if (picked !== newest) {
+    console.error(`NeoForge ${newest} not yet on meta.prismlauncher.org — pinning ${picked} instead`);
+  }
+  return picked;
 }
 
 function pickFile(version) {
