@@ -1,0 +1,13 @@
+name = "customdiscs-mod"
+filename = "customdiscs-1.1.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/3sTE0a54/versions/SA03lXMA/customdiscs-1.1.0.jar"
+hash-format = "sha512"
+hash = "32001e6b52d1a03e8b016db8e81bada206dc75b182302223349530a118a2b93f7ed57b1f4a449af65f5ab502288a1f1a89f257e2bfb08a7e698907bde453c51b"
+
+[update]
+[update.modrinth]
+mod-id = "3sTE0a54"
+version = "SA03lXMA"
