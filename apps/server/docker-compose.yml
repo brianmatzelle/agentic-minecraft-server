@@ -127,10 +127,13 @@ services:
       # Currently: computercraft-server.json raises CC: Tweaked's max monitor size
       # 8x6 -> 20x20 ([term_sizes.monitor] width/height in computercraft-server.toml;
       # CC's hard cap is 32); customdiscs-server.json widens the Custom Discs music
-      # zone 64 -> 128 blocks (audio.maxAudibleDistance in world/serverconfig/
+      # zone 64 -> 128 blocks (audio.maxAudibleDistance in config/
       # customdiscs-server.toml; broadcastRadius 144 keeps the default +16 download
-      # head-start margin). That serverconfig file only generates on the world's
-      # first boot WITH the mod, so the patch lands from the second start onward
+      # head-start margin). Custom Discs writes that file to /data/config, NOT
+      # /data/world/serverconfig — it registers a COMMON-type config, so it is
+      # world-independent (verified on the live server 2026-07-23; targeting the
+      # serverconfig path made the patch a silent permanent no-op). It generates on
+      # the first boot WITH the mod, so the patch lands from the second start onward
       # (itzg skips patches whose target file is missing).
       # NOTE: the rewrite keeps values (incl. the ordered
       # garvtunnel http.rules) but strips comments/formatting from the patched toml

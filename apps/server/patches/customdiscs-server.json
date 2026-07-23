@@ -1,5 +1,5 @@
 {
-  "file": "/data/world/serverconfig/customdiscs-server.toml",
+  "file": "/data/config/customdiscs-server.toml",
   "ops": [
     {
       "$set": {
