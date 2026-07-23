@@ -266,6 +266,11 @@ hash = "c41d4e6e20ad74aaa0e865f43bb00f096b6d3745314879a2d8d2ae5d4f933a46"
 metafile = true
 
 [[files]]
+file = "mods/sound-physics-remastered.pw.toml"
+hash = "3dc6c2dad8d7f350bf00d94a1caf262a77a7be1aedd8b6c26d9cd693f06cd393"
+metafile = true
+
+[[files]]
 file = "mods/superb-warfare.pw.toml"
 hash = "e3621029343a540d50eb68db0a777507dd4ab407bab3daf270de80f7cf80415c"
 metafile = true

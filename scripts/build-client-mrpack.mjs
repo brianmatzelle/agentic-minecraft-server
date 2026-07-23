@@ -215,6 +215,22 @@ const CLIENT_MODS = [
   // and not needed to connect. NeoForge 1.21.1, latest 3.1.2-b-1.21.1 (beta). No deps.
   // Requested via Discord 2026-06-30.
   { slug: 'distanthorizons',                     client: 'optional', server: 'unsupported' },
+  // ── Audio realism (client-only; server never plays sound → server: 'unsupported') ─
+  // Sound Physics Remastered — reverb, occlusion and per-material absorption for every
+  // sound: jukebox music echoes in a big brick hall, muffles through walls, deadens in
+  // wool. Pure client-side DSP on the local sound engine (Modrinth server_side: optional
+  // is nominal — there's no server half worth running), so like distanthorizons and the
+  // FPS mods it stays OUT of modlist.txt: no server boot risk, no deploy coupling.
+  // client: 'optional' — it's an atmosphere mod, not needed to connect, and players on
+  // weak audio setups (or who just don't want it) can deselect it on import; clients
+  // without it hear vanilla audio and still join fine. Its optional integrations are a
+  // free win here: cloth-config is already shipped above, so the in-game settings screen
+  // works out of the box. PINNED to the tested build (drift-lock, same policy as the
+  // other client-only mods — an unpinned regen would push an unneeded client update for
+  // a cosmetic mod); this is today's newest, so it changes no bytes now.
+  // NeoForge 1.21.1, latest neoforge-1.21.1-1.5.1. No required deps.
+  // Requested via Discord 2026-07-23.
+  { slug: 'sound-physics-remastered',            client: 'optional', server: 'unsupported', pin: 'neoforge-1.21.1-1.5.1' },
 ];
 
 // Server-only mods that must NEVER ship to a client: perf/diagnostic tools plus
