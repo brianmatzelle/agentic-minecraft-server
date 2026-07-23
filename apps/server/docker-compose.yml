@@ -20,7 +20,15 @@ services:
     environment:
       EULA: "TRUE"                              # accepts https://aka.ms/MinecraftEULA
       TYPE: "NEOFORGE"
-      VERSION: "${MC_VERSION:-1.21.1}"          # NeoForge build auto-resolved for this MC version
+      VERSION: "${MC_VERSION:-1.21.1}"          # target MC version
+      # NeoForge loader build. NOT "latest": NeoForge enforces loader-build EQUALITY in
+      # the config handshake — a server on 21.1.243 rejects a 21.1.242 client outright
+      # ("Incompatible client! Please use NeoForge <build>"), so an unpinned server that
+      # drifts to the newest Maven build locks out everyone on the published client pack.
+      # Keep this equal to `dependencies.neoforge` in apps/client/modrinth.index.json,
+      # which the pack builder pins to the newest build meta.prismlauncher.org has
+      # mirrored (Prism can't install a build it hasn't mirrored — see scripts/build-client-mrpack.mjs).
+      NEOFORGE_VERSION: "${NEOFORGE_VERSION:-latest}"
       MEMORY: "${MC_MEMORY:-12G}"               # heap; Aikar flags set Xms=Xmx. 12G is a healthy modded heap on this 128G box (bigger ≠ better — large heaps lengthen GC pauses)
       SEED: "${LEVEL_SEED:-}"                   # <-- custom world seed (blank = random)
       MOTD: "${MC_MOTD:-A NeoForge server, maintained by Garvis}"
