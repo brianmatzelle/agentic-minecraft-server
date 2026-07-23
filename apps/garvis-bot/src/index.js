@@ -40,6 +40,7 @@ import { resolveAction, runAction, catalogMenu, parseClassification, rconExec } 
 import { buildModrinthEmbeds } from './embeds.js';
 import { startInGameBridge, parseIngameClassification } from './ingame.js';
 import { renderSpecToTv, parseTvSpec, extractUrl } from './tv.js';
+import { extractYouTubeUrl, parseChannelAsk, playOnJumbotron, setJumbotronChannel } from './jumbotron.js';
 import { runBodyAction } from './body.js';
 import { startHungerWatcher } from './hunger.js';
 import { startSleepWatcher } from './sleep.js';
@@ -189,6 +190,15 @@ const INGAME_GIVE = (process.env.GARVIS_INGAME_GIVE ?? 'off') !== 'off';
 // a specific CraftOS computer, GARVIS_TV_COMPUTER (default 9). See docs/in-game-garvis.md.
 const INGAME_TV = (process.env.GARVIS_INGAME_TV ?? 'on') !== 'off';
 const TV_COMPUTER = process.env.GARVIS_TV_COMPUTER || '9';
+// In-game JUMBOTRON: paste a YouTube link at Garvis in chat and it plays on the
+// five-face stadium screen (`!g put https://youtu.be/… on the jumbotron`). Unlike
+// the TV above this is a live video pipeline — the stadiumcast sidecar resolves the
+// link with yt-dlp and feeds ffmpeg → sanjuuni → the faces — so it's a deterministic
+// fast path with NO classifier call: a link in the message IS the request. Same
+// public, ungated, cooldown-bounded trust level as tv/body (visible, reversible:
+// "!g put the camera back on the jumbotron"). Off with GARVIS_INGAME_JUMBOTRON=off.
+// Ops runbook: .claude/skills/stream/SKILL.md.
+const INGAME_JUMBOTRON = (process.env.GARVIS_INGAME_JUMBOTRON ?? 'on') !== 'off';
 // In-game BODY: when ON, players can command Garvis's physical body — the camera
 // account playing in the garviscam client with Baritone aboard (`!g come here`,
 // `!g follow me`, `!g stop`, `!g go to -948 85 -147`). Movement = Baritone commands
@@ -629,6 +639,9 @@ function buildInGamePrompt({ question, player }) {
     `- Mod loader: ${SERVER.loader} for Minecraft ${SERVER.mc} (requires ${SERVER.java}).`,
     `- The installed mods are listed in apps/agent/modlist.txt — read it if asked what mods are on the server or how a specific mod works.`,
     `- YOUR BODY: you are NOT chat-only — you have a real player body in the world (you play as ${BODY_ACCOUNT}) that walks, follows, mines, and breaks/places blocks. Players drive it with plain "${INGAME_TRIGGER}" asks: "${INGAME_TRIGGER} come here", "${INGAME_TRIGGER} follow me", "${INGAME_TRIGGER} stay", "${INGAME_TRIGGER} go to <x y z>", "${INGAME_TRIGGER} mine some iron", "${INGAME_TRIGGER} harvest the wheat", "${INGAME_TRIGGER} spectate <player>" (you ghost-attach to that player's view and their POV goes out on the livestream at tv.starting.cc; "${INGAME_TRIGGER} stop" releases it). If asked whether you can mine/dig/come along/watch someone, say YES and offer one of those to try.`,
+    ...(INGAME_JUMBOTRON ? [
+      `- THE JUMBOTRON: the Pokémon stadium has a giant five-face screen that plays real video. Anyone can put a YouTube video on it by pasting the link at you — "${INGAME_TRIGGER} put https://youtu.be/… on the jumbotron" (the link alone works too). It also runs Bloomberg TV ("${INGAME_TRIGGER} bloomberg on the jumbotron") or the live world camera ("${INGAME_TRIGGER} put the camera back on the jumbotron"). Playback is ~4fps and silent — it's a Minecraft monitor, not a cinema. If someone asks for a video, song, or "can you play X", tell them to paste the YouTube link.`,
+    ] : []),
     ...(INGAME_RCON
       ? [
           `- Body limits: the BODY itself (walking/Baritone) won't auto-craft or auto-build, and it won't mine chests/containers or player-placed valuables — that's somebody's stuff.`,
@@ -645,7 +658,7 @@ function buildInGamePrompt({ question, player }) {
       : [
           `- Body limits (be honest about these): you can't BUILD structures or CRAFT on command yet, and you won't mine chests/containers or player-placed valuables — that's somebody's stuff.`,
           ``,
-          `If asked to DO something admin-shaped (op/ban/kick/teleport a player/give items/weather), point them to Discord (@Garvis), where requests and moderation are handled — but do NOT claim to be chat-only: body commands, mod requests ("${INGAME_TRIGGER} add <mod>"), and putting things on the stadium TV all work right here in chat.`,
+          `If asked to DO something admin-shaped (op/ban/kick/teleport a player/give items/weather), point them to Discord (@Garvis), where requests and moderation are handled — but do NOT claim to be chat-only: body commands, mod requests ("${INGAME_TRIGGER} add <mod>"), putting things on the stadium TV, and playing a YouTube link on the stadium jumbotron all work right here in chat.`,
         ]),
     ``,
     `THE PLAYER'S MESSAGE:`,
@@ -747,6 +760,9 @@ function buildWhisperPrompt({ question, player }) {
     `- Mod loader: ${SERVER.loader} for Minecraft ${SERVER.mc} (requires ${SERVER.java}).`,
     `- The installed mods are listed in apps/agent/modlist.txt — read it if asked what mods are on the server or how a specific mod works.`,
     `- YOUR BODY: you are NOT chat-only — you have a real player body in the world (you play as ${BODY_ACCOUNT}) that walks, follows, mines, breaks/places blocks, and can spectate a player (their POV goes out on the livestream). Body commands only run from the PUBLIC trigger, so if they ask whether you can mine, come along, or watch them play, say YES and point them at "${INGAME_TRIGGER} mine some iron", "${INGAME_TRIGGER} come here", or "${INGAME_TRIGGER} spectate <name>".`,
+    ...(INGAME_JUMBOTRON ? [
+      `- THE JUMBOTRON: the Pokémon stadium's giant five-face screen plays real video — pasting a YouTube link at the PUBLIC trigger ("${INGAME_TRIGGER} <link>") puts it up there (silent, ~4fps). Also runs Bloomberg TV or the live world camera. Point them at the public trigger; whispers can't drive it.`,
+    ] : []),
     ``,
     `If asked to DO something that changes the server (op/ban/give/add a mod/etc.), explain whispers are chat-only and point them to the public "${INGAME_TRIGGER}" trigger or Discord (@Garvis).`,
     ``,
@@ -888,6 +904,29 @@ async function onInGameMessage({ player, message, reply, trigger }) {
   // logTurn is best-effort + fire-and-forget (see convlog.js) — called AFTER the reply so
   // it never delays the player and a down Postgres can't break the `!g` path.
   const base = { source: 'minecraft', server: MC_CONTAINER, trigger: INGAME_TRIGGER, player, request: q };
+
+  // JUMBOTRON — a YouTube link (or an explicit channel ask) drives the stadium
+  // screen. Checked BEFORE the classifier: pasting a link is unambiguous, and it
+  // costs no model call. A video link would be useless on the small TV anyway —
+  // that path can only paint a still image or the URL as text.
+  if (INGAME_JUMBOTRON) {
+    const link = extractYouTubeUrl(q);
+    const channel = link ? null : parseChannelAsk(q);
+    if (link || channel) {
+      await reply('📺 one sec — cueing up the jumbotron…', { target: player });
+      let out;
+      try {
+        out = link ? await playOnJumbotron({ url: link, player }) : await setJumbotronChannel(channel, { player });
+      } catch (e) {
+        console.error(`[ingame] jumbotron ${player}: ${e.message}`);
+        out = { ok: false, text: 'I hit a snag with the jumbotron — give it another go in a moment.' };
+      }
+      await reply(out.text, out.ok ? {} : { target: player });   // success public (@a); errors private
+      console.log(`[ingame] jumbotron ${out.ok ? 'OK' : 'FAIL'} ${player}: ${link || channel}`);
+      logTurn({ ...base, intent: 'jumbotron', response: out.text, success: out.ok, metadata: { jumbotron: link || channel } });
+      return;
+    }
+  }
 
   // A `give` (live rcon action, like Discord moderation → independent of dispatch mode)
   // or a mod request (drives the maint agent → needs CAN_ACT)? One classifier call drives
