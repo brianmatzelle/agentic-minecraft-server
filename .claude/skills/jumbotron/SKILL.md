@@ -50,7 +50,7 @@ Stream viewers buy command credits with USDC (HTTP 402) at **https://tv.starting
 - Whole layer: `docker compose restart garviscam` / `stadiumcast` (from `apps/server/`).
 - CC player: `apps/server/garvtunnel/cc -i 10 'os.queueEvent("cc_stop")'` then `CCDEPLOY_ID=10 ccdeploy .claude/skills/cc/examples/jumbotron/jumboplay.lua /jumboplay.lua jumboplay`.
 
-## Bloomberg on the jumbotron (source switch, since 2026-07-23)
+## Bloomberg on the jumbotron (source switch, since 2026-07-23 — dedicated skill: `/stream`)
 - Flip: `docker exec mc-stadiumcast /opt/source.sh bloomberg` · back: `/opt/source.sh live`. State file `/media/source` (persists across restarts — "live" is the no-file default); the entrypoint loop re-reads it and swaps the pipeline within ~5s.
 - Bloomberg mode: in-container ffmpeg pulls Bloomberg TV's public HLS feed (`https://bloomberg.com/media-manifest/streams/us.m3u8`, from iptv-org's streams.json — same source the ~/projects/active/tv termtv app uses; override via `BLOOMBERG_URL` env) → 10fps/542x414 h264 mpegts → sanjuuni on 127.0.0.1:8181. garviscam's :8180 push just gets refused meanwhile — camloop retries forever, camera + Owncast web stream unaffected.
 - URL dead? Re-resolve: `curl -s https://iptv-org.github.io/api/streams.json | jq -r '.[] | select(.channel == "BloombergTV.us") | .url'`.
