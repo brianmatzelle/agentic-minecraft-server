@@ -1,0 +1,17 @@
+{
+  "file": "/data/world/serverconfig/customdiscs-server.toml",
+  "ops": [
+    {
+      "$set": {
+        "path": "$.audio.maxAudibleDistance",
+        "value": 128.0
+      }
+    },
+    {
+      "$set": {
+        "path": "$.audio.broadcastRadius",
+        "value": 144.0
+      }
+    }
+  ]
+}
