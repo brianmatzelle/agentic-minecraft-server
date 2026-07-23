@@ -53,6 +53,12 @@ const REPO_ROOT = resolve(__dirname, '../..');
 const RCON_BIN_DIR = resolve(__dirname, '../bin');
 const INSTALL_GUIDE = resolve(REPO_ROOT, 'docs/windows-client-install.md');
 
+// The model behind EVERY agent turn (in-game `!g`, Discord Q&A, maintenance). Pinned
+// on the spawn rather than inherited from ~/.claude/settings.json, so flipping the
+// owner's global `/config` model can't silently move Garvis onto a different brain.
+// `opus` is an alias — it always resolves to the current Opus.
+const CLAUDE_MODEL = process.env.GARVIS_CLAUDE_MODEL || 'opus';
+
 // The maintenance agent works in an ISOLATED clone, never the live REPO_ROOT, so a
 // spawned `claude` can branch/commit/push without colliding with anyone editing the
 // real repo. Defaults to a sibling checkout; override with GARVIS_AGENT_WORKDIR.
@@ -351,7 +357,7 @@ function onCooldown(userId, ms = COOLDOWN_MS, ns = 'agent') {
 // sessionId, timedOut}.
 function runClaude(prompt, { resume = null, timeoutMs = HELP_TIMEOUT_MS, maxTurns = HELP_TURNS, cwd = REPO_ROOT, openshell = false, gitAuthor = null, rcon = false } = {}) {
   return new Promise((done) => {
-    const claudeArgs = ['-p', '--output-format', 'json', '--max-turns', String(maxTurns)];
+    const claudeArgs = ['-p', '--output-format', 'json', '--model', CLAUDE_MODEL, '--max-turns', String(maxTurns)];
     if (resume) claudeArgs.push('--resume', resume);
     // Keep this LAST: --disallowedTools is variadic and consumes the patterns that
     // follow it, so nothing else may come after on the arg list.
