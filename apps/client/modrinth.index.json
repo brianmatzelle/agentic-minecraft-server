@@ -456,6 +456,21 @@
       "fileSize": 368598
     },
     {
+      "path": "mods/immersive_portals-6.0.7-all.jar",
+      "hashes": {
+        "sha1": "cfbeca890b281fec20a5c94d6673effb37127129",
+        "sha512": "c4b5ce9f5b3f9030cf836adef613e073036b04bbe77f07978872165c142ec88fb8d726ba6e90afd8907b8f5e868b00e0a0efa7613f32c402fcb93ed082a0f828"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/zf4Szzx2/versions/HbBv6YVB/immersive_portals-6.0.7-all.jar"
+      ],
+      "fileSize": 1864746
+    },
+    {
       "path": "mods/iris-neoforge-1.8.14-beta.1+mc1.21.1.jar",
       "hashes": {
         "sha1": "1bd129cf7bce65d6b1c0543045f0620c98a0f885",
@@ -679,6 +694,21 @@
         "https://cdn.modrinth.com/data/og4KPYmA/versions/E7JIkQhi/pointblank-neoforge-1.21-1.11.1.jar"
       ],
       "fileSize": 17553459
+    },
+    {
+      "path": "mods/portalgun-6.1.3+1.21.1.jar",
+      "hashes": {
+        "sha1": "3804d386f2b5c8c7303f799e00be8f9ad430d030",
+        "sha512": "f659fb688651ffd7322f17c39e1a2a425c3ee0e66835cf037ed0cae648d70c118ee2abcece1c6fb9a713cdeeb9b64c4a66bab30032c7eea825332552f2ae3da7"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/DLL5bjA1/versions/bgCWZLZE/portalgun-6.1.3%2B1.21.1.jar"
+      ],
+      "fileSize": 770787
     },
     {
       "path": "mods/pylons-1.21.1-5.4.2.jar",
