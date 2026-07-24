@@ -136,6 +136,9 @@ const CLIENT_MODS = [
   { slug: 'curios',                              client: 'required', server: 'required' }, // superb-warfare dep (accessory slots)
   // ── Portal gun (Discord req 2026-07-24) — content mod, required client-side; geckolib dep already above ─
   { slug: 'aperture-innovations',                client: 'required', server: 'required' }, // Aperture Innovations — Portal 1/2 portal gun
+  // ── See-through portal gun (Discord req 2026-07-24) — content mod, required client-side; geckolib+cloth-config deps already above ─
+  { slug: 'immersive-portal-gun-for-forge',      client: 'required', server: 'required' }, // Immersive Portal Gun — see-through Portal-style portals
+  { slug: 'immersive-portals-neoforge',          client: 'required', server: 'required' }, // rendering engine that makes portals see-through (Immersive Portal Gun dep)
   // ── Tech, storage & villager QoL (Discord req 2026-06-28) — content mods, required client-side ─
   { slug: 'mekanism',                            client: 'required', server: 'required' },
   { slug: 'mekanism-generators',                 client: 'required', server: 'required' }, // mekanism addon
