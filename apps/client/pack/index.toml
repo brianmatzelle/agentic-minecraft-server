@@ -156,16 +156,6 @@ hash = "a33ca4f92283e7545bc2e336c1142f8087c1e4ad5b8f5acc869ea34823e9ad5d"
 metafile = true
 
 [[files]]
-file = "mods/immersive-portal-gun-for-forge.pw.toml"
-hash = "8386f880fce647321640c16d1d272ee22bda0056fcd5a3f34aee9c2e6400ab1b"
-metafile = true
-
-[[files]]
-file = "mods/immersive-portals-neoforge.pw.toml"
-hash = "10479755939cb3bd246e1a4ada3eb3dc4767a9b54028cfaf8992bf6334fac070"
-metafile = true
-
-[[files]]
 file = "mods/iris.pw.toml"
 hash = "d428012929f4681f677b599da5d850b43b8ac3d17341a217f06a7a4e3d8f6894"
 metafile = true
