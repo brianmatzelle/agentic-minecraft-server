@@ -1,0 +1,13 @@
+name = "aperture-innovations"
+filename = "aperture_innovations-neoforge-2.1.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/GsmkmPdY/versions/izlbCbqe/aperture_innovations-neoforge-2.1.1.jar"
+hash-format = "sha512"
+hash = "6ede7a3571b80454d4dd7800ffd8fe28ee6deb9e642879dbd87fbaa263a30cae7bbda888666f9b821c06bc6ea8ab2298991bb1ae52b95ba250132c8f9d5a127d"
+
+[update]
+[update.modrinth]
+mod-id = "GsmkmPdY"
+version = "izlbCbqe"

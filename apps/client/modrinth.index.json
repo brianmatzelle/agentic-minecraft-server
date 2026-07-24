@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-07-23",
+  "versionId": "2026-07-24",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -36,19 +36,34 @@
       "fileSize": 936602
     },
     {
-      "path": "mods/architectury-13.0.8-neoforge.jar",
+      "path": "mods/aperture_innovations-neoforge-2.1.1.jar",
       "hashes": {
-        "sha1": "6ca11d3cc136bf69bb8f4d56982481eb85b5100b",
-        "sha512": "65e3664953385d880320dd6bb818bcb96d361c07c53e2a7f65e64c6a47720ee26b233224ae9cad465ef0b2bbaefdaf30fb0175a983cecd91de058817d6fcf57e"
+        "sha1": "38568a44bfc3d20dfc2815a15cca955d8c926293",
+        "sha512": "6ede7a3571b80454d4dd7800ffd8fe28ee6deb9e642879dbd87fbaa263a30cae7bbda888666f9b821c06bc6ea8ab2298991bb1ae52b95ba250132c8f9d5a127d"
       },
       "env": {
         "client": "required",
         "server": "required"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/lhGA9TYQ/versions/ZxYGwlk0/architectury-13.0.8-neoforge.jar"
+        "https://cdn.modrinth.com/data/GsmkmPdY/versions/izlbCbqe/aperture_innovations-neoforge-2.1.1.jar"
       ],
-      "fileSize": 584004
+      "fileSize": 1367526
+    },
+    {
+      "path": "mods/architectury-13.0.11-neoforge.jar",
+      "hashes": {
+        "sha1": "008656a0702801174b8ec245ed7aad1921d6e9f1",
+        "sha512": "d9f7c3bb8162577dfb461ffdf04bd6a3563c7586934a0e2a744c14421beffb8286f0d88d4c758317003f20f99fe8072a39b9d675af061e036970d36db36027f0"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/lhGA9TYQ/versions/1IiqEQGl/architectury-13.0.11-neoforge.jar"
+      ],
+      "fileSize": 584734
     },
     {
       "path": "mods/athena-neoforge-1.21.1-4.0.6.jar",

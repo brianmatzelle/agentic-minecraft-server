@@ -134,6 +134,8 @@ const CLIENT_MODS = [
   // ── Tanks & military vehicles (Discord req 2026-07-21) — content mod, required client-side ─
   { slug: 'superb-warfare',                      client: 'required', server: 'required' }, // Superb Warfare — tanks, helicopters, artillery, drones
   { slug: 'curios',                              client: 'required', server: 'required' }, // superb-warfare dep (accessory slots)
+  // ── Portal gun (Discord req 2026-07-24) — content mod, required client-side; geckolib dep already above ─
+  { slug: 'aperture-innovations',                client: 'required', server: 'required' }, // Aperture Innovations — Portal 1/2 portal gun
   // ── Tech, storage & villager QoL (Discord req 2026-06-28) — content mods, required client-side ─
   { slug: 'mekanism',                            client: 'required', server: 'required' },
   { slug: 'mekanism-generators',                 client: 'required', server: 'required' }, // mekanism addon
