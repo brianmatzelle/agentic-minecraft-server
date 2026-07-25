@@ -10,8 +10,11 @@ A real livestream of the running world, drawn on the 5-face CC monitor jumbotron
 │ headless modded MC client      │ ──tcp────▶  │ sanjuuni -T live      │ ──:8177────▶  │ jumboplay.lua │
 │ (fat_balls_addict, spectator   │   :8180     │ encode → CC frames    │  (CC http     │ blits to all  │
 │ over the field) under Xvfb;    │             │ (542x414, ~5fps)      │   allow-rule) │ monitor faces │
-│ ffmpeg x11grab 10fps           │             └───────────────────────┘               └───────────────┘
-└────────────────────────────────┘
+│ ffmpeg x11grab 10fps           │             │                       │               │       +       │
+└────────────────────────────────┘             │ channels.js ctl API   │ ◀──:8178────  │ channel picker│
+                                               └───────────────────────┘   http GET    └───────────────┘
+                                                  │ tune (fixed argv)
+                                                  ▼ source.sh live|bloomberg|youtube <url>|channel <id>
 ```
 
 - **garviscam** (`apps/server/garviscam/`): portablemc + NeoForge client + the
@@ -40,10 +43,42 @@ A real livestream of the running world, drawn on the 5-face CC monitor jumbotron
   the ffmpeg→sanjuuni hop must NOT be a TCP port — a video ending restarts the
   pair within seconds and the old connection's TIME_WAIT blocks the rebind
   ("Connection refused" on a ~60s loop), which is why it's a FIFO.
+- **channels.js** (`apps/server/stadiumcast/channels.js`, 2026-07-25): the TV
+  catalog + the `:8178` control API the in-game picker tunes through. `source.sh
+  channel <id-or-name>` is now a first-class mode next to live/bloomberg/youtube,
+  which makes "bloomberg mode" retroactively just one channel out of ~10.5k.
+  This is a port of the ONLY part of the owner's termtv app
+  (`~/projects/active/tv`) that this stack didn't already have: its data layer
+  (`channels.py` + `curated.py` — fetch iptv-org channels.json + streams.json,
+  merge, cache 6h, resolve a 19-entry hand-vetted grid out of the long tail).
+  termtv's other two layers are already covered here — its render layer
+  (`video_widget.py` + the `_octant_ext` C/CUDA sub-cell classifier) is what
+  sanjuuni does for CC, and its player layer (`mpv_pty.py`) is what ffmpeg does.
+  Nothing was rewritten in Lua. Two things it does that termtv doesn't, because
+  the faces are a harsher target than a terminal: it carries each stream's
+  `user_agent`/`referrer` into ffmpeg (some CDNs 403 without them) and picks the
+  variant nearest 542x414 instead of `streams[0]`. Endpoints: `/channels`
+  (curated grid + what's on), `/search?q=`, `/tune?id=|?mode=`, `/now`,
+  `/health`, `/refresh`. Two deliberate shapes: the index build runs as a
+  SHORT-LIVED child (`node channels.js build`) because parsing the 11MB upstream
+  catalog peaks at a few hundred MB and this container is capped at 2g next to
+  sanjuuni's frame store; and `/tune` shells into source.sh with fixed argv, so
+  the container stays the only thing that touches ffmpeg/ffprobe.
 - **jumboplay.lua** (this dir): sanjuuni websocket protocol ("n" is a *rolling*
   head counter in live mode — chase it, jump forward when >2s behind), draws
   every attached monitor, auto-reconnects, `cc_stop`/q to stop. In computer
-  10's startup.lua.
+  10's startup.lua. Since 2026-07-25 it also hosts the **channel picker** as a
+  second coroutine under the same `parallel.waitForAny` — the video path is
+  unchanged and degrades independently (control API unreachable = the menu says
+  so, the faces keep playing). Two surfaces, one list: this computer's terminal
+  (arrows + enter, `/` searches the full catalog, `c` = camera, `q` = quit) and
+  an optional touch "guide" monitor. Monitors are classified by SIZE — the modal
+  size is the video wall, anything else becomes the guide — so placing a small
+  monitor on computer 10 (or its wired network) turns it into a tappable channel
+  board with no config change; with only the 5 identical faces attached the
+  picker is keyboard-only. The terminal is the menu now, so stream health shows
+  as a measured-fps badge in the header instead of scrolling prints, and a 5s
+  tick re-reads `/now` so a tune from chat or the CLI can't leave it stale.
 
 ## Camera control (host-side, via RCON)
 ```bash
@@ -142,6 +177,33 @@ owncast's 8088 binding is 127.0.0.1-only:
   the join happened (`rcon-cli list`), don't trust the flag.
 - FML's early-loading window wedges headless GL: `earlyWindowControl=false`.
 - CC:T http rule for `stadiumcast` (above the `$private` deny) hot-reloads on
-  save — no server restart.
+  save — no server restart. It matches by HOST with no port, so the picker's
+  `http.get` to `:8178` was already covered by the rule the ws stream uses; the
+  control API needed no config change at all.
+- The iptv-org long tail is mostly junk — dead, geo-blocked, or audio-only. That
+  is WHY the curated grid exists and why `source.sh channel` ffprobe-vets before
+  it flips: a channel that fails after the flip has already blanked a screen that
+  was playing fine. Verified 2026-07-25 — a refused pick leaves the previous
+  channel up and returns the reason to the player. `cartoon network` simply isn't
+  in the catalog (no free stream); that's data, not a bug.
+- A channel's stream URL is re-resolved AND re-probed on every supervisor loop,
+  not cached at tune time: iptv-org lists many variants per channel (25 for
+  Bloomberg), they rotate, and `--probe` returns the best-ranked one that plays
+  right now — so a variant dying mid-play heals into the next-best instead of
+  looping on a corpse. The legacy `bloomberg` mode is kept as its own pinned feed
+  so the `BLOOMBERG_URL` override keeps working.
+- **A VALID STREAM IS NOT NECESSARILY THE CHANNEL** (cost a debugging round on
+  2026-07-25). ffprobe can only answer "is there decodable video here", and an ad
+  slate answers yes. Two kinds of impostor sit in the catalog: Pluto TV
+  (`jmp2.uk/plu-…`) URLs that serve a "pluto tv" bumper, and broadcaster
+  per-event feeds (`*-event.m3u8`) that hold a slate when no event is on. Both
+  probe clean. The first symptom is a player reporting "I picked a channel and
+  the screen didn't change" — a near-static dark frame on the faces reads exactly
+  like a frozen screen. Mitigation is in `rankStreams`, NOT in the probe: labelled
+  quality beats unlabelled (the impostors are usually untagged), non-event beats
+  event, then nearest 720p, then upstream order. Regression that caused it:
+  scoring unlabelled as "neutral ~540" promoted two Pluto URLs above every real
+  720p feed and pushed `bloomberg.com/…/us.m3u8` to position 16. Don't treat
+  unknown quality as average.
 - Editing scripts under `garviscam/scripts/` requires an image rebuild — they
   are COPY'd in (a stale-script launch cost us a silent no-join once).

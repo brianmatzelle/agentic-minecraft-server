@@ -41,7 +41,13 @@ WORKDIR /media
 COPY entrypoint.sh /opt/entrypoint.sh
 COPY source.sh /opt/source.sh
 COPY ytdlp-args.sh /opt/ytdlp-args.sh
-RUN chmod +x /opt/entrypoint.sh /opt/source.sh
+# channels.js — iptv-org catalog + the :8178 control API the in-game picker
+# tunes through. Node stdlib only (nodejs is already here for yt-dlp), so there
+# is nothing to npm-install.
+COPY channels.js /opt/channels.js
+RUN chmod +x /opt/entrypoint.sh /opt/source.sh /opt/channels.js
+# 8177 = sanjuuni frames (ws), 8178 = channel control API. Both internal-only.
+EXPOSE 8177 8178
 # CAST_AUTOSTART=1 (compose) runs the live sanjuuni loop; docker exec still
 # works for ad-hoc jobs (test clips etc.).
 ENTRYPOINT ["/opt/entrypoint.sh"]

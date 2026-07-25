@@ -5,6 +5,9 @@
 #   live            — sanjuuni listens on :8180 for the garviscam mpegts push
 #   bloomberg       — in-container ffmpeg pulls Bloomberg TV's public HLS feed
 #   youtube <url>   — yt-dlp resolves the link, ffmpeg pulls it (see YT_FPS below)
+#   channel <id>    — any iptv-org channel; channels.js owns the catalog and
+#                     re-resolves the URL on every loop (they rotate), and also
+#                     serves the control API the in-game picker tunes through
 # Both pulled modes downsample to 542x414 (same codec recipe as camloop's push)
 # and push mpegts to sanjuuni on 127.0.0.1:8181; garviscam's :8180 push just gets
 # connection-refused meanwhile — camloop already retries forever.
@@ -26,6 +29,10 @@ BLOOMBERG_URL="${BLOOMBERG_URL:-https://bloomberg.com/media-manifest/streams/us.
 # So encode just UNDER the draw ceiling and let ffmpeg's -re be the clock: 3fps in,
 # ~3.2fps of drawing capacity, playback lands at real time.
 YT_FPS="${YT_FPS:-3}"
+# Catalog channels are live HLS like Bloomberg, so the same 10fps applies: when
+# the encoder outruns the faces the demuxer just skips to the live edge. Only
+# VODs need the under-the-ceiling treatment above.
+CHANNEL_FPS="${CHANNEL_FPS:-10}"
 # Prefer an already-muxed (or video-only) ≤720p format: no merge needed, and the
 # faces are 542x414 anyway. Audio is dropped regardless — the monitors are silent.
 YT_FORMAT="${YT_FORMAT:-b[height<=720]/bv*[height<=720]/b/bv*}"
@@ -148,6 +155,25 @@ if [ "${CAST_AUTOSTART:-0}" = "1" ]; then
         bloomberg)
           pull_to_sanjuuni "$BLOOMBERG_URL" 10 /media/bloomberg.log
           ;;
+        channel)
+          # Re-resolved (and re-probed) every loop on purpose: catalog URLs rotate,
+          # and --probe picks the best-ranked variant that is playable RIGHT NOW, so
+          # a variant dying mid-play heals into the next-best one instead of looping
+          # on a corpse. Some CDNs 403 without the stream's own user_agent/referrer,
+          # so carry those into ffmpeg as input options.
+          if ! URLLINE=$(node /opt/channels.js url "$ARG" --probe 2>>/media/channels.log); then
+            echo "[cast] no playable stream for channel '$ARG' — retrying in 30s (see /media/channels.log)" >> /media/live.log
+            sleep 30
+            continue
+          fi
+          IFS=$'\t' read -r CH_URL CH_UA CH_REF <<EOF
+$URLLINE
+EOF
+          CH_ARGS=()
+          if [ -n "${CH_UA:-}" ]; then CH_ARGS+=(-user_agent "$CH_UA"); fi
+          if [ -n "${CH_REF:-}" ]; then CH_ARGS+=(-headers "$(printf 'Referer: %s\r\n' "$CH_REF")"); fi
+          pull_to_sanjuuni "$CH_URL" "$CHANNEL_FPS" /media/channel.log "${CH_ARGS[@]}"
+          ;;
         youtube)
           STREAM=$(resolve_yt "$ARG")
           if [ -z "$STREAM" ]; then
@@ -182,4 +208,15 @@ if [ "${CAST_AUTOSTART:-0}" = "1" ]; then
     done
   ) &
 fi
+
+# Channel catalog + control API (:8178, internal compose network only — nothing
+# published). This is what the in-game picker in jumboplay.lua talks to: it
+# serves the curated grid + search over the ~8.5k-channel iptv-org catalog and
+# shells back into source.sh to tune. It builds/refreshes the index on demand in
+# a short-lived child process, so the 11MB catalog parse never lives in a
+# long-running RSS next to sanjuuni's frame store.
+if [ "${CAST_CTL:-1}" = "1" ]; then
+  node /opt/channels.js serve >> /media/channels.log 2>&1 &
+fi
+
 exec tail -f /dev/null

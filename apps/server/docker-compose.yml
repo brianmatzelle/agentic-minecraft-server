@@ -327,6 +327,9 @@ services:
   # Idles until the host launches an encode/serve job via `docker exec` — a
   # sanjuuni WebSocket server on :8177 that in-game computer 10 pulls frames
   # from (ws://stadiumcast:8177, internal network only, nothing published).
+  # Also serves the channel control API on :8178 (channels.js) — the in-game
+  # picker in jumboplay.lua GETs the catalog and tunes through it; the existing
+  # per-HOST allow-rule below covers it, no port rule needed.
   # PREREQUISITE: CC http allow-rule for host "stadiumcast" ABOVE the
   # "$private" deny in server-data/config/computercraft-server.toml (NeoForge
   # hot-reloads it — no restart). ./stadiumcast/media is mounted for clips; the
@@ -346,6 +349,7 @@ services:
     memswap_limit: 2g
     environment:
       CAST_AUTOSTART: "1"                       # live sanjuuni loop (:8180 in, :8177 ws out)
+      CAST_CTL: "1"                             # channel catalog + control API on :8178
     volumes:
       - ./stadiumcast/media:/media
 
