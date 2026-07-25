@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "2026-07-24",
+  "versionId": "2026-07-25",
   "name": "mc.starting.cc — Cobblemon + Create (NeoForge 1.21.1)",
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
@@ -501,19 +501,19 @@
       "fileSize": 725742
     },
     {
-      "path": "mods/jei-1.21.1-neoforge-19.39.0.370.jar",
+      "path": "mods/jei-1.21.1-neoforge-19.39.0.371.jar",
       "hashes": {
-        "sha1": "b6d4e2b65720a50c82a6b4d52e00cefd561604e5",
-        "sha512": "06034b91b03094614bb5ee201a98b210c425c3b15b921f9b46b5ec805de36a2b843aaa35c1fb41e0197fce831244dd40ed7abd33ba77ca71ea4c48dd6d20b9ce"
+        "sha1": "8d9995a181fc24890a5a90cbbb9e45fd86d4641e",
+        "sha512": "83bc3719de5f93183ea3e9355e4f4b335d22c807efb1fdefd3db0bcdc037dffa4abdda612f576c950130e4a9d33f334f57d9dffba4855acbb81768fb28b22ffb"
       },
       "env": {
         "client": "optional",
         "server": "optional"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/P6MOayB0/jei-1.21.1-neoforge-19.39.0.370.jar"
+        "https://cdn.modrinth.com/data/u6dRKJwZ/versions/TMNM8nwH/jei-1.21.1-neoforge-19.39.0.371.jar"
       ],
-      "fileSize": 1635412
+      "fileSize": 1572695
     },
     {
       "path": "mods/kotlinforforge-5.11.0-all.jar",
@@ -861,19 +861,19 @@
       "fileSize": 85732
     },
     {
-      "path": "mods/waystones-neoforge-1.21.1-21.1.37.jar",
+      "path": "mods/waystones-neoforge-1.21.1-21.1.38.jar",
       "hashes": {
-        "sha1": "ffada9b8b212102d7bdd006f773ac0b29c5b815c",
-        "sha512": "d9e90a81376393b4aecd19f527dc68f44908ed0f5cb26b2e3236cdc0373b661225a5365cd448c622c112460a6d005480c14349aa6b1050138f2582261b355595"
+        "sha1": "19e70d41c936ac6cda1da429d117376fba28c98e",
+        "sha512": "56dc6f6d220106338b5f3825de9e2f3379eeebaaf52120adfcfbedabae068af2cc502349d05c0ed1d798926659eae31b37875bd6b07c49e648f0b9914376d2cb"
       },
       "env": {
         "client": "required",
         "server": "required"
       },
       "downloads": [
-        "https://cdn.modrinth.com/data/LOpKHB2A/versions/az73Oero/waystones-neoforge-1.21.1-21.1.37.jar"
+        "https://cdn.modrinth.com/data/LOpKHB2A/versions/OL8Mnbav/waystones-neoforge-1.21.1-21.1.38.jar"
       ],
-      "fileSize": 1201931
+      "fileSize": 1207581
     }
   ],
   "dependencies": {

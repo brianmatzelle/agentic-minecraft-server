@@ -172,7 +172,7 @@ metafile = true
 
 [[files]]
 file = "mods/jei.pw.toml"
-hash = "3efa9f089202bf54faba9d438b4d6fe69e2ca41916120a1aeb9c377a1905cafc"
+hash = "01bb40ab2933a5ef1862b409d2f6fe3fc00f6a9972637990b44d00de09194fff"
 metafile = true
 
 [[files]]
@@ -287,5 +287,5 @@ metafile = true
 
 [[files]]
 file = "mods/waystones.pw.toml"
-hash = "7584c74952bd2f3950fb925bb2f292500dbf5fdbe1d86e3d79cdd3ee8bfa412c"
+hash = "44ea22d63e7303130ebe6d01372cbd18f9a0a32806b51459d05960bd024400ca"
 metafile = true
