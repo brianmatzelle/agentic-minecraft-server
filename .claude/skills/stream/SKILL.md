@@ -24,12 +24,14 @@ Deliberately NOT wired into the paid stream-chat path (`streamchat.js`) — toll
 
 ## Status / verify
 - Frame counter: `docker exec mc-stadiumcast sh -c 'tr "\r" "\n" < /media/live.log | tail -1'` — ADVANCING = jumboplay is connected and the faces are drawing (~3-4fps).
-- **`frame 0/0` forever = IDLE, not broken**: sanjuuni `-T` encodes frames only as the ws client REQUESTS them. No jumboplay connected → no encode, and the writer backs up harmlessly. It starts the moment jumboplay connects.
+- **Nobody watching = 0 procs, and that is HEALTHY.** Since the 2026-07-24 leak fix the pipeline duty-cycles: up ~30s to offer a connection, and if no ws client attaches it tears down and parks 45s (an unwatched `-T` sanjuuni frees nothing and grew to 94 GiB RSS, taking the host down). So with an empty stadium the normal signature is BOTH procs absent, `[cast] no viewer after 30s — parking the feed` repeating in live.log, and the pull log ending in `Broken pipe` / `Error writing trailer` — that is the last probe window's teardown, not a crash. **Don't escalate on it.** The feed lights up within ~45s of a player looking at the screen (jumboplay retries every 3s).
+- Viewer state: `docker exec mc-stadiumcast sh -c 'tr "\r" "\n" < /media/live.log | grep "\[cast\]" | tail -5'` — `no viewer`/`viewer left` = parked; silence + an advancing frame counter = someone is watching.
 - What's up: `docker exec mc-stadiumcast sh -c 'cat /media/source; cat /media/now-playing'`.
 - Pull logs: `/media/youtube.log` (yt-dlp + ffmpeg) · `/media/bloomberg.log`. "corrupt input packet" / "timestamp discontinuity" on a live feed is normal live-edge noise, not failure.
-- Procs: `docker exec mc-stadiumcast sh -c 'pgrep -x sanjuuni; pgrep -x ffmpeg'` (pulled modes = both; live mode = sanjuuni only).
+- Procs: `docker exec mc-stadiumcast sh -c 'pgrep -x sanjuuni; pgrep -x ffmpeg'` — with a viewer attached, pulled modes = both, live mode = sanjuuni only; with no viewer, neither (see above).
 
 ## Jumbotron blank/frozen? (escalate in order)
+0. **Is anyone actually watching?** If the report is "it looks dead" from the CLI rather than from a player standing at the screen, stop — see the duty-cycle bullet above. Parked ≠ broken.
 1. **Chunk loaded?** The jumbotron only runs while computer 10's chunk is loaded. Stadium is forceloaded since 2026-07-23 (`forceload add -970 -170 -920 -130`, 11 chunks; check: `docker exec mc-neoforge rcon-cli "forceload query -948 -147"`; revert = `forceload remove` same args).
 2. **Computer on?** `docker exec mc-neoforge rcon-cli "computercraft dump"` — LANDMINE: it reports computer 10 at (20481031, 122, 20485130); that's a Sable sub-level coordinate-space artifact, NOT a stolen computer — it's physically at the stadium with its 5 monitors. Boot it remotely: `rcon-cli "computercraft turn-on 10"`.
 3. **jumboplay running?** `apps/server/garvtunnel/cc -s` should list id 10. Restart the player: `cc -i 10 'os.queueEvent("cc_stop")'` then `CCDEPLOY_ID=10 ccdeploy .claude/skills/cc/examples/jumbotron/jumboplay.lua /jumboplay.lua jumboplay`.
