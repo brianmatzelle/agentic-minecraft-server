@@ -11,8 +11,13 @@ hash = "334d448d03392b110ac27f5cedd88617c83339295474815b005e584c9c245b88"
 metafile = true
 
 [[files]]
+file = "mods/aperture-innovations.pw.toml"
+hash = "3c51f3f6c1b6dcdad8dec5bf2ee4cb59bf59c0752bb20c8ea06115f8a43998a5"
+metafile = true
+
+[[files]]
 file = "mods/architectury-api.pw.toml"
-hash = "6dab8d2507eeacddfad622e58416aae44ed7425de6cae35f8e5694f88ac270f7"
+hash = "711b2a6f04632d0e8fa7fdbe78d97f5961d798c1b25c9ab5811bc44c9fb589ad"
 metafile = true
 
 [[files]]
@@ -167,7 +172,7 @@ metafile = true
 
 [[files]]
 file = "mods/jei.pw.toml"
-hash = "3efa9f089202bf54faba9d438b4d6fe69e2ca41916120a1aeb9c377a1905cafc"
+hash = "01bb40ab2933a5ef1862b409d2f6fe3fc00f6a9972637990b44d00de09194fff"
 metafile = true
 
 [[files]]
@@ -287,5 +292,5 @@ metafile = true
 
 [[files]]
 file = "mods/waystones.pw.toml"
-hash = "7584c74952bd2f3950fb925bb2f292500dbf5fdbe1d86e3d79cdd3ee8bfa412c"
+hash = "44ea22d63e7303130ebe6d01372cbd18f9a0a32806b51459d05960bd024400ca"
 metafile = true

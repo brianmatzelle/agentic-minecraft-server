@@ -12,10 +12,12 @@
 //   server-only — so the bundle can't silently drift from the modlist.
 //
 // What it does:
-//   1. For each CLIENT_MODS slug, query the Modrinth API for the newest
-//      NeoForge 1.21.1 build (same "latest compatible" policy itzg uses on the
-//      server, alpha/beta channels included) and grab its primary file's
-//      url + size + sha1/sha512.
+//   1. For each CLIENT_MODS slug, resolve the version to ship and grab its
+//      primary file's url + size + sha1/sha512. Shared (server-side) mods
+//      resolve to THE JAR THE SERVER IS ACTUALLY RUNNING — every jar in
+//      apps/server/server-data/mods/ is sha1'd and matched against Modrinth, so
+//      the pack can't drift off the live server (see serverJarHashes). Only
+//      client-only mods fall back to `pin`-or-newest-compatible.
 //   2. Resolve the newest NeoForge 21.1.x loader build that Prism Launcher's
 //      metadata service has actually mirrored (see latestNeoforge below).
 //   3. Write apps/client/modrinth.index.json (human-readable, committed for PR
@@ -25,14 +27,19 @@
 //      packwiz-installer can auto-update clients on launch (no re-import).
 //      The .mrpack stays the first-time installer (it carries the loader).
 //
-// IMPORTANT: regenerate this in the SAME PR that changes apps/agent/modlist.txt.
-// Both the server and this pack track "latest 1.21.1", so generating the pack
-// right after a modlist change keeps client and server byte-identical. Run:
+// IMPORTANT: run this AFTER the server has restarted onto the new modlist, and
+// on the server host — it reads the server's mods/ dir to learn what to ship.
+// Regenerating it before the restart just re-pins the client to the OLD jars.
 //   node scripts/build-client-mrpack.mjs
+//
+// Also re-run it after ANY server restart that moved an unpinned mod (itzg
+// re-resolves "latest" on every boot), or clients will sit behind the server
+// with no way to self-fix. `git diff apps/client/modrinth.index.json` after a
+// restart is the cheap check.
 //
 // No global installs, no network writes, never touches server-data/.
 
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
@@ -42,6 +49,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = join(__dirname, '..');
 const OUT_DIR = join(REPO, 'apps', 'client');
 const MODLIST = join(REPO, 'apps', 'agent', 'modlist.txt');
+// The jars the SERVER is actually running right now (itzg downloads them here at
+// boot). Read-only — this is the authority for every shared mod's version. See
+// serverJarHashes() below. Gitignored, so it only exists on the server host.
+const SERVER_MODS = join(REPO, 'apps', 'server', 'server-data', 'mods');
 
 const MC_VERSION = '1.21.1';
 const LOADER = 'neoforge';
@@ -134,6 +145,12 @@ const CLIENT_MODS = [
   // ── Tanks & military vehicles (Discord req 2026-07-21) — content mod, required client-side ─
   { slug: 'superb-warfare',                      client: 'required', server: 'required' }, // Superb Warfare — tanks, helicopters, artillery, drones
   { slug: 'curios',                              client: 'required', server: 'required' }, // superb-warfare dep (accessory slots)
+  // ── Portal gun (Discord req 2026-07-24) — content mod, required client-side; geckolib dep already above ─
+  { slug: 'aperture-innovations',                client: 'required', server: 'required' }, // Aperture Innovations — Portal 1/2 portal gun
+  // NOTE: Immersive Portals + Immersive Portal Gun (PR #71) were BACKED OUT 2026-07-24 — Immersive
+  // Portals' @Redirect on redirectHandleCollisions hard-conflicts with Sable (required by Create:
+  // Aeronautics, priority 1100 > 1000): critical injection failure crashes BOTH server and client
+  // on launch. They are mutually exclusive with the current pack; do not re-add without dropping Sable.
   // ── Tech, storage & villager QoL (Discord req 2026-06-28) — content mods, required client-side ─
   { slug: 'mekanism',                            client: 'required', server: 'required' },
   { slug: 'mekanism-generators',                 client: 'required', server: 'required' }, // mekanism addon
@@ -236,7 +253,10 @@ const CLIENT_MODS = [
 // Server-only mods that must NEVER ship to a client: perf/diagnostic tools plus
 // server-side-only content (e.g. worldgen whose structures use vanilla blocks, so
 // the client needs nothing extra to see them).
-const SERVER_ONLY = ['lithium', 'ferrite-core', 'modernfix', 'spark', 'chunky', 'noisium', 'when-dungeons-arise', 'warputils', 'cobblemon-challenge'];
+const SERVER_ONLY = ['lithium', 'ferrite-core', 'modernfix', 'spark', 'chunky', 'noisium', 'when-dungeons-arise', 'warputils', 'cobblemon-challenge',
+  // WorldEdit (PR #72) — ops edit terrain via server-side commands (//set, //copy).
+  // Clients need nothing: the server just sends the resulting block changes.
+  'worldedit'];
 
 function modlistSlugs() {
   return readFileSync(MODLIST, 'utf8')
@@ -270,6 +290,21 @@ async function prismNeoforgeBuilds() {
   }
 }
 
+// The loader is the harshest version gate in the whole pack: NeoForge enforces
+// build EQUALITY in the config handshake, so a pack one build ahead of the server
+// rejects EVERY client outright ("Incompatible client! Please use NeoForge …").
+// The server pins its build in apps/server/.env (NEOFORGE_VERSION) — read it,
+// same as we read its mods. Resolving "newest mirrored by Prism" independently is
+// exactly how the pack ends up ahead of a pinned server.
+function serverNeoforge() {
+  for (const f of [join(REPO, 'apps', 'server', '.env'), join(REPO, 'apps', 'server', '.env.example')]) {
+    if (!existsSync(f)) continue;
+    const m = readFileSync(f, 'utf8').match(/^\s*NEOFORGE_VERSION\s*=\s*([^\s#]+)/m);
+    if (m && m[1] !== 'latest') return { version: m[1], from: f };
+  }
+  return null; // unpinned server (NEOFORGE_VERSION=latest) — fall back to resolving
+}
+
 async function latestNeoforge() {
   const r = await fetch(
     'https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml',
@@ -296,6 +331,31 @@ async function latestNeoforge() {
     console.error(`NeoForge ${newest} not yet on meta.prismlauncher.org — pinning ${picked} instead`);
   }
   return picked;
+}
+
+// ── The server's installed jars are the version authority ────────────────────
+// Both sides used to resolve "latest compatible" INDEPENDENTLY: itzg re-resolves
+// at every boot, this script re-resolves at every build. Any mod that published a
+// new build between the last pack build and the next server restart silently
+// drifts — the server moves, the pack doesn't, and clients get "you're behind"
+// with no way to fix it (updating the pack just re-installs the same stale jar).
+// That's what the scattered `pin:` fields below were each patching by hand, one
+// mod at a time, after the fact.
+//
+// So: sha1 every jar in the server's mods/ dir and let THAT decide. Modrinth's
+// /version_files endpoint maps a file hash back to the exact version it came
+// from, so a shared mod ships to clients as the same bytes the server loaded —
+// byte-identical by construction, not by remembering to regenerate in time.
+// Client-only mods (server: 'unsupported') have no server jar and still resolve
+// pin-or-latest.
+function serverJarHashes() {
+  if (!existsSync(SERVER_MODS)) return null;
+  const map = new Map(); // sha1 -> filename
+  for (const f of readdirSync(SERVER_MODS)) {
+    if (!f.endsWith('.jar')) continue;
+    map.set(createHash('sha1').update(readFileSync(join(SERVER_MODS, f))).digest('hex'), f);
+  }
+  return map.size ? map : null;
 }
 
 function pickFile(version) {
@@ -329,8 +389,17 @@ if (unclassified.length) {
 }
 
 // ── Resolve each client mod's file from Modrinth ─────────────────────────────
+const installed = serverJarHashes();
+if (installed) {
+  console.error(`Matching ${installed.size} jars installed on the server (${SERVER_MODS}).`);
+} else {
+  console.error(`WARN: no server mods/ dir at ${SERVER_MODS} — falling back to "newest compatible"`);
+  console.error('      for every mod. The pack may drift off what the server actually runs; run this');
+  console.error('      on the server host (or copy its mods/ dir there) for a guaranteed match.');
+}
 console.error(`Resolving ${CLIENT_MODS.length} client mods for ${LOADER} ${MC_VERSION}…`);
 const resolved = [];
+const stalePins = [];
 for (const mod of CLIENT_MODS) {
   const q =
     `https://api.modrinth.com/v2/project/${mod.slug}/version` +
@@ -339,11 +408,28 @@ for (const mod of CLIENT_MODS) {
   const versions = await getJSON(q);
   if (!versions.length) throw new Error(`No ${LOADER} ${MC_VERSION} build for ${mod.slug}`);
   versions.sort((a, b) => new Date(b.date_published) - new Date(a.date_published));
-  // Default: newest compatible build (the same "latest" policy itzg uses). `pin`
-  // overrides it for mods whose server version is forced by a dependency (e.g.
-  // SimpleTMs pins Cobblemon), so the pack can't drift off what the server runs.
-  const v = mod.pin ? versions.find((x) => x.version_number === mod.pin) : versions[0];
+  // Precedence: the jar the server actually loaded > `pin` > newest compatible.
+  // A shared mod resolves to the server's build even when a newer one exists on
+  // Modrinth — that's the whole point (the server is on whatever it downloaded at
+  // its last boot, not on whatever is newest right now).
+  const onServer =
+    mod.server !== 'unsupported' && installed
+      ? versions.find((x) => installed.has(pickFile(x)?.hashes?.sha1))
+      : null;
+  const v = onServer || (mod.pin ? versions.find((x) => x.version_number === mod.pin) : versions[0]);
   if (!v) throw new Error(`Pinned ${mod.slug} ${mod.pin} not found among ${LOADER} ${MC_VERSION} builds`);
+  // A pin that disagrees with the running server is stale by definition — the
+  // server won. Report it so the pin gets bumped or dropped rather than quietly
+  // lying about what the pack ships.
+  if (onServer && mod.pin && mod.pin !== onServer.version_number) {
+    stalePins.push(`${mod.slug}: pin ${mod.pin} → server runs ${onServer.version_number}`);
+  }
+  // Shared mod, server dir readable, but no installed jar matched: the server
+  // hasn't picked this mod up yet (added to modlist.txt but not restarted into),
+  // or it came from somewhere other than Modrinth. Don't guess silently.
+  if (!onServer && mod.server !== 'unsupported' && installed) {
+    console.error(`  WARN: ${mod.slug} — no matching jar in the server's mods/; using ${mod.pin ? `pin ${mod.pin}` : 'newest'}`);
+  }
   const file = pickFile(v);
   if (!file?.hashes?.sha1 || !file?.hashes?.sha512) {
     throw new Error(`Missing hashes for ${mod.slug} ${v.version_number}`);
@@ -360,11 +446,32 @@ for (const mod of CLIENT_MODS) {
     projectId: v.project_id, // Modrinth IDs let `packwiz update` re-resolve later
     versionId: v.id,
   });
-  console.error(`  ${mod.slug.padEnd(38)} ${String(v.version_number).padEnd(28)} (client:${mod.client})`);
+  const src = onServer ? 'server' : mod.pin ? 'pin' : 'latest';
+  console.error(`  ${mod.slug.padEnd(38)} ${String(v.version_number).padEnd(28)} ${src.padEnd(6)} (client:${mod.client})`);
 }
 
-const neoforge = await latestNeoforge();
-console.error(`NeoForge loader: ${neoforge}`);
+if (stalePins.length) {
+  console.error(`\nWARNING: ${stalePins.length} pin(s) no longer match the running server (server wins):`);
+  for (const p of stalePins) console.error(`  ${p}`);
+  console.error('         → bump or drop each `pin` in CLIENT_MODS; the pack shipped the server build.');
+}
+
+const pinnedLoader = serverNeoforge();
+const neoforge = pinnedLoader ? pinnedLoader.version : await latestNeoforge();
+if (pinnedLoader) {
+  console.error(`NeoForge loader: ${neoforge}  (server pin, from ${pinnedLoader.from})`);
+  // Prism installs the loader from its own metadata mirror, not NeoForge's Maven.
+  // If it hasn't mirrored the server's pinned build, importing the pack fails with
+  // "Could not download metadata for net.neoforged <build>" — better to know here.
+  const prism = await prismNeoforgeBuilds();
+  if (prism && !prism.has(neoforge)) {
+    console.error(`WARN: meta.prismlauncher.org has not mirrored NeoForge ${neoforge} yet —`);
+    console.error('      Prism imports of this pack will fail until it does. Shipping it anyway:');
+    console.error('      the server runs this build, and a different one locks clients out entirely.');
+  }
+} else {
+  console.error(`NeoForge loader: ${neoforge}  (server unpinned — resolved newest Prism-mirrored build)`);
+}
 
 // mrpack file list — Modrinth-schema fields only. Stable ordering for clean diffs.
 const files = resolved

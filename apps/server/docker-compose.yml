@@ -335,6 +335,15 @@ services:
     build: ./stadiumcast
     container_name: mc-stadiumcast
     restart: unless-stopped
+    # Backstop for the sanjuuni frame-store leak (see the "Leak guard" comment in
+    # stadiumcast/entrypoint.sh). Unbounded, it reached 94GB and swap-killed the
+    # whole host on 2026-07-24. The entrypoint now parks unwatched feeds and
+    # recycles at 1GB, so this cap should never be reached — but if it is, docker
+    # kills the container and `restart: unless-stopped` rebuilds it in seconds,
+    # instead of the Minecraft server dying. memswap_limit == mem_limit so it
+    # can't spill into swap either, which is what actually took the box down.
+    mem_limit: 2g
+    memswap_limit: 2g
     environment:
       CAST_AUTOSTART: "1"                       # live sanjuuni loop (:8180 in, :8177 ws out)
     volumes:
