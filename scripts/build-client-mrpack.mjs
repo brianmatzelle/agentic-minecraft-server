@@ -147,6 +147,9 @@ const CLIENT_MODS = [
   { slug: 'curios',                              client: 'required', server: 'required' }, // superb-warfare dep (accessory slots)
   // ── Portal gun (Discord req 2026-07-24) — content mod, required client-side; geckolib dep already above ─
   { slug: 'aperture-innovations',                client: 'required', server: 'required' }, // Aperture Innovations — Portal 1/2 portal gun
+  // ── Immersive Engineering (Discord req 2026-07-25) — asked for as shader-safe stadium
+  // floodlights. Content mod (blocks/items/registry) → required client-side. No deps.
+  { slug: 'immersiveengineering',                client: 'required', server: 'required' }, // Immersive Engineering — tech suite; aimable Floodlight lights a real 32-block beam (works with shaders)
   // NOTE: Immersive Portals + Immersive Portal Gun (PR #71) were BACKED OUT 2026-07-24 — Immersive
   // Portals' @Redirect on redirectHandleCollisions hard-conflicts with Sable (required by Create:
   // Aeronautics, priority 1100 > 1000): critical injection failure crashes BOTH server and client
