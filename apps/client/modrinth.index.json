@@ -6,6 +6,21 @@
   "summary": "Client mods for the mc.starting.cc server. Import into Prism Launcher or the Modrinth App.",
   "files": [
     {
+      "path": "mods/[Neoforge 1.21.1] Better Zoom v2.7.0.jar",
+      "hashes": {
+        "sha1": "1731b439f18e0b48f97c7f09362f3efe57b9e12a",
+        "sha512": "2922391abddbeed2b640b224c857090025bf6fbc48be889bc502c5d9a98f51a213d5b5fa2ba01e61c3fe6b7956274e2cd6ba92565933ada3e417b14349487069"
+      },
+      "env": {
+        "client": "optional",
+        "server": "unsupported"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/rOY9XqdO/versions/P1tY9nD4/%5BNeoforge%201.21.1%5D%20Better%20Zoom%20v2.7.0.jar"
+      ],
+      "fileSize": 20827
+    },
+    {
       "path": "mods/accessories-neoforge-1.1.0-beta.53+1.21.1.jar",
       "hashes": {
         "sha1": "77d75c2e13cfdf56a45cdd29806c1c97c3d250fc",

@@ -251,6 +251,24 @@ const CLIENT_MODS = [
   // NeoForge 1.21.1, latest neoforge-1.21.1-1.5.1. No required deps.
   // Requested via Discord 2026-07-23.
   { slug: 'sound-physics-remastered',            client: 'optional', server: 'unsupported', pin: 'neoforge-1.21.1-1.5.1' },
+  // ── Zoom / "binoculars" (client-only; the server never renders → server: 'unsupported') ─
+  // Better Zoom — hold a hotkey (C by default, rebindable in Controls) to zoom smoothly,
+  // scroll the wheel to adjust the factor. Asked for on Discord as "a binoculars mod":
+  // this is the spyglass without the black-bar overlay, no item needed. Purely a local
+  // camera FOV change, so like the FPS/shader mods it stays OUT of modlist.txt — no
+  // server boot risk, no deploy coupling.
+  // Chosen over the more popular Just Zoom (7.9M dl) deliberately: Better Zoom ships NO
+  // mixins/ASM and has no library dependency, while Just Zoom mixins the camera and pulls
+  // in Konkrete. This pack already runs Sodium + Iris + Veil (Sable) and has been bitten
+  // once by a mixin conflict (Immersive Portals vs Sable, backed out 2026-07-24), so the
+  // zero-mixin option is the cheap insurance — it can't fight the renderer.
+  // client: 'optional' — comfort feature, not needed to connect; Prism installs it by
+  // default on import but players can deselect it (same treatment as distanthorizons and
+  // sound-physics-remastered). PINNED to the tested build (drift-lock, same policy as the
+  // other client-only mods); this is today's newest, so it changes no bytes now.
+  // NeoForge 1.21.1, latest 2.7.0. No required deps.
+  // Requested via Discord 2026-07-25.
+  { slug: 'better-zoom',                         client: 'optional', server: 'unsupported', pin: '2.7.0' },
 ];
 
 // Server-only mods that must NEVER ship to a client: perf/diagnostic tools plus

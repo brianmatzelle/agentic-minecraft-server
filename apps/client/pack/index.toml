@@ -31,6 +31,11 @@ hash = "6f45abb9ea3a42133391f83a0f050d82891f5297529020b951587a8d9481eaaf"
 metafile = true
 
 [[files]]
+file = "mods/better-zoom.pw.toml"
+hash = "c25c5797246294f6a177fd5230e3da2dd041898b69d1894a9fd5c13985feb07a"
+metafile = true
+
+[[files]]
 file = "mods/cc-tweaked.pw.toml"
 hash = "321902218709249a46c9bfc25c0364ad44a0abf6bed9516d9d7d7811a848d1bd"
 metafile = true
