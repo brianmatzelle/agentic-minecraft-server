@@ -45,9 +45,13 @@ COPY ytdlp-args.sh /opt/ytdlp-args.sh
 # tunes through. Node stdlib only (nodejs is already here for yt-dlp), so there
 # is nothing to npm-install.
 COPY channels.js /opt/channels.js
-RUN chmod +x /opt/entrypoint.sh /opt/source.sh /opt/channels.js
-# 8177 = sanjuuni frames (ws), 8178 = channel control API. Both internal-only.
-EXPOSE 8177 8178
+# castaudio.js — TV audio as a DFPWM websocket for the stadium speakers. Same
+# deal: node stdlib only, including its own websocket framing.
+COPY castaudio.js /opt/castaudio.js
+RUN chmod +x /opt/entrypoint.sh /opt/source.sh /opt/channels.js /opt/castaudio.js
+# 8177 = sanjuuni frames (ws), 8178 = channel control API, 8179 = DFPWM audio
+# (ws). All internal-only.
+EXPOSE 8177 8178 8179 8182 8183
 # CAST_AUTOSTART=1 (compose) runs the live sanjuuni loop; docker exec still
 # works for ad-hoc jobs (test clips etc.).
 ENTRYPOINT ["/opt/entrypoint.sh"]

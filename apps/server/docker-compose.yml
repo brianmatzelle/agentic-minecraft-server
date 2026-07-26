@@ -350,6 +350,53 @@ services:
     environment:
       CAST_AUTOSTART: "1"                       # live sanjuuni loop (:8180 in, :8177 ws out)
       CAST_CTL: "1"                             # channel catalog + control API on :8178
+      # Jumbotron frame size, in sanjuuni pixels = wall chars x (2 wide, 3 tall)
+      # at termtv.lua's 0.5 textScale. The wall was rebuilt on 2026-07-26 — bottom
+      # face removed, the four remaining enlarged to a uniform 271x152 — so the old
+      # 542x414 (the previous modal face, 271x138) left a 7-row black band top and
+      # bottom. A mismatch never errors: termtv centres the frame, letterboxing
+      # when the face is taller and cropping when it's smaller.
+      CAST_W: "542"
+      CAST_H: "456"
+      # TV audio for the stadium speakers: its own ffmpeg -> DFPWM -> ws :8179,
+      # consumed by whichever computer holds the speakers — computer 10's own, in
+      # practice, and it IS audible at the seats even though the wall is a Sable
+      # moving structure whose blocks sit 20M blocks out in the overworld (Sable
+      # simulates it at the stadium, sound included; owner confirmed 2026-07-26).
+      # CAST_AUDIO: "0" mutes the whole stadium here.
+      CAST_AUDIO: "1"
+      # Seconds of audio buffered before playback. Doubles as the A/V offset (the
+      # faces run behind live) AND the underrun guard: HLS delivers ~6s segments in
+      # one burst, so anything shallower than the segment period stutters forever.
+      # 8 was shallower than Bloomberg's own ~10s segments and the set logged 68
+      # buffering gaps in 10 minutes; 16 clears the segment period with margin.
+      # `[`/`]` at the set moves it live if a channel wants something else.
+      CAST_AUDIO_DELAY: "16"
+      # Feed rate for the faces, held just UNDER what they can actually draw
+      # (measured 4.66fps on 2026-07-25, once termtv.lua replaced jumboplay's
+      # poll-then-fetch protocol with one round trip per frame — the old ceiling
+      # was 3-4). Same rule as TERMTV_FPS below. Above the draw rate the FIFO
+      # backs up, ffmpeg blocks, and a LIVE source can't catch up again: the
+      # picture walks steadily behind the live edge while the audio leg stays on
+      # it, so the sound slides AHEAD of the picture. Under it, the client waits
+      # on the encoder instead and both hold station.
+      CHANNEL_FPS: "4"
+      # termtv — a second, small screen (one monitor + speaker on one computer,
+      # running termtv.lua) fed by its own leg: video ws :8182, audio ws :8183.
+      # Independent pipeline, so it can't stall the jumbotron; same tuned channel.
+      # TERMTV_W/H must match the monitor at termtv.lua's 0.5 textScale
+      # (cols*2 x rows*3, even numbers) — 79x38 chars is the default below.
+      TERMTV: "1"
+      TERMTV_W: "158"
+      TERMTV_H: "114"
+      # Just UNDER what the set can actually draw (measured 8.9fps: 38 blit rows
+      # plus DFPWM decoding, one round trip per frame, each costing a server
+      # tick). Above the draw rate, sanjuuni banks the frames the client never
+      # asks for — measured +22MB/min — and the picture slides steadily behind
+      # live while the audio leg stays at the live edge, so the sound drifts
+      # AHEAD of the picture until the RSS guard recycles the pipeline. Under it,
+      # the client waits on the server instead and both stay put.
+      TERMTV_FPS: "8"
     volumes:
       - ./stadiumcast/media:/media
 
@@ -440,6 +487,101 @@ services:
       - postgres
       - owncast
 
+  # --- The client you play from the phone (playclient) -------------------------
+  # garviscam's sibling: same modded NeoForge client, same pack, but drawn on the
+  # HOST's X session (:1) with hardware GL ("NVIDIA GB10/PCIe", direct rendering)
+  # instead of Xvfb+llvmpipe. Sunshine (below) captures that display, so this is
+  # the thing you are actually looking at on the phone.
+  #
+  # Reaches the server as `minecraft:25565` over the compose network — that is
+  # the address to type into the in-game server list.
+  #
+  # Idles by default; driven with `docker exec` (see ./playclient/scripts/).
+  # Set PLAY_AUTOSTART=1 once you're happy with it so the game is already
+  # running when you connect from the phone with no laptop in reach.
+  playclient:
+    build: ./playclient
+    container_name: mc-playclient
+    restart: unless-stopped
+    shm_size: "2g"
+    ipc: host                                  # MIT-SHM against the host's X server
+    environment:
+      DISPLAY: "${SUNSHINE_DISPLAY:-:1}"
+      XAUTHORITY: "/run/user/1000/gdm/Xauthority"
+      PULSE_SERVER: "unix:/run/user/1000/pulse/native"   # game audio → host sink → Sunshine picks it up
+      NVIDIA_VISIBLE_DEVICES: "all"
+      NVIDIA_DRIVER_CAPABILITIES: "all"        # graphics, not just compute — this is what makes GL work
+      PLAYCLIENT_LOGIN: "${PLAYCLIENT_LOGIN:-}"
+      PLAY_RES: "${PLAY_RES:-2560x1080}"
+      PLAY_AUTOSTART: "${PLAY_AUTOSTART:-0}"
+    volumes:
+      - playclient-data:/data
+      - ../client:/pack:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - /run/user/1000/gdm/Xauthority:/run/user/1000/gdm/Xauthority:ro
+      - /run/user/1000/pulse:/run/user/1000/pulse
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, video, display, graphics, utility, compute]
+
+  # --- Phone streaming (Sunshine → Moonlight on the iPhone) --------------------
+  # Play the REAL modded client from an iPhone. Not Geyser/Bedrock (Geyser only
+  # translates SERVER-side mods, so Cobblemon — the whole point of this server —
+  # is invisible to a Bedrock client) and not a Java launcher on the phone
+  # (needs sideloading + JIT, and the pack wants ~4GB). Instead: the client runs
+  # HERE on the GB10, and only H.264 frames go to the phone.
+  #
+  # Transport is TAILSCALE (iphone171 100.120.0.72 ⇄ spark-4933 100.126.150.5,
+  # direct, ~41ms) — deliberately no router port forward, since UDP forwarding
+  # on this router has never worked (cf. the Simple Voice Chat revert).
+  #
+  # Capture is X11 against gdm's existing Xorg on :1 (proprietary NVIDIA driver,
+  # 2560x1080 ultrawide on USB-C-0), NOT KMS — see ./sunshine/sunshine.conf for
+  # why that choice avoids a kernel-param change, a reboot, and a dummy plug.
+  #
+  # network_mode: host — Moonlight wants a wide TCP+UDP port range (47984-48010)
+  # and mDNS discovery; host networking is the sane way to serve that, and it
+  # puts the listener on tailscale0. ipc: host — X11 capture uses MIT-SHM, which
+  # needs the host IPC namespace. user 0:0 — /dev/uinput is root:root 0600, and
+  # Sunshine needs it to synthesise the virtual keyboard/mouse/gamepad.
+  #
+  # The web UI (https://<tailscale-ip>:47990) is where you set the login and
+  # confirm the PIN when pairing the phone. See ./sunshine/README.md.
+  sunshine:
+    build: ./sunshine                          # upstream's arm64 image is missing libs — see ./sunshine/Dockerfile
+    container_name: mc-sunshine
+    restart: unless-stopped
+    network_mode: host
+    ipc: host
+    user: "0:0"
+    command: ["/config/sunshine.conf"]
+    environment:
+      DISPLAY: "${SUNSHINE_DISPLAY:-:1}"
+      XAUTHORITY: "/run/user/1000/gdm/Xauthority"
+      PULSE_SERVER: "unix:/run/user/1000/pulse/native"
+      NVIDIA_VISIBLE_DEVICES: "all"
+      NVIDIA_DRIVER_CAPABILITIES: "all"        # need video (NVENC) + graphics/display, not just compute
+    devices:
+      - /dev/uinput                            # virtual kbd/mouse/gamepad injected into seat0
+      - /dev/dri
+    volumes:
+      - sunshine-config:/config                # pairing certs, credentials, state
+      - ./sunshine/sunshine.conf:/config/sunshine.conf   # repo file is the source of truth; edit + restart
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - /run/user/1000/gdm/Xauthority:/run/user/1000/gdm/Xauthority:ro
+      - /run/user/1000/pulse:/run/user/1000/pulse
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, video, display, graphics, utility, compute]
+
 volumes:
   prometheus-data:                              # Prometheus TSDB (survives restarts)
   grafana-data:                                 # Grafana's own db: users, dashboard edits, prefs
@@ -447,3 +589,5 @@ volumes:
   garviscam-data:                               # GarvisCam client: game files, pack, MSA session
   owncast-data:                                 # Garvis TV: owncast config/db (stream title, chat history)
   restic-cache:                                 # offsite backup sidecar: restic's local cache (perf only)
+  sunshine-config:                              # Sunshine: web-UI login, pairing certs, client state
+  playclient-data:                              # phone client: game files, pack, MSA session
