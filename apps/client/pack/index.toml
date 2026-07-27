@@ -116,6 +116,11 @@ hash = "3e972fe1a63bbdacac985a9c3cf114a287d33c479fc5606bdcc6a699f15fec45"
 metafile = true
 
 [[files]]
+file = "mods/diligentstalker.pw.toml"
+hash = "c9c96770f0c254fa7bcaf593ddadc50fb7e9d632e701494cfb80713c9806fef8"
+metafile = true
+
+[[files]]
 file = "mods/distanthorizons.pw.toml"
 hash = "e6a792eef5fdf3a380a8668b55e3db4be0faec648d66e82e5b18ca59c50551fd"
 metafile = true
@@ -132,7 +137,7 @@ metafile = true
 
 [[files]]
 file = "mods/entityculling.pw.toml"
-hash = "5b79bd9559106dce80b8e90b559a4f3b84cccad3a0c8f3f6af46b39ed06e5419"
+hash = "3f2998cb3b2eed6dbebc2868be6e26bb99607ec285dfdd2ad7f18f6b9e10cefd"
 metafile = true
 
 [[files]]
