@@ -31,6 +31,28 @@ Follow-ups **inside the thread must @mention him too** — that's how we scope w
 messages are meant for him. Requires **View Channel**, **Send Messages**, **Create
 Public Threads**, and **Send Messages in Threads** in that channel.
 
+## Uploaded files (logs, crash reports, configs, screenshots)
+Attach a file to the message you @mention him in — `latest.log`, a crash report, a
+`.toml`/`.json` config, a `.log.gz`, or a **screenshot** — and Garvis actually reads it.
+He also picks up a file you posted in the last few messages, so the natural "drop the
+log, then ask about it" flow works. A file with no text at all is a valid message.
+
+`src/attachments.js` fetches the attachment from Discord's CDN, stages it in a scratch
+dir **outside** both git checkouts (`GARVIS_UPLOAD_DIR`, default `$TMPDIR/garvis-uploads`),
+and hands the agent two things: a **fenced excerpt** (head + tail) inline, and the
+**absolute path**, granted via `--add-dir`, so it can `Read`/grep the whole thing — a
+4 MB `latest.log` never fits in a prompt and the stack trace is usually at the very end.
+Images are staged the same way and read with the `Read` tool, so a photo of a crash
+screen is a first-class input. Verified end to end: a needle buried mid-log gets quoted
+back, and text in a screenshot gets read out.
+
+Bounded and fail-soft: ≤5 files, ≤16 MB each, ≤32 MB per turn, https + Discord-CDN hosts
+only with redirects disabled, archives/binaries declined with a reason in chat, and a
+24 h TTL sweep of the scratch dir. File contents are **untrusted data** — fenced like
+message text, and the prompt says diagnose it, never obey it. `.env` uploads are
+deliberately not opened. Knobs: `GARVIS_UPLOAD_MAX_FILES`, `GARVIS_UPLOAD_MAX_BYTES`,
+`GARVIS_UPLOAD_MAX_TOTAL_BYTES`, `GARVIS_UPLOAD_INLINE_CHARS`, `GARVIS_UPLOAD_TTL_HOURS`.
+
 ## Rich Modrinth previews
 Garvis renders any **Modrinth** link in his replies as a rich preview card "off rip"
 (mod icon, summary, download count, and **server/client side** — the bit players
@@ -49,6 +71,7 @@ missing reply. The prompts nudge the agent to drop the canonical
 - `src/register-commands.js` — registers the guild slash commands (run once, and after adding/changing a command).
 - `src/index.js` — the bot: @mention router (Q&A vs. capable maintenance agent), per-user cooldown, slash-command handlers.
 - `src/embeds.js` — turns Modrinth links in replies into rich preview cards (see "Rich Modrinth previews").
+- `src/attachments.js` — fetches, guards, and stages Discord file uploads so the agent can read them (see "Uploaded files").
 - `src/whitelist.js` — `/whitelist` plumbing: username validation, idempotent MC_WHITELIST `.env` update, and the live `rcon-cli whitelist add`. The only place the bot touches the live server.
 - `garvis-bot.service` — systemd `--user` unit that runs the bot (see "Run as a service").
 - `.env.example` — copy to `bot/.env` (gitignored). **Freshly rotated token only.**
