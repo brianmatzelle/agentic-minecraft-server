@@ -182,12 +182,17 @@ metafile = true
 
 [[files]]
 file = "mods/jei.pw.toml"
-hash = "01bb40ab2933a5ef1862b409d2f6fe3fc00f6a9972637990b44d00de09194fff"
+hash = "e9676877eccbaa31f889c64fb13c2ed3fbcecbcdaffd157e9a821087e92c5d8b"
 metafile = true
 
 [[files]]
 file = "mods/kotlin-for-forge.pw.toml"
 hash = "464e92f88ee1ffe24cc59093ee5b45a3c43753e532d031d0f584447492e84480"
+metafile = true
+
+[[files]]
+file = "mods/lambdynamiclights.pw.toml"
+hash = "a2d81fc3ea7561666a7e0f7c3951772b936612e7fe86cd243abb52a6ac31d78b"
 metafile = true
 
 [[files]]
@@ -283,6 +288,11 @@ metafile = true
 [[files]]
 file = "mods/sound-physics-remastered.pw.toml"
 hash = "3dc6c2dad8d7f350bf00d94a1caf262a77a7be1aedd8b6c26d9cd693f06cd393"
+metafile = true
+
+[[files]]
+file = "mods/spotlights-or-something.pw.toml"
+hash = "76fe43fef6f2aa9d64e0133f663382284697f0e7d086614156a54cb6713e5006"
 metafile = true
 
 [[files]]

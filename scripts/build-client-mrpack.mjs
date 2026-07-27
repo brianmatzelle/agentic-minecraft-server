@@ -150,6 +150,31 @@ const CLIENT_MODS = [
   // ── Immersive Engineering (Discord req 2026-07-25) — asked for as shader-safe stadium
   // floodlights. Content mod (blocks/items/registry) → required client-side. No deps.
   { slug: 'immersiveengineering',                client: 'required', server: 'required' }, // Immersive Engineering — tech suite; aimable Floodlight lights a real 32-block beam (works with shaders)
+  // ── Cone spotlights (Discord req 2026-07-25) — content mod, required BOTH sides ────
+  // Asked for after the IE floodlight (above) was judged too plain: this is the visible
+  // light-BEAM look. Requested with the shader caveat below already explained and
+  // accepted — do not re-litigate it here, but do not delete this comment either.
+  // Its default "Veil" renderer is broken under Iris (which we ship client-REQUIRED to
+  // EVERY player): lights become a pink hue / missing-texture overlay, and it triggers on
+  // Iris merely being present, no shaderpack needed. Upstream: iris-veil-compat issue #5
+  // names this mod; the fix (that repo's PR #9, "Add deferred light pass") is still OPEN,
+  // never CI-built, and the repo has been dormant since 2026-06-19. So the ONLY usable
+  // renderer here is "Lamb", which the player selects in the mod's settings screen and
+  // which REQUIRES lambdynamiclights — added directly below for exactly this reason.
+  // Ships its own Veil inside the jar (jarjar); Sable/Create: Aeronautics also carry Veil,
+  // so NeoForge resolves one of them — watch the first boot for a renderer/mixin clash
+  // (this pack was already bitten once, by Immersive Portals vs Sable, backed out 2026-07-24).
+  { slug: 'spotlights-or-something',             client: 'required', server: 'required' }, // Spotlights or Something — aimable cone spotlights/searchlights; SET RENDERER TO "LAMB" (Veil mode is broken under our Iris)
+  // LambDynamicLights — not a Modrinth-declared *required* dep of Spotlights (it lists it
+  // optional), but it is required in PRACTICE here: it backs the only light renderer that
+  // survives Iris, so without it every player sees the pink-hue bug. client 'required' (not
+  // 'optional' like the other comfort mods) for that reason — a player who deselected it
+  // would get a visibly broken mod. Ships ONE multiloader jar; its Modrinth metadata lists
+  // fabric-api required, which applies to the Fabric path only — the NeoForge side is
+  // self-contained. Declares sodium-dynamic-lights and ryoamiclights INCOMPATIBLE; we ship
+  // neither. Server never renders light → server: 'unsupported', so it stays OUT of
+  // modlist.txt (same treatment as sodium/iris/immediatelyfast).
+  { slug: 'lambdynamiclights',                   client: 'required', server: 'unsupported' }, // required in practice by spotlights-or-something's shader-surviving "Lamb" renderer
   // NOTE: Immersive Portals + Immersive Portal Gun (PR #71) were BACKED OUT 2026-07-24 — Immersive
   // Portals' @Redirect on redirectHandleCollisions hard-conflicts with Sable (required by Create:
   // Aeronautics, priority 1100 > 1000): critical injection failure crashes BOTH server and client
