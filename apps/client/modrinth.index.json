@@ -336,6 +336,21 @@
       "fileSize": 550074
     },
     {
+      "path": "mods/diligentstalker-neoforge-1.21.1-1.1.1.jar",
+      "hashes": {
+        "sha1": "60a30449625c188d8b0305b861490a420e637cab",
+        "sha512": "29fd88daee236193ca0d9b99ad6d9f80f9670682cb4a11af486b6de6864d5cb9cba540b8cc32f0c7773a515e6aa29b2dcb742d537351b319b4cdf39a92aa8c56"
+      },
+      "env": {
+        "client": "required",
+        "server": "required"
+      },
+      "downloads": [
+        "https://cdn.modrinth.com/data/cYG2StiC/versions/w6gAEfFG/diligentstalker-neoforge-1.21.1-1.1.1.jar"
+      ],
+      "fileSize": 164596
+    },
+    {
       "path": "mods/DistantHorizons-3.2.0-b-1.21.1-fabric-neoforge.jar",
       "hashes": {
         "sha1": "df25e8cfe06917963778723a1d9a60610dd21bec",
@@ -387,7 +402,7 @@
         "sha512": "0c22502b84b13d8ac6daffe14ac77e7306b5b7a48f5cd9b3950d9e1d60b3786104aa035fbfdb208b1c9a75ad0e356301a774da32edc3f71cb3a53e2d28fd39e6"
       },
       "env": {
-        "client": "required",
+        "client": "optional",
         "server": "unsupported"
       },
       "downloads": [

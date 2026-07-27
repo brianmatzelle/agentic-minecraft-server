@@ -1,0 +1,13 @@
+name = "diligentstalker"
+filename = "diligentstalker-neoforge-1.21.1-1.1.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/cYG2StiC/versions/w6gAEfFG/diligentstalker-neoforge-1.21.1-1.1.1.jar"
+hash-format = "sha512"
+hash = "29fd88daee236193ca0d9b99ad6d9f80f9670682cb4a11af486b6de6864d5cb9cba540b8cc32f0c7773a515e6aa29b2dcb742d537351b319b4cdf39a92aa8c56"
+
+[update]
+[update.modrinth]
+mod-id = "cYG2StiC"
+version = "w6gAEfFG"

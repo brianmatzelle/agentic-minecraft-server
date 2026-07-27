@@ -179,6 +179,15 @@ const CLIENT_MODS = [
   // Portals' @Redirect on redirectHandleCollisions hard-conflicts with Sable (required by Create:
   // Aeronautics, priority 1100 > 1000): critical injection failure crashes BOTH server and client
   // on launch. They are mutually exclusive with the current pack; do not re-add without dropping Sable.
+  // Diligent Stalker — remote camera drones (Discord req 2026-07-27). Fly a DroneStalker
+  // and see through it ("StalkerView") from any distance; it force-loads its own chunks so
+  // the feed keeps rendering. Content/entity mod → required on both sides. No deps.
+  // CONFLICT: the author documents it as incompatible with EntityCulling — that mod is
+  // client-only and we shipped it client:'required', which Prism will NOT let a player
+  // deselect. Flipped to 'optional' below (Prism still installs optional files by default,
+  // so nothing changes for players who don't care) purely so drone pilots have an escape
+  // hatch. If the two turn out to coexist fine in practice, put the pin back to 'required'.
+  { slug: 'diligentstalker',                     client: 'required', server: 'required' },
   // ── Tech, storage & villager QoL (Discord req 2026-06-28) — content mods, required client-side ─
   { slug: 'mekanism',                            client: 'required', server: 'required' },
   { slug: 'mekanism-generators',                 client: 'required', server: 'required' }, // mekanism addon
@@ -226,7 +235,12 @@ const CLIENT_MODS = [
   // pinned value is today's newest, so this changes no bytes now — it's a drift-lock.
   // Drop the pin (and the iris/iris-veil-compat block) together if shaders are removed.
   { slug: 'sodium',                              client: 'required', server: 'unsupported', pin: 'mc1.21.1-0.8.12-beta.2-neoforge' }, // Veil-compatible renderer: the big FPS win + Iris's required dep
-  { slug: 'entityculling',                       client: 'required', server: 'unsupported' }, // skips rendering hidden mobs/Cobblemon
+  // Was client:'required'. Downgraded to 'optional' 2026-07-27 when diligentstalker was
+  // added: that mod's page lists EntityCulling as INCOMPATIBLE ("blocks first-person
+  // movement"), and a 'required' entry is not deselectable in Prism, so drone pilots had
+  // no way out. 'optional' still installs by default on import — this only buys the
+  // escape hatch, it does not take the FPS win away from anyone.
+  { slug: 'entityculling',                       client: 'optional', server: 'unsupported' }, // skips rendering hidden mobs/Cobblemon; deselect if you fly Diligent Stalker drones
   // PINNED to 1.6.10: this is the build the live pack ships and every player has. A
   // newer stable 1.6.11 released 2026-06-30, and unpinned this mod re-resolves to
   // "latest" on every regen — a naive regen silently swaps it in, dirtying the /add
