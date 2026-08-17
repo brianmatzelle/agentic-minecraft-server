@@ -505,6 +505,13 @@ services:
     restart: unless-stopped
     shm_size: "2g"
     ipc: host                                  # MIT-SHM against the host's X server
+    # Controller path: Sunshine creates its virtual gamepad on the HOST only
+    # when a Moonlight session attaches one — i.e. mid-session, after this
+    # container exists — so a static `devices:` list can never name the node.
+    # Bind the whole directory and open input's char-major via cgroup instead;
+    # GLFW/Controlify then sees the pad appear through inotify hotplug.
+    device_cgroup_rules:
+      - "c 13:* rmw"                           # char major 13 = input subsystem (event*, js*)
     environment:
       DISPLAY: "${SUNSHINE_DISPLAY:-:1}"
       XAUTHORITY: "/run/user/1000/gdm/Xauthority"
@@ -517,8 +524,15 @@ services:
     volumes:
       - playclient-data:/data
       - ../client:/pack:ro
+      - /dev/input:/dev/input                  # gamepad passthrough — see device_cgroup_rules above
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
-      - /run/user/1000/gdm/Xauthority:/run/user/1000/gdm/Xauthority:ro
+      # X cookie via an on-disk copy, NOT gdm's own /run/user/1000/gdm/Xauthority.
+      # That path is tmpfs, so it is empty at boot — and Docker materialises a
+      # missing bind-mount source as a root-owned DIRECTORY, which then blocks gdm
+      # from writing the real cookie and bounces every graphical login straight
+      # back to the greeter (cost an evening on 2026-07-29). $HOME is on disk, so
+      # this survives reboots; i3 refreshes it at session start (~/.config/i3/config).
+      - ${HOME}/.docker-xauth:/run/user/1000/gdm/Xauthority:ro
       - /run/user/1000/pulse:/run/user/1000/pulse
     deploy:
       resources:
@@ -558,6 +572,8 @@ services:
     network_mode: host
     ipc: host
     user: "0:0"
+    cap_add:
+      - SYS_ADMIN                               # KMS capture: open the DRM device and read the scanout plane
     command: ["/config/sunshine.conf"]
     environment:
       DISPLAY: "${SUNSHINE_DISPLAY:-:1}"
@@ -571,8 +587,9 @@ services:
     volumes:
       - sunshine-config:/config                # pairing certs, credentials, state
       - ./sunshine/sunshine.conf:/config/sunshine.conf   # repo file is the source of truth; edit + restart
+      - ./sunshine/apps.json:/config/apps.json           # ditto — Moonlight's app list (web-UI app edits won't stick)
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
-      - /run/user/1000/gdm/Xauthority:/run/user/1000/gdm/Xauthority:ro
+      - ${HOME}/.docker-xauth:/run/user/1000/gdm/Xauthority:ro   # on-disk copy — see playclient above for why
       - /run/user/1000/pulse:/run/user/1000/pulse
     deploy:
       resources:

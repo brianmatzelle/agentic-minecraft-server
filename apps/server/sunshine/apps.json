@@ -1,0 +1,16 @@
+{
+  "_comment": "Bind-mounted over /config/apps.json — repo file is the source of truth; edit + restart mc-sunshine. Don't edit apps via the web UI, its writes can't land on the read-only mount. Sunshine on Linux captures the WHOLE display, so both entries stream the same picture: 'Minecraft' exists because the game is what this rig is for (launch.sh + options.txt fullscreen:true keep it filling the screen), 'Desktop' is the honest name for poking at the box itself. The stock file's Steam/Low-Res entries were noise on this box.",
+  "env": {
+    "PATH": "$(PATH):$(HOME)/.local/bin"
+  },
+  "apps": [
+    {
+      "name": "Minecraft",
+      "image-path": "desktop.png"
+    },
+    {
+      "name": "Desktop",
+      "image-path": "desktop.png"
+    }
+  ]
+}
